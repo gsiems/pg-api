@@ -1,0 +1,212 @@
+/*
+
+psql -t -c "SELECT util_meta.mk_view (
+        a_object_schema => 'tasker_data',
+        a_object_name => 'dt_user',
+        a_ddl_schema => 'core',
+        a_owner => 'tasker_owner',
+        a_grantees => 'tasker_read, tasker_updt' ) ;" tasker | sed -e 's/[[:space:]]*+$//' -e 's/^ //'
+
+*/
+
+CREATE OR REPLACE FUNCTION util_meta.mk_view (
+    a_object_schema text default null,
+    a_object_name text default null,
+    a_ddl_schema text default null,
+    a_cast_booleans_as text default null,
+    a_owner text default null,
+    a_grantees text default null )
+RETURNS text
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+AS $$
+/**
+Function mk_view generates a draft view of a table
+
+| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| ------------------------------ | ------ | ---------- | -------------------------------------------------- |
+| a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
+| a_object_name                  | in     | text       | The (name of the) table to create the view for     |
+| a_ddl_schema                   | in     | text       | The (name of the) schema to create the view in (if different from the table schema) |
+| a_cast_booleans_as             | in     | text       | The (optional) csv pair (true,false) of values to cast booleans as (if booleans are going to be cast to non-boolean values) |
+| a_owner                        | in     | text       | The (optional) role that is to be the owner of the view  |
+| a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted select on the view |
+
+The goal is to combine the table columns of the specifed table with the natural key columns of any referenced tables to create a draft view.
+
+This does not (currently) attempt to recurse beyond the parent tables for the specified table (parents of parents).
+
+Aspirational goal: to recurse parent reference tables.
+
+Aspirational goal: to recognise self-referential tables and add the recursive CTE for all parent records.
+
+Note that this should work for all table types (dt, rt, st)
+
+*/
+DECLARE
+
+    r record ;
+    col record ;
+    fk record ;
+    fk_col record ;
+
+    l_result text ;
+
+    has_join boolean ;
+    l_column_alias text ;
+    l_column_comment text ;
+    l_columns text[] ;
+    l_comments text[] ;
+    l_ddl_schema text ;
+    l_full_view_name text ;
+    l_full_table_name text ;
+    l_joins text[] ;
+    l_table_alias text := 'base' ;
+    l_view_name text ;
+
+BEGIN
+
+-- TODO: a_cast_booleans_as
+
+    ----------------------------------------------------------------------------
+    -- Ensure that the specified table exists
+    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+        RETURN 'ERROR: invalid object' ;
+    END IF ;
+
+    ----------------------------------------------------------------------------
+    l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
+    l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
+    l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
+    l_full_table_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
+
+    ----------------------------------------------------------------------------
+    -- Determine the comment for the view
+    FOR r IN (
+        SELECT schema_name,
+                object_name,
+                comments
+            FROM util_meta.objects
+            WHERE schema_name = a_object_schema
+                AND object_name = a_object_name
+                AND object_type = 'table' ) LOOP
+
+        l_comments := array_append ( l_comments,
+            util_meta.snippet_object_comment (
+                a_ddl_schema => l_ddl_schema,
+                a_object_name => l_view_name,
+                a_object_type => 'view',
+                a_comment => 'View of: ' || coalesce ( r.comments, 'TBD' ) ) ) ;
+
+    END LOOP ;
+
+    ----------------------------------------------------------------------------
+    FOR col IN (
+        SELECT column_name,
+                concat_ws ( '.', l_table_alias, column_name ) AS table_column,
+                concat_ws ( '.', l_full_view_name, column_name ) AS full_column_name,
+                ordinal_position,
+                CASE
+                    WHEN is_nullable THEN 'LEFT JOIN'
+                    ELSE 'JOIN'
+                    END AS join_type,
+                't' || lpad ( ordinal_position::text, 3, '0' ) AS join_alias,
+                comments
+            FROM util_meta.columns
+            WHERE schema_name = a_object_schema
+                AND object_name = a_object_name
+            ORDER BY ordinal_position ) LOOP
+
+        l_columns := array_append ( l_columns, col.table_column ) ;
+        l_comments := array_append ( l_comments,
+            util_meta.snippet_object_comment (
+                a_ddl_schema => l_ddl_schema,
+                a_object_name => l_view_name || '.' || col.column_name,
+                a_object_type => 'column',
+                a_comment => col.comments ) ) ;
+
+        FOR fk IN (
+            SELECT fks.ref_schema_name,
+                    fks.ref_table_name,
+                    fks.ref_full_table_name,
+                    col.join_alias || '.' || fks.ref_column_names AS join_column_name
+                FROM util_meta.foreign_keys fks
+                WHERE fks.schema_name = a_object_schema
+                    AND fks.table_name = a_object_name
+                    AND fks.column_names = col.column_name
+                    AND fks.ref_column_names !~ ',' ) LOOP
+
+            has_join := false ;
+
+            FOR fk_col IN (
+                SELECT column_name,
+                        col.join_alias || '.' || column_name AS full_column_name,
+                        comments
+                    FROM util_meta.columns
+                    WHERE schema_name = fk.ref_schema_name
+                        AND object_name = fk.ref_table_name
+                        AND is_nk
+                    ORDER BY ordinal_position ) LOOP
+
+                has_join := true ;
+
+                l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
+
+                l_columns := array_append ( l_columns, concat_ws ( ' ', fk_col.full_column_name, 'AS', l_column_alias ) ) ;
+
+                l_column_comment := concat_ws ( ' ', 'The', replace ( fk_col.column_name, '_', ' ' ), 'for the', replace ( l_column_alias, '_', ' ' ) ) ;
+
+                l_comments := array_append ( l_comments,
+                    util_meta.snippet_object_comment (
+                        a_ddl_schema => l_ddl_schema,
+                        a_object_name => l_view_name || '.' || l_column_alias,
+                        a_object_type => 'column',
+                        a_comment => l_column_comment ) ) ;
+
+            END LOOP ;
+
+            IF has_join THEN
+                l_joins := array_append ( l_joins,
+                    util_meta.indent (1) ||  concat_ws ( ' ', col.join_type, fk.ref_full_table_name, col.join_alias ) ) ;
+
+                l_joins := array_append ( l_joins,
+                    util_meta.indent (2) || concat_ws ( ' ', 'ON', '(', fk.join_column_name, '=', col.table_column, ')' ) ) ;
+            END IF ;
+
+        END LOOP ;
+
+    END LOOP ;
+
+    l_result := concat_ws ( util_meta.new_line (),
+        l_result,
+        'CREATE OR REPLACE VIEW ' || l_full_view_name,
+        'AS',
+        concat_ws ( ' ', 'SELECT', array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent (2) ) ),
+        util_meta.indent (1) || concat_ws ( ' ', 'FROM', l_full_table_name, l_table_alias ) ) ;
+
+    IF array_length ( l_joins, 1 ) > 0 THEN
+
+        l_result := concat_ws ( util_meta.new_line (),
+            l_result,
+            array_to_string ( l_joins, util_meta.new_line () ) ) ;
+
+    END IF ;
+
+    l_result := concat_ws ( util_meta.new_line (),
+        l_result || ' ;',
+        '',
+        util_meta.snippet_owners_and_grants (
+            a_ddl_schema => a_ddl_schema,
+            a_object_name => l_view_name,
+            a_object_type => 'view',
+            a_owner => a_owner,
+            a_grantees => a_grantees ),
+        '',
+        array_to_string ( l_comments, util_meta.new_line () ),
+        '' ) ;
+
+    RETURN l_result ;
+
+END ;
+$$ ;
