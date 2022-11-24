@@ -19,8 +19,8 @@ with the database.
 4. To encourage more up-front thought being put into the data model.
 
 5. To avoid spending effort on repetitive or inconsequential decisions, because
-avoiding (decision fatigue)[https://www.healthline.com/health/decision-fatigue]
-and making (smart decisions)[https://fs.blog/smart-decisions/] is a thing.
+avoiding [decision fatigue](https://www.healthline.com/health/decision-fatigue)
+and making [smart decisions](https://fs.blog/smart-decisions/) is a thing.
 
 ## Assertions
 
