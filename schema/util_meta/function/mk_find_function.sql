@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION util_meta.mk_find_function (
     a_object_name text default null,
     a_ddl_schema text default null,
     a_is_row_based boolean default null,
+    a_exclude_binary_data boolean default null,
     a_owner text default null,
     a_grantees text default null )
 RETURNS text
@@ -18,7 +19,8 @@ Function mk_find_function generates a draft "find matching entries" function for
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the function for |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the function in (if different from the table schema) |
-| a_is_row_based                 | in     | boolean    | Indicates if the permissions model is row-based (default is table based |
+| a_is_row_based                 | in     | boolean    | Indicates if the permissions model is row-based (default is table based) |
+| a_exclude_binary_data          | in     | boolean    | Indicates if binary (bytea, jsonb) data is to be excluded from the result-set (default is to include binary data) |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the function  |
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted execute on the function |
 
@@ -27,10 +29,6 @@ ASSERTIONS
  * There will exist a view for the table in the same schema as the function to be created
  * The permissions model is table (as opposed to row) based
 
-FUTURE GOALS
-
- * Support option of generating code for a row-based security model
-
 */
 DECLARE
 
@@ -38,8 +36,11 @@ DECLARE
 
     l_ddl_schema text ;
     l_doc_item text ;
+    l_found_cte text ;
     l_full_view_name text ;
     l_func_name text ;
+    l_exclude_binary_data boolean ;
+    l_is_row_based boolean ;
     l_join_clause text[] ;
     l_local_params text[]  ;
     l_local_types text[] ;
@@ -50,9 +51,10 @@ DECLARE
     l_pk_cols text[] ;
     l_result text ;
     l_search_cols text[] ;
+    l_select_cols text[] ;
+    l_select text ;
     l_table_noun text ;
     l_view_name text ;
-    l_is_row_based boolean ;
 
 BEGIN
 
@@ -79,6 +81,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_is_row_based := coalesce ( a_is_row_based, false ) ;
+    l_exclude_binary_data := coalesce ( a_exclude_binary_data, false ) ;
 
     IF l_is_row_based THEN
         l_local_params := array_append ( l_local_params, 'r' ) ;
@@ -103,27 +106,32 @@ BEGIN
                 object_name,
                 column_name,
                 ordinal_position,
+                data_type,
                 is_pk,
                 is_nk
             FROM util_meta.columns
             WHERE schema_name = a_object_schema
                 AND object_name = a_object_name
-                AND ( is_pk
-                    OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
-        l_search_cols := array_append ( l_search_cols, r.column_name ) ;
+        IF r.is_pk OR r.is_nk THEN
+            l_search_cols := array_append ( l_search_cols, r.column_name ) ;
+        END IF ;
 
         IF r.is_pk THEN
-
             l_pk_cols := array_append ( l_pk_cols, r.column_name ) ;
             l_join_clause := array_append ( l_join_clause, 'found.' || r.column_name || ' = de.' || r.column_name ) ;
+        END IF ;
 
+        IF l_exclude_binary_data AND r.data_type IN ( 'bytea', 'jsonb' ) THEN
+            l_select_cols := array_append ( l_select_cols, 'null::' || r.data_type || ' AS ' || r.column_name ) ;
+        ELSE
+            l_select_cols := array_append ( l_select_cols, 'de.' || r.column_name ) ;
         END IF ;
 
     END LOOP ;
 
-
+    ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -151,6 +159,36 @@ BEGIN
         util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
         util_meta.indent (1) || '-- TODO: verify the columns to search on' ) ;
 
+    ----------------------------------------------------------------------------
+    l_found_cte := concat_ws ( util_meta.new_line (),
+        util_meta.indent (2) || 'found AS (',
+        util_meta.indent (3) || 'SELECT ' || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent (6) ),
+        util_meta.indent (4) || 'FROM base',
+        util_meta.indent (4) || 'WHERE ( ( a_search_term IS NOT NULL',
+        util_meta.indent (7) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
+        util_meta.indent (7) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
+        util_meta.indent (6) || 'OR ( trim ( coalesce ( a_search_term, ' || quote_literal ( '' ) || ' ) ) = ' || quote_literal ( '' ) || ' ) )',
+        util_meta.indent (2) || ')' ) ;
+
+    ----------------------------------------------------------------------------
+    IF l_exclude_binary_data THEN
+
+        l_select := concat_ws ( util_meta.new_line (),
+            util_meta.indent (2) || 'SELECT ' || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent (4) ),
+            util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
+            util_meta.indent (3) || 'JOIN found',
+            util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' )' ) ;
+
+    ELSE
+
+        l_select := concat_ws ( util_meta.new_line (),
+            util_meta.indent (2) || 'SELECT de.*',
+            util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
+            util_meta.indent (3) || 'JOIN found',
+            util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' )' ) ;
+
+    END IF ;
+
     IF l_is_row_based THEN
 
         l_result := concat_ws ( util_meta.new_line (),
@@ -162,18 +200,8 @@ BEGIN
             util_meta.indent (3) || 'SELECT ' || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent (5) ),
             util_meta.indent (4) || 'FROM ' || l_full_view_name,
             util_meta.indent (2) || '),',
-            util_meta.indent (2) || 'found AS (',
-            util_meta.indent (3) || 'SELECT ' || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent (6) ),
-            util_meta.indent (4) || 'FROM base',
-            util_meta.indent (4) || 'WHERE ( ( a_search_term IS NOT NULL',
-            util_meta.indent (7) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
-            util_meta.indent (7) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
-            util_meta.indent (6) || 'OR ( trim ( coalesce ( a_search_term, ' || quote_literal ( '' ) || ' ) ) = ' || quote_literal ( '' ) || ' ) )',
-            util_meta.indent (2) || ')',
-            util_meta.indent (2) || 'SELECT de.*',
-            util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
-            util_meta.indent (3) || 'JOIN found',
-            util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' )',
+            l_found_cte,
+            l_select,
             util_meta.indent (2) || ') LOOP',
             util_meta.snippet_get_permissions (
                 a_ddl_schema => l_ddl_schema,
@@ -207,18 +235,8 @@ BEGIN
             util_meta.indent (4) || 'FROM ' || l_full_view_name,
             util_meta.indent (4) || 'WHERE l_has_permission',
             util_meta.indent (2) || '),',
-            util_meta.indent (2) || 'found AS (',
-            util_meta.indent (3) || 'SELECT ' || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent (6) ),
-            util_meta.indent (4) || 'FROM base',
-            util_meta.indent (4) || 'WHERE ( ( a_search_term IS NOT NULL',
-            util_meta.indent (7) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
-            util_meta.indent (7) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
-            util_meta.indent (6) || 'OR ( trim ( coalesce ( a_search_term, ' || quote_literal ( '' ) || ' ) ) = ' || quote_literal ( '' ) || ' ) )',
-            util_meta.indent (2) || ')',
-            util_meta.indent (2) || 'SELECT de.*',
-            util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
-            util_meta.indent (3) || 'JOIN found',
-            util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' ) ;' ) ;
+            l_found_cte,
+            l_select || ' ) ;' ) ;
 
     END IF ;
 
