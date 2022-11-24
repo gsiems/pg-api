@@ -33,6 +33,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/snippet_function_frontmatter.sql
 \i util_meta/function/snippet_object_comment.sql
 \i util_meta/function/snippet_owners_and_grants.sql
+\i util_meta/function/snippet_resolve_id.sql
 
 \i util_meta/function/snippet_get_permissions.sql
 
@@ -44,3 +45,4 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_resolve_id_function.sql
 
 \i util_meta/function/mk_find_function.sql
+\i util_meta/function/mk_get_function.sql
