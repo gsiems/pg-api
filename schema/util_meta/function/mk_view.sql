@@ -1,14 +1,3 @@
-/*
-
-psql -t -c "SELECT util_meta.mk_view (
-        a_object_schema => 'tasker_data',
-        a_object_name => 'dt_user',
-        a_ddl_schema => 'core',
-        a_owner => 'tasker_owner',
-        a_grantees => 'tasker_read, tasker_updt' ) ;" tasker | sed -e 's/[[:space:]]*+$//' -e 's/^ //'
-
-*/
-
 CREATE OR REPLACE FUNCTION util_meta.mk_view (
     a_object_schema text default null,
     a_object_name text default null,
