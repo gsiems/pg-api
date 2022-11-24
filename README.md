@@ -18,6 +18,10 @@ with the database.
 
 4. To encourage more up-front thought being put into the data model.
 
+5. To avoid spending effort on repetitive or inconsequential decisions, because
+avoiding (decision fatigue)[https://www.healthline.com/health/decision-fatigue]
+and making (smart decisions)[https://fs.blog/smart-decisions/] is a thing.
+
 ## Assertions
 
 1. The database will have multiple different users connecting to it, either
@@ -248,6 +252,11 @@ the dt_widget table references the rt_widget_type table and the column name of
 the primary key of the rt_widget_type table is "id" then the default name for
 the referencing column should be "widget_type_id" (that is, "rt_widget_type"
 minus "rt_" plus "_id").
+
+### Table and view comments
+
+All tables and views SHOULD have a database comment. All table and view columns
+should also have a database comment.
 
 ### Database access
 
