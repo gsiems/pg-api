@@ -27,7 +27,9 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 
 -- Snippet functions
 \i util_meta/function/snippet_owners_and_grants.sql
+\i util_meta/function/snippet_object_comment.sql
 
 -- "Final" DDL generating functions
 \i util_meta/function/mk_view.sql
+\i util_meta/function/mk_user_type.sql
 \i util_meta/function/mk_table_migration.sql
