@@ -39,7 +39,7 @@ BEGIN
     -- Ensure that a backup table does not exist
     IF util_meta.is_valid_object ( 'bak_' || a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: a backup table already exists' ;
-    END LOOP ;
+    END IF ;
 
     l_full_table_name := a_object_schema || '.' || a_object_name ;
     l_new_line := util_meta.new_line () ;
