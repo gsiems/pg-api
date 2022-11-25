@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION util_meta.mk_priv_dml_procedure (
+CREATE OR REPLACE FUNCTION util_meta.mk_priv_update_procedure (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
@@ -34,6 +34,7 @@ DECLARE
 
     r record ;
 
+    l_assertions text[] ;
     l_dc text ;
     l_ddl_schema text ;
     l_distinct_cols text[] ;
@@ -71,6 +72,8 @@ BEGIN
     IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
         l_log_err_line := util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ;
     END IF ;
+
+    l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
@@ -257,6 +260,7 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an update on ' || a_object_name,
             a_language => 'plpgsql',
+            a_assertions => l_assertions,
             a_param_names => l_param_names,
             a_param_directions => l_param_directions,
             a_param_datatypes => l_param_types,
