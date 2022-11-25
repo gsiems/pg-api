@@ -1,8 +1,7 @@
-CREATE OR REPLACE FUNCTION util_meta.mk_priv_dml_procedure (
+CREATE OR REPLACE FUNCTION util_meta.mk_priv_delete_procedure (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
     a_insert_audit_columns text default null,
     a_update_audit_columns text default null,
     a_owner text default null )
@@ -19,7 +18,6 @@ Function mk_priv_delete_procedure generates a draft "private" delete procedure f
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the procedure for |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the procedure in (if different from the table schema) |
-| a_cast_booleans_as             | in     | text       | The (optional) csv pair (true,false) of values to cast booleans as  (if booleans are going to be cast to non-boolean values) |
 | a_insert_audit_columns         | in     | text       | The (optional) csv list of insert audit columns (user created, timestamp created, etc.) that the database user doesn't directly edit |
 | a_update_audit_columns         | in     | text       | The (optional) csv list of update audit columns (user updated, timestamp last updated, etc.) that the database user doesn't directly edit |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the procedure |
@@ -34,6 +32,7 @@ DECLARE
 
     r record ;
 
+    l_assertions text[] ;
     l_ddl_schema text ;
     l_log_err_line text ;
     l_param_comments text[] ;
@@ -64,6 +63,8 @@ BEGIN
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'priv_delete_' || l_table_noun ;
+
+    l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
 
     ------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -112,12 +113,11 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs a delete on ' || a_object_name,
             a_language => 'plpgsql',
+            a_assertions => l_assertions,
             a_param_names => l_param_names,
             a_param_directions => l_param_directions,
             a_param_datatypes => l_param_types,
-            a_param_comments => l_param_comments,
-            a_local_var_names => l_local_params,
-            a_local_var_datatypes => l_local_types ),
+            a_param_comments => l_param_comments ),
         util_meta.snippet_log_params (
             a_param_names => l_param_names,
             a_datatypes => l_param_types ),
