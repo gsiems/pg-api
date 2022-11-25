@@ -34,6 +34,7 @@ DECLARE
 
     r record ;
 
+    l_assertions text[] ;
     l_ddl_schema text ;
     l_dt_fk_count integer ;
     l_false_chk text ;
@@ -80,6 +81,8 @@ BEGIN
 
     l_local_params := array_append ( l_local_params, 'l_acting_user_id' ) ;
     l_local_types := array_append ( l_local_types, 'integer' ) ;
+
+    l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
 
     ----------------------------------------------------------------------------
     IF a_cast_booleans_as IS NOT NULL THEN
@@ -251,6 +254,7 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an insert on ' || a_object_name,
             a_language => 'plpgsql',
+            a_assertions => l_assertions,
             a_param_names => l_param_names,
             a_param_directions => l_param_directions,
             a_param_datatypes => l_param_types,
