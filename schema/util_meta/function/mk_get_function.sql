@@ -21,11 +21,11 @@ Function mk_get_function generates a draft get item function for a table.
 
 ASSERTIONS
 
-    * In the schema that the get function will be created in there will be:
+ * In the schema that the get function will be created in there will be:
 
-        1. a view for the table (mk_view)
+   1. a view for the table (mk_view)
 
-        2. a function for resolving the ID of the table (mk_resolve_id_function)
+   2. a function for resolving the ID of the table (mk_resolve_id_function)
 
 */
 
