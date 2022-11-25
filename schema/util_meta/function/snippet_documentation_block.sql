@@ -60,7 +60,6 @@ BEGIN
     IF array_length ( a_assertions, 1 ) > 0 THEN
         l_return := concat_ws ( util_meta.new_line (),
             l_return,
-            '',
             'ASSERTIONS',
             '',
             ' * ' || array_to_string ( a_assertions,  util_meta.new_line (2) || ' * ' ),
