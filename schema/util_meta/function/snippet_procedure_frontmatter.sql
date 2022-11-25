@@ -78,11 +78,19 @@ BEGIN
             a_directions => a_param_directions,
             a_datatypes => a_param_datatypes,
             a_comments => a_param_comments,
-            a_assertions => a_assertions ),
-        util_meta.snippet_declare_variables (
-            a_var_names => a_local_var_names,
-            a_var_datatypes => a_local_var_datatypes ),
-        '',
+            a_assertions => a_assertions ) ) ;
+
+    IF array_length ( a_local_var_names, 1 ) > 0 THEN
+        l_return := concat_ws ( util_meta.new_line (),
+            l_return,
+            util_meta.snippet_declare_variables (
+                a_var_names => a_local_var_names,
+                a_var_datatypes => a_local_var_datatypes ) ) ;
+
+    END IF ;
+
+    l_return := concat_ws ( util_meta.new_line (),
+        l_return,
         'BEGIN' ) ;
 
     RETURN l_return ;
