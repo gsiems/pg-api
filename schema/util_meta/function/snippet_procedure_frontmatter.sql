@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_procedure_frontmatter (
     a_procedure_name text default null,
     a_procedure_purpose text default null,
     a_language text default null,
+    a_assertions text[] default null,
     a_param_names text[] default null,
     a_param_directions text[] default null,
     a_param_datatypes text[] default null,
@@ -25,6 +26,7 @@ Function snippet_procedure_frontmatter generates the pl/pg-sql code snippet for 
 | a_procedure_name               | in     | text       | The (name of the) procedure to create              |
 | a_procedure_purpose            | in     | text       | The (brief) description of the purpose of the procedure |
 | a_language                     | in     | text       | The language that the procedure is written in (defaults to plpgsql) |
+| a_assertions                   | in     | text[]     | The list of assertions made by the procedure       |
 | a_param_names                  | in     | text[]     | The list of calling parameter names                |
 | a_param_directions             | in     | text[]     | The list of the calling parameter directions       |
 | a_param_datatypes              | in     | text[]     | The list of the datatypes for the parameters       |
@@ -49,7 +51,7 @@ BEGIN
 
         FOR l_idx IN 1..l_param_count LOOP
             l_params = array_append ( l_params,
-                util_meta.indent (1) || concat_ws ( ' ', a_param_names[l_idx], a_directions[l_idx], a_datatypes[l_idx], 'default null' ) ) ;
+                util_meta.indent (1) || concat_ws ( ' ', a_param_names[l_idx], a_param_directions[l_idx], a_param_datatypes[l_idx], 'default null' ) ) ;
         END LOOP ;
 
         l_return := concat_ws ( util_meta.new_line (),
@@ -63,7 +65,7 @@ BEGIN
 
     END IF ;
 
-    RETURN concat_ws ( util_meta.new_line (),
+    l_return := concat_ws ( util_meta.new_line (),
         l_return,
         'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ),
         'SECURITY DEFINER',
@@ -75,12 +77,15 @@ BEGIN
             a_param_names => a_param_names,
             a_directions => a_param_directions,
             a_datatypes => a_param_datatypes,
-            a_comments => a_param_comments ),
+            a_comments => a_param_comments,
+            a_assertions => a_assertions ),
         util_meta.snippet_declare_variables (
             a_var_names => a_local_var_names,
             a_var_datatypes => a_local_var_datatypes ),
         '',
         'BEGIN' ) ;
+
+    RETURN l_return ;
 
 END ;
 $$ ;
