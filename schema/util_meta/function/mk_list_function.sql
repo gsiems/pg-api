@@ -241,6 +241,8 @@ BEGIN
             a_var_names => l_local_var_names,
             a_var_datatypes => l_local_types ),
         '',
+        'BEGIN',
+        '',
         util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
         util_meta.indent (1) || '-- As written, this asserts that the permissions model is table (as opposed to row) based.' ) ;
 
