@@ -27,7 +27,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/table_noun.sql
 
 -- Snippet functions
-\i util_meta/function/snippet_declare_params.sql
+\i util_meta/function/snippet_declare_variables.sql
 \i util_meta/function/snippet_documentation_block.sql
 \i util_meta/function/snippet_function_backmatter.sql
 \i util_meta/function/snippet_function_frontmatter.sql

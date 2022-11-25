@@ -171,7 +171,7 @@ BEGIN
             a_directions => l_param_directions,
             a_datatypes => l_param_types,
             a_comments => l_param_comments ),
-        util_meta.snippet_declare_params (
+        util_meta.snippet_declare_variables (
             a_param_names => l_local_params,
             a_datatypes => l_local_types ),
         '',

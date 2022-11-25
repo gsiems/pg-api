@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION util_meta.snippet_declare_params (
+CREATE OR REPLACE FUNCTION util_meta.snippet_declare_variables (
     a_param_names text[] default null,
     a_datatypes text[] default null )
 RETURNS text
@@ -7,7 +7,7 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function snippet_declare_params generates the pl/pg-sql code snippet for declaring the local parameters for a function or procedure
+Function snippet_declare_variables generates the pl/pg-sql code snippet for declaring the local parameters for a function or procedure
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
