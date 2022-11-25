@@ -27,7 +27,6 @@ Function mk_find_function generates a draft "find matching entries" function for
 ASSERTIONS
 
  * There will exist a view for the table in the same schema as the function to be created
- * The permissions model is table (as opposed to row) based
 
 */
 DECLARE
@@ -112,6 +111,8 @@ BEGIN
             FROM util_meta.columns
             WHERE schema_name = a_object_schema
                 AND object_name = a_object_name
+                AND ( is_pk
+                    OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
         IF r.is_pk OR r.is_nk THEN
@@ -121,12 +122,6 @@ BEGIN
         IF r.is_pk THEN
             l_pk_cols := array_append ( l_pk_cols, r.column_name ) ;
             l_join_clause := array_append ( l_join_clause, 'found.' || r.column_name || ' = de.' || r.column_name ) ;
-        END IF ;
-
-        IF l_exclude_binary_data AND r.data_type IN ( 'bytea', 'jsonb' ) THEN
-            l_select_cols := array_append ( l_select_cols, 'null::' || r.data_type || ' AS ' || r.column_name ) ;
-        ELSE
-            l_select_cols := array_append ( l_select_cols, 'de.' || r.column_name ) ;
         END IF ;
 
     END LOOP ;
@@ -173,6 +168,27 @@ BEGIN
     ----------------------------------------------------------------------------
     IF l_exclude_binary_data THEN
 
+        FOR r IN (
+            SELECT schema_name,
+                    object_name,
+                    column_name,
+                    ordinal_position,
+                    data_type,
+                    is_pk,
+                    is_nk
+                FROM util_meta.columns
+                WHERE schema_name = l_ddl_schema
+                    AND object_name = l_view_name
+                ORDER BY ordinal_position ) LOOP
+
+            IF l_exclude_binary_data AND r.data_type IN ( 'bytea', 'jsonb' ) THEN
+                l_select_cols := array_append ( l_select_cols, 'null::' || r.data_type || ' AS ' || r.column_name ) ;
+            ELSE
+                l_select_cols := array_append ( l_select_cols, 'de.' || r.column_name ) ;
+            END IF ;
+
+        END LOOP ;
+
         l_select := concat_ws ( util_meta.new_line (),
             util_meta.indent (2) || 'SELECT ' || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent (4) ),
             util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
@@ -189,6 +205,7 @@ BEGIN
 
     END IF ;
 
+    ----------------------------------------------------------------------------
     IF l_is_row_based THEN
 
         l_result := concat_ws ( util_meta.new_line (),
