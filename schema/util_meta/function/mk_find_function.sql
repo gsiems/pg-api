@@ -41,7 +41,7 @@ DECLARE
     l_exclude_binary_data boolean ;
     l_is_row_based boolean ;
     l_join_clause text[] ;
-    l_local_params text[]  ;
+    l_local_var_names text[]  ;
     l_local_types text[] ;
     l_param_comments text[] ;
     l_param_directions text[] ;
@@ -83,11 +83,11 @@ BEGIN
     l_exclude_binary_data := coalesce ( a_exclude_binary_data, false ) ;
 
     IF l_is_row_based THEN
-        l_local_params := array_append ( l_local_params, 'r' ) ;
+        l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
         l_local_types := array_append ( l_local_types, 'record' ) ;
     END IF ;
 
-    l_local_params := array_append ( l_local_params, 'l_has_permission' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
     l_param_names := array_append ( l_param_names, 'a_search_term' ) ;
@@ -146,8 +146,8 @@ BEGIN
             a_datatypes => l_param_types,
             a_comments => l_param_comments ),
         util_meta.snippet_declare_variables (
-            a_param_names => l_local_params,
-            a_datatypes => l_local_types ),
+            a_var_names => l_local_var_names,
+            a_var_datatypes => l_local_types ),
         '',
         'BEGIN',
         '',

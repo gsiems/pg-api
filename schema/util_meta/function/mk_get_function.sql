@@ -37,7 +37,7 @@ DECLARE
     l_doc_item text ;
     l_full_view_name text ;
     l_func_name text ;
-    l_local_params text[] ;
+    l_local_var_names text[] ;
     l_local_types text[] ;
     l_param_comments text[] ;
     l_param_directions text[] ;
@@ -82,7 +82,7 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_params := array_append ( l_local_params, 'l_has_permission' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
     ----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ BEGIN
 
         l_pk_param := 'l_' || l_pk_column_name ;
 
-        l_local_params := array_append ( l_local_params, l_pk_param ) ;
+        l_local_var_names := array_append ( l_local_var_names, l_pk_param ) ;
         l_local_types := array_append ( l_local_types, l_pk_data_type ) ;
 
         l_resolve_id := util_meta.snippet_resolve_id (
@@ -172,8 +172,8 @@ BEGIN
             a_datatypes => l_param_types,
             a_comments => l_param_comments ),
         util_meta.snippet_declare_variables (
-            a_param_names => l_local_params,
-            a_datatypes => l_local_types ),
+            a_var_names => l_local_var_names,
+            a_var_datatypes => l_local_types ),
         '',
         'BEGIN' ) ;
 

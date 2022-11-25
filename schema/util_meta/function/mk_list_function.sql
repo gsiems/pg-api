@@ -53,7 +53,7 @@ DECLARE
     l_doc_item text ;
     l_full_view_name text ;
     l_func_name text ;
-    l_local_params text[] ;
+    l_local_var_names text[] ;
     l_local_types text[] ;
     l_local_parent_param text ;
     l_param_comments text[] ;
@@ -100,7 +100,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_exclude_binary_data := coalesce ( a_exclude_binary_data, false ) ;
 
-    l_local_params := array_append ( l_local_params, 'l_has_permission' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
     ----------------------------------------------------------------------------
@@ -207,7 +207,7 @@ BEGIN
     IF array_length ( l_resolve_id_params, 1 ) = 0 THEN
         RETURN 'ERROR: could not resolve PK parameter' ;
     ELSIF array_length ( l_resolve_id_params, 1 ) > 1 THEN
-        l_local_params := array_append ( l_local_params, l_local_parent_param ) ;
+        l_local_var_names := array_append ( l_local_var_names, l_local_parent_param ) ;
         l_local_types := array_append ( l_local_types, l_parent_data_type ) ;
     END IF ;
 
@@ -238,8 +238,8 @@ BEGIN
             a_datatypes => l_param_types,
             a_comments => l_param_comments ),
         util_meta.snippet_declare_variables (
-            a_param_names => l_local_params,
-            a_datatypes => l_local_types ),
+            a_var_names => l_local_var_names,
+            a_var_datatypes => l_local_types ),
         '',
         util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
         util_meta.indent (1) || '-- As written, this asserts that the permissions model is table (as opposed to row) based.' ) ;

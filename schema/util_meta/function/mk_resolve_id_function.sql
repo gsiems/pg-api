@@ -42,7 +42,7 @@ DECLARE
     l_doc_item text ;
     l_from_clause text ;
     l_func_name text ;
-    l_local_params text[] ;
+    l_local_var_names text[] ;
     l_local_types text[] ;
     l_nk_cast text ;
     l_nk_param text[] ;
@@ -101,7 +101,7 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_params := array_append ( l_local_params, 'r' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
     l_local_types := array_append ( l_local_types, 'record' ) ;
 
     ----------------------------------------------------------------------------
@@ -182,8 +182,8 @@ BEGIN
             a_datatypes => l_param_types,
             a_comments => l_param_comments ),
         util_meta.snippet_declare_variables (
-            a_param_names => l_local_params,
-            a_datatypes => l_local_types ),
+            a_var_names => l_local_var_names,
+            a_var_datatypes => l_local_types ),
          '',
          'BEGIN' ) ;
 
