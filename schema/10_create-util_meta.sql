@@ -25,17 +25,25 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/is_valid_object.sql
 \i util_meta/function/new_line.sql
 \i util_meta/function/table_noun.sql
+\i util_meta/function/proc_parameters.sql
 
 -- Snippet functions
 \i util_meta/function/snippet_declare_variables.sql
 \i util_meta/function/snippet_documentation_block.sql
-\i util_meta/function/snippet_function_backmatter.sql
-\i util_meta/function/snippet_function_frontmatter.sql
+
+\i util_meta/function/snippet_log_params.sql
 \i util_meta/function/snippet_object_comment.sql
 \i util_meta/function/snippet_owners_and_grants.sql
 \i util_meta/function/snippet_resolve_id.sql
+\i util_meta/function/snippet_resolve_user_id.sql
+
+\i util_meta/function/snippet_function_backmatter.sql
+\i util_meta/function/snippet_function_frontmatter.sql
+\i util_meta/function/snippet_procedure_backmatter.sql
+\i util_meta/function/snippet_procedure_frontmatter.sql
 
 \i util_meta/function/snippet_get_permissions.sql
+\i util_meta/function/snippet_permissions_check.sql
 
 -- "Final" DDL generating functions
 \i util_meta/function/mk_view.sql
@@ -47,3 +55,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_find_function.sql
 \i util_meta/function/mk_get_function.sql
 \i util_meta/function/mk_list_function.sql
+
+\i util_meta/function/mk_priv_delete_procedure.sql
+\i util_meta/function/mk_priv_insert_procedure.sql
+\i util_meta/function/mk_priv_update_procedure.sql
