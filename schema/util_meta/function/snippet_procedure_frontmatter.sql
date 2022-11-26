@@ -85,7 +85,8 @@ BEGIN
             l_return,
             util_meta.snippet_declare_variables (
                 a_var_names => a_local_var_names,
-                a_var_datatypes => a_local_var_datatypes ) ) ;
+                a_var_datatypes => a_local_var_datatypes ),
+                '' ) ;
 
     END IF ;
 
