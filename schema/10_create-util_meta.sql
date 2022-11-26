@@ -51,6 +51,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_table_migration.sql
 
 \i util_meta/function/mk_resolve_id_function.sql
+\i util_meta/function/mk_can_do_function_shell.sql
 
 \i util_meta/function/mk_find_function.sql
 \i util_meta/function/mk_get_function.sql
