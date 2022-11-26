@@ -31,8 +31,8 @@ BEGIN
 
     l_return := concat_ws ( util_meta.new_line (),
         util_meta.snippet_get_permissions (
-            a_ddl_schema => a_ddl_schema,
             a_action => a_action,
+            a_ddl_schema => a_ddl_schema,
             a_object_type => a_object_type,
             a_id_param => a_id_param,
             a_parent_object_type => a_parent_object_type,
