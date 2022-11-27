@@ -64,3 +64,11 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_delete_procedure.sql
 \i util_meta/function/mk_insert_procedure.sql
 \i util_meta/function/mk_update_procedure.sql
+
+-- JSON utility functions
+\i util_meta/function/json_identifier.sql
+
+-- JSON snippet functions
+
+-- "Final" DDL generating functions
+\i util_meta/function/mk_json_type.sql
