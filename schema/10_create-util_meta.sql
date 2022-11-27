@@ -63,3 +63,4 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 
 \i util_meta/function/mk_delete_procedure.sql
 \i util_meta/function/mk_insert_procedure.sql
+\i util_meta/function/mk_update_procedure.sql
