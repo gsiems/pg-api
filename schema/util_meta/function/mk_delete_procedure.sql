@@ -28,7 +28,7 @@ DECLARE
     r record ;
 
     l_ddl_schema text ;
-    l_local_params text[] ;
+    l_local_var_names text[] ;
     l_local_types text[] ;
     l_log_err_line text ;
     l_param_comments text[] ;
@@ -60,7 +60,7 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'delete_' || l_table_noun ;
 
-    l_local_params := array_append ( l_local_params, 'l_has_permission' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
     ------------------------------------------------------------------------
@@ -116,7 +116,7 @@ BEGIN
             a_param_directions => l_param_directions,
             a_param_datatypes => l_param_types,
             a_param_comments => l_param_comments,
-            a_local_var_names => l_local_params,
+            a_local_var_names => l_local_var_names,
             a_local_var_datatypes => l_local_types ),
         util_meta.snippet_log_params (
             a_param_names => l_param_names,

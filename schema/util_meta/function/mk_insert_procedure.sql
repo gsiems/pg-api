@@ -20,7 +20,7 @@ Function mk_insert_procedure generates a draft "public" insert procedure for a t
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the procedure for |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the procedure in (if different from the table schema) |
-| a_cast_booleans_as             | in     | text       | The (optional) csv pair (true,false) of values to cast booleans as  (if booleans are going to be cast to non-boolean values) |
+| a_cast_booleans_as             | in     | text       | The (optional) csv pair (true,false) of values to cast booleans as (if booleans are going to be cast to non-boolean values) |
 | a_insert_audit_columns         | in     | text       | The (optional) csv list of insert audit columns (user created, timestamp created, etc.) that the database user doesn't directly edit |
 | a_update_audit_columns         | in     | text       | The (optional) csv list of update audit columns (user updated, timestamp last updated, etc.) that the database user doesn't directly edit |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the procedure |
@@ -35,7 +35,7 @@ DECLARE
 
     l_ddl_schema text ;
 
-    l_local_params text[] ;
+    l_local_var_names text[] ;
     l_local_types text[] ;
     l_log_err_line text ;
     l_param_comments text[] ;
@@ -71,7 +71,7 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'insert_' || l_table_noun ;
 
-    l_local_params := array_append ( l_local_params, 'l_has_permission' ) ;
+    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
     --------------------------------------------------------------------
@@ -188,7 +188,7 @@ BEGIN
             a_param_directions => l_param_directions,
             a_param_datatypes => l_param_types,
             a_param_comments => l_param_comments,
-            a_local_var_names => l_local_params,
+            a_local_var_names => l_local_var_names,
             a_local_var_datatypes => l_local_types ),
         util_meta.snippet_log_params (
             a_param_names => l_param_names,
@@ -202,7 +202,7 @@ BEGIN
             a_object_type => l_table_noun,
             a_id_param => 'null::integer',
             a_parent_object_type => l_parent_noun,
-            a_parent_id_param => 'null::integer' ),
+            a_parent_id_param => l_parent_id_param ),
         '',
         util_meta.indent (1) || 'call priv_' || l_proc_name || ' (',
         util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
