@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION util_meta.mk_json_type (
+CREATE OR REPLACE FUNCTION util_meta.mk_json_user_type (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
@@ -11,7 +11,7 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function mk_json_type generates a user type for a table or view with lowerCamelCase column names
+Function mk_json_user_type generates a user type for a table or view with lowerCamelCase column names
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
@@ -92,7 +92,7 @@ BEGIN
     END LOOP ;
 
     l_result := concat_ws ( util_meta.new_line (),
-        'CREATE OR REPLACE TYPE ' || l_full_type_name || ' (',
+        'CREATE TYPE ' || l_full_type_name || ' AS (',
         array_to_string ( l_columns, ',' || util_meta.new_line () ) || ' ) ;',
         '',
         util_meta.snippet_owners_and_grants (
