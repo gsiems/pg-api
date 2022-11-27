@@ -22,12 +22,17 @@ DECLARE
 
     r record ;
 
+    l_local_types text[] ;
+    l_local_var_names text[]  ;
     l_param_comments text[] ;
     l_param_directions text[] ;
     l_param_names text[] ;
     l_param_types text[] ;
+    l_notes text [] ;
 
 BEGIN
+
+    l_notes := array_append ( l_notes, 'To help prevent privilege escalation attacks, both the acting user and the connected user need to have sufficient permissions to perform the action' ) ;
 
     FOR r IN (
         SELECT schema_name
@@ -64,6 +69,12 @@ BEGIN
         l_param_types := array_append ( l_param_types, 'integer' ) ;
         l_param_comments := array_append ( l_param_comments, 'The ID of the parent object to check permissions for (this is for inserts)' ) ;
 
+        l_local_var_names := array_append ( l_local_var_names, 'l_acting_user_id' ) ;
+        l_local_types := array_append ( l_local_types, 'integer' ) ;
+
+        l_local_var_names := array_append ( l_local_var_names, 'l_connected_user_id' ) ;
+        l_local_types := array_append ( l_local_types, 'integer' ) ;
+
         RETURN concat_ws ( util_meta.new_line (),
             util_meta.snippet_function_frontmatter (
                 a_ddl_schema => a_ddl_schema,
@@ -80,13 +91,24 @@ BEGIN
                 a_param_names => l_param_names,
                 a_directions => l_param_directions,
                 a_datatypes => l_param_types,
-                a_comments => l_param_comments ),
-            '',
-            'DECLARE',
+                a_comments => l_param_comments,
+                a_notes => l_notes ),
+            util_meta.snippet_declare_variables (
+                a_var_names => l_local_var_names,
+                a_var_datatypes => l_local_types ),
             '',
             'BEGIN',
             '',
+            util_meta.snippet_resolve_user_id (
+                a_check_result => true ),
+            '',
+            util_meta.snippet_resolve_user_id (
+                a_user_id_var => 'l_connected_user_id',
+                a_user_id_param => 'connected_user::text',
+                a_check_result => true ),
+            '',
             util_meta.indent (1) || '-- TODO: Finish this function',
+            '',
             util_meta.indent (1) || 'RETURN false ;',
             util_meta.snippet_function_backmatter (
                 a_ddl_schema => a_ddl_schema,
