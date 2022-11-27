@@ -86,7 +86,7 @@ BEGIN
     END LOOP ;
 
     l_result := concat_ws ( util_meta.new_line (),
-        'CREATE OR REPLACE TYPE ' || l_full_type_name || ' (',
+        'CREATE TYPE ' || l_full_type_name || ' AS (',
         array_to_string ( l_columns, ',' || util_meta.new_line () ) || ' ) ;',
         '',
         util_meta.snippet_owners_and_grants (
