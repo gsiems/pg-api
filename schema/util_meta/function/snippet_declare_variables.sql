@@ -32,7 +32,7 @@ BEGIN
     RETURN concat_ws ( util_meta.new_line (),
         'DECLARE',
         '',
-        util_meta.indent (1) || array_to_string ( l_variable_lines, ',' || util_meta.new_line () || util_meta.indent (1) ) ) ;
+        util_meta.indent (1) || array_to_string ( l_variable_lines, util_meta.new_line () || util_meta.indent (1) ) ) ;
 
 END ;
 $$ ;
