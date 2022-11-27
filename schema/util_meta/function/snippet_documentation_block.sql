@@ -6,7 +6,8 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_documentation_block (
     a_directions text[] default null,
     a_datatypes text[] default null,
     a_comments text[] default null,
-    a_assertions text[] default null )
+    a_assertions text[] default null,
+    a_notes text[] default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -24,6 +25,7 @@ Function snippet_documentation_block generates the documentation block for an ob
 | a_directions                   | in     | text[]     | The list of the calling parameter directions       |
 | a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
 | a_comments                     | in     | text[]     | The list of the comments for the parameters        |
+| a_notes                        | in     | text[]     | The list of notes for the user/developer of the function |
 | a_assertions                   | in     | text[]     | The list of assertions made by the function/procedure |
 
 */
@@ -56,6 +58,16 @@ BEGIN
         '',
          array_to_string ( l_doc_lines, util_meta.new_line () ),
         '' ) ;
+
+    IF array_length ( a_notes, 1 ) > 0 THEN
+        l_return := concat_ws ( util_meta.new_line (),
+            l_return,
+            'NOTES',
+            '',
+            ' * ' || array_to_string ( a_notes,  util_meta.new_line (2) || ' * ' ),
+            '' ) ;
+
+    END IF ;
 
     IF array_length ( a_assertions, 1 ) > 0 THEN
         l_return := concat_ws ( util_meta.new_line (),
