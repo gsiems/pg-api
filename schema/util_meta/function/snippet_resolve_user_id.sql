@@ -24,7 +24,7 @@ DECLARE
     r record ;
 
     l_indents integer ;
-    l_log_err_line integer ;
+    l_log_err_line text ;
     l_return text ;
     l_user_id_param text ;
     l_user_id_var text ;
