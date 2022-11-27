@@ -101,6 +101,56 @@ nk_columns AS (
             constraint_name,
             trim ( unnest ( string_to_array ( column_names, ',' ) ) ) AS column_name
         FROM natural_keys
+),
+types AS (
+    SELECT n.oid AS schema_oid,
+            n.nspname::text AS schema_name,
+            t.oid AS object_oid,
+            split_part ( pg_catalog.format_type ( t.oid, NULL ), '.', 2 ) AS object_name,
+            CASE
+                WHEN t.typrelid != 0 THEN CAST ( 'tuple' AS pg_catalog.text )
+                WHEN t.typlen < 0 THEN CAST ( 'var' AS pg_catalog.text )
+                ELSE CAST ( t.typlen AS pg_catalog.text )
+                END AS object_type,
+            t.typrelid
+        FROM pg_catalog.pg_type t
+        JOIN pg_catalog.pg_namespace n
+            ON ( n.oid = t.typnamespace )
+        WHERE ( t.typrelid = 0
+                OR ( SELECT c.relkind = 'c'
+                        FROM pg_catalog.pg_class c
+                        WHERE c.oid = t.typrelid ) )
+            AND NOT EXISTS (
+                    SELECT 1
+                        FROM pg_catalog.pg_type el
+                        WHERE el.oid = t.typelem
+                        AND el.typarray = t.oid )
+            AND n.nspname <> 'information_schema'
+            AND n.nspname !~ '^pg_'
+),
+type_cols AS (
+    SELECT types.schema_oid,
+            types.schema_name,
+            types.object_oid,
+            types.object_name,
+            types.object_oid::bigint * 10000::bigint + a.attnum::bigint as column_id,
+            a.attname::text AS column_name,
+            a.attnum AS ordinal_position,
+            pg_catalog.format_type ( a.atttypid, a.atttypmod ) AS data_type,
+            null::boolean AS is_nullable,
+            null::boolean AS is_pk,
+            null::boolean AS is_nk,
+            pg_catalog.pg_get_expr ( ad.adbin, ad.adrelid ) AS column_default,
+            null::text AS domain_name,
+            pg_catalog.col_description ( a.attrelid, a.attnum ) AS comments
+        FROM types
+        JOIN pg_catalog.pg_attribute a
+            ON ( a.attrelid = types.typrelid )
+        LEFT JOIN pg_catalog.pg_attrdef ad
+            ON ( a.attrelid = ad.adrelid
+                AND a.attnum = ad.adnum )
+        WHERE a.attnum > 0
+            AND NOT a.attisdropped
 )
 SELECT col.schema_oid,
         col.schema_name::text AS schema_name,
@@ -125,7 +175,25 @@ SELECT col.schema_oid,
     LEFT JOIN nk_columns nk
         ON ( nk.schema_name = col.schema_name::text
             AND nk.object_name = col.object_name::text
-            AND nk.column_name = col.column_name::text ) ;
+            AND nk.column_name = col.column_name::text )
+UNION
+SELECT tc.schema_oid,
+        tc.schema_name,
+        tc.object_oid,
+        tc.object_name,
+        concat_ws ( '.', tc.schema_name, tc.object_name ) AS full_object_name,
+        tc.column_id,
+        tc.column_name,
+        tc.ordinal_position,
+        tc.data_type,
+        null::boolean AS is_nullable,
+        null::boolean AS is_pk,
+        null::boolean AS is_nk,
+        tc.column_default,
+        null::text AS domain_name,
+        tc.comments
+    FROM type_cols tc
+;
 
 COMMENT ON VIEW util_meta.columns IS 'Metadata for the application database columns' ;
 
