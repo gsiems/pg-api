@@ -1,5 +1,7 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_resolve_user_id (
     a_indents integer default null,
+    a_user_id_var text default null,
+    a_user_id_param text default null,
     a_check_result boolean default null )
 RETURNS text
 LANGUAGE plpgsql
@@ -12,6 +14,8 @@ Function snippet_resolve_user_id    generates the pl/pg-sql code snippet for log
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The number of indents to add to the code snippet (default 1) |
+| a_user_id_var                  | in     | text       | The name of the user ID variable to populate (default l_acting_user_id) |
+| a_user_id_param                | in     | text       | The parameter to check the user Id for (default a_user) |
 | a_check_result                 | in     | boolean    | Indicates if there should be a cehck of the return value |
 
 */
@@ -22,10 +26,14 @@ DECLARE
     l_indents integer ;
     l_log_err_line integer ;
     l_return text ;
+    l_user_id_param text ;
+    l_user_id_var text ;
 
 BEGIN
 
     l_indents := coalesce ( a_indents, 1 ) ;
+    l_user_id_var :=  coalesce ( a_user_id_var, 'l_acting_user_id' ) ;
+    l_user_id_param := coalesce ( a_user_id_param, 'a_user' ) ;
 
     ----------------------------------------------------------------------------
     -- ASSERTION: There will be a dt_user table of some sort and this table
@@ -36,7 +44,7 @@ BEGIN
             FROM util_meta.objects
             WHERE object_name = 'resolve_user_id' ) LOOP
 
-        l_return := util_meta.indent ( l_indents ) || 'l_acting_user_id := ' || r.full_object_name || ' ( a_user => a_user ) ;' ;
+        l_return := util_meta.indent ( l_indents ) || l_user_id_var || ' := ' || r.full_object_name || ' ( a_user => ' || l_user_id_param || ' ) ;' ;
 
         IF coalesce ( a_check_result, true ) THEN
 
@@ -48,7 +56,7 @@ BEGIN
 
             l_return := concat_ws ( util_meta.new_line (),
                     l_return,
-                    util_meta.indent ( l_indents ) || 'IF l_acting_user_id IS NULL THEN',
+                    util_meta.indent ( l_indents ) || 'IF ' || l_user_id_var || ' IS NULL THEN',
                     util_meta.indent ( l_indents + 1 ) || 'a_err := ''No, or invalid, user specified'' ;',
                     l_log_err_line,
                     util_meta.indent ( l_indents + 1 ) || 'RETURN ;',
@@ -60,7 +68,7 @@ BEGIN
 
     END LOOP ;
 
-    RETURN 'TODO: l_acting_user_id := ' ;
+    RETURN '-- TODO: (schema name?) ' || l_user_id_var || ' := resolve_user_id ( a_user => ' || l_user_id_param || ' ) ;' ;
 
 END ;
 $$ ;
