@@ -71,5 +71,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- JSON snippet functions
 
 -- "Final" DDL generating functions
-\i util_meta/function/mk_json_type.sql
+\i util_meta/function/mk_json_user_type.sql
 \i util_meta/function/mk_json_view.sql
+
+\i util_meta/function/mk_json_find_function.sql
