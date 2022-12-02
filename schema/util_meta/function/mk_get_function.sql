@@ -159,7 +159,7 @@ BEGIN
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type =>l_full_view_name,
-            a_returns_set => false,
+            a_returns_set => true,
             a_param_names => l_param_names,
             a_directions => l_param_directions,
             a_datatypes => l_param_types ),
