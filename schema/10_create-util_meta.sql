@@ -26,6 +26,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/new_line.sql
 \i util_meta/function/table_noun.sql
 \i util_meta/function/proc_parameters.sql
+\i util_meta/function/calling_parameters.sql
 
 -- Snippet functions
 \i util_meta/function/snippet_declare_variables.sql
@@ -45,7 +46,8 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/snippet_get_permissions.sql
 \i util_meta/function/snippet_permissions_check.sql
 
--- "Final" DDL generating functions
+--------------------------------------------------------------------------------
+-- "Final" DDL generating functions for "regular API" objects
 \i util_meta/function/mk_view.sql
 \i util_meta/function/mk_user_type.sql
 \i util_meta/function/mk_table_migration.sql
@@ -65,13 +67,14 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_insert_procedure.sql
 \i util_meta/function/mk_update_procedure.sql
 
+--------------------------------------------------------------------------------
 -- JSON utility functions
 \i util_meta/function/json_identifier.sql
 
 -- JSON snippet functions
 
 -- "Final" DDL generating functions
-\i util_meta/function/mk_json_user_type.sql
 \i util_meta/function/mk_json_view.sql
+\i util_meta/function/mk_json_user_type.sql
 
-\i util_meta/function/mk_json_find_function.sql
+\i util_meta/function/mk_json_function_wrapper.sql
