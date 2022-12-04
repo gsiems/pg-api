@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION util_meta.mk_json_get_function (
+CREATE OR REPLACE FUNCTION util_meta.mk_json_function_wrapper (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
@@ -10,12 +10,13 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function mk_json_get_function generates a draft JSON wrapper around a regular get function (as created by mk_get_function)
+Function mk_json_function_wrapper
+ generates a draft JSON wrapper around a regular set returning function ( find_, get_, list_ )
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
-| a_object_schema                | in     | text       | The (name of the) schema that contains the regular get function |
-| a_object_name                  | in     | text       | The (name of the) name of the regular get function |
+| a_object_schema                | in     | text       | The (name of the) schema that contains the regular function |
+| a_object_name                  | in     | text       | The (name of the) name of the regular function     |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the json function in |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the json function |
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted on the json function |
@@ -29,26 +30,26 @@ DECLARE
 
     l_result text ;
 
-    l_calling_params text [ ] ;
-    l_calling_types text [ ] ;
+    l_calling_params text[] ;
+    l_calling_types text[] ;
     l_column_alias text ;
     l_column_comment text ;
     l_column_name text ;
-    l_columns text [ ] ;
+    l_columns text[] ;
     l_ddl_schema text ;
     l_doc_item text ;
-    l_func_name text ;
-    l_param_comments text [ ] ;
-    l_param_directions text [ ] ;
-    l_param_names text [ ] ;
-    l_param_name text ;
-    l_param_types text [ ] ;
-    l_param_type text ;
-    l_proc_params text [ ] ;
-    l_view_name text ;
-    l_type_name text ;
-    l_full_type_name text ;
     l_full_view_name text ;
+    l_func_name text ;
+    l_func_type text ;
+    l_param_comments text[] ;
+    l_param_directions text[] ;
+    l_param_names text[] ;
+    l_param_name text ;
+    l_param_types text[] ;
+    l_param_type text ;
+    l_proc_params text[] ;
+    l_view_name text ;
+    l_test text ;
 
 BEGIN
 
@@ -61,64 +62,74 @@ BEGIN
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce (  a_ddl_schema, a_object_schema || '_json' ) ;
     l_func_name := a_object_name ;
-    l_type_name := regexp_replace ( a_object_name, '^get_', 'ut_' ) ;
-    l_view_name := regexp_replace ( a_object_name, '^get_', 'dv_' ) ;
+    l_func_type := split_part ( a_object_name, '_', 1 ) ;
+
+    FOR r IN (
+        SELECT prefix
+            FROM (
+                VALUES
+                    ( 'dv_' ),
+                    ( 'rv_' ),
+                    ( 'sv_' )
+                ) AS dat ( prefix ) ) LOOP
+
+        l_test := regexp_replace ( a_object_name, '^' || l_func_type || '_', r.prefix ) ;
+        IF util_meta.is_valid_object ( a_object_schema, l_test, 'view' ) THEN
+            l_view_name := l_test ;
+            EXIT ;
+        END IF ;
+
+    END LOOP ;
+
+    IF l_view_name IS NULL THEN
+        RETURN 'ERROR: could not find view' ;
+    END IF ;
+
+
     l_full_view_name := a_object_schema || '.' || l_view_name ;
-    l_full_type_name := l_ddl_schema || '.' || l_type_name ;
 
     l_doc_item := 'Returns the results of the ' || a_object_schema || '.' || a_object_name || ' function as JSON' ;
 
     ----------------------------------------------------------------------------
     FOR r IN (
         WITH args AS (
-            SELECT a_object_schema AS schema_name,
-                    a_object_name AS object_name,
+            SELECT schema_name,
+                    object_name,
+                    object_type,
+                    param_name,
+                    data_type,
+                    param_default,
+                    param_direction,
+                    arg_position,
                     l_view_name AS view_name,
-                    l_full_view_name AS full_view_name
-        ),
-        p1 AS (
-            SELECT args.schema_name,
-                    args.object_name,
-                    args.view_name,
-                    args.full_view_name,
-                    trim ( regexp_replace ( unnest ( string_to_array ( lower ( objects.calling_arguments ), ',' ) ), ' default.+$', '' ) ) AS param
-                FROM util_meta.objects
-                JOIN args
-                    ON ( args.schema_name = objects.schema_name
-                        AND args.object_name = objects.object_name )
-        ),
-        p2 AS (
-            SELECT p1.schema_name,
-                    p1.object_name,
-                    p1.view_name,
-                    p1.full_view_name,
-                    split_part ( p1.param, ' ', 1 ) AS param_name,
-                    split_part ( p1.param, ' ', 2 ) AS param_type,
-                    p1.param,
-                    regexp_replace ( split_part ( p1.param, ' ', 1 ), '^a_', '' ) AS column_name
-                FROM p1
+                    l_full_view_name AS full_view_name,
+                    column_name,
+                    comments
+                FROM util_meta.calling_parameters (
+                    a_object_schema => a_object_schema,
+                    a_object_name => a_object_name,
+                    a_object_type => 'function' )
         )
-        SELECT p2.schema_name,
-                p2.object_name,
-                p2.view_name,
-                p2.param_name,
-                p2.param_type,
-                p2.param,
-                p2.column_name,
-                coalesce ( columns.comments, 'TBD' ) AS comments
-            FROM p2
+        SELECT args.schema_name,
+                args.object_name,
+                args.object_type,
+                args.param_name,
+                args.data_type,
+                args.param_default,
+                args.param_direction,
+                args.arg_position,
+                args.view_name,
+                args.full_view_name,
+                columns.column_name,
+                coalesce ( columns.comments, args.comments, 'TBD' ) AS comments
+            FROM args
             LEFT JOIN util_meta.columns
-                ON ( columns.full_object_name = p2.full_view_name
-                    AND columns.column_name = p2.column_name ) ) LOOP
-
-        -- TODO deal with preceeding IN, OUT, INOUT?
-
-        l_param_name := split_part ( r.param, ' ', 1 ) ;
-        l_param_type := split_part ( r.param, ' ', 2 ) ;
+                ON ( columns.full_object_name = args.full_view_name
+                    AND columns.column_name = args.column_name ) ) LOOP
 
         l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, r.param_type ) ;
+        l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
+        l_param_types := array_append ( l_param_types, r.data_type ) ;
         l_param_comments := array_append ( l_param_comments, r.comments ) ;
 
         l_proc_params := array_append ( l_proc_params, concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
