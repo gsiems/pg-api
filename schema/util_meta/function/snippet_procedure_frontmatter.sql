@@ -50,7 +50,7 @@ BEGIN
     IF l_param_count > 0 THEN
 
         FOR l_idx IN 1..l_param_count LOOP
-            l_params = array_append ( l_params,
+            l_params := array_append ( l_params,
                 util_meta.indent (1) || concat_ws ( ' ', a_param_names[l_idx], a_param_directions[l_idx], a_param_datatypes[l_idx], 'default null' ) ) ;
         END LOOP ;
 
