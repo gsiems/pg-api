@@ -78,3 +78,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/mk_json_user_type.sql
 
 \i util_meta/function/mk_json_function_wrapper.sql
+
+--------------------------------------------------------------------------------
+-- Testing functions
+\i util_meta/function/mk_test_procedure_wrapper.sql
