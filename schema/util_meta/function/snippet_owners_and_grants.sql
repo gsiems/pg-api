@@ -27,24 +27,28 @@ DECLARE
 
     r record ;
     l_return text ;
-    l_sig text ;
+    l_alter_sig text ;
+    l_grant_sig text ;
     l_priv text ;
 
 BEGIN
 
-    l_sig := concat_ws ( ' ', upper ( a_object_type ), a_ddl_schema || '.' || a_object_name ) ;
+    l_alter_sig := concat_ws ( ' ', upper ( a_object_type ), a_ddl_schema || '.' || a_object_name ) ;
 
     IF upper ( a_object_type ) IN ( 'FUNCTION', 'PROCEDURE' ) THEN
 
-        l_sig := concat_ws ( ' ', l_sig, '(', array_to_string ( a_datatypes, ', ' ), ')' ) ;
+        l_alter_sig := concat_ws ( ' ', l_alter_sig, '(', array_to_string ( a_datatypes, ', ' ), ')' ) ;
+        l_grant_sig := l_alter_sig ;
         l_priv := 'EXECUTE' ;
 
     ELSIF upper ( a_object_type ) IN ( 'TABLE', 'VIEW' ) THEN
 
+        l_grant_sig := a_ddl_schema || '.' || a_object_name ;
         l_priv := 'SELECT' ;
 
     ELSIF upper ( a_object_type ) IN ( 'TYPE' ) THEN
 
+        l_grant_sig := a_ddl_schema || '.' || a_object_name ;
         l_priv := 'USAGE' ;
 
     END IF ;
@@ -54,7 +58,7 @@ BEGIN
         l_return := concat_ws ( util_meta.new_line (),
             l_return,
             '',
-            concat_ws ( ' ', 'ALTER', l_sig, 'OWNER TO', a_owner, ';' ) ) ;
+            concat_ws ( ' ', 'ALTER', l_alter_sig, 'OWNER TO', a_owner, ';' ) ) ;
 
     END IF ;
 
@@ -64,7 +68,7 @@ BEGIN
         l_return := concat_ws ( util_meta.new_line (),
             l_return,
             '',
-            concat_ws ( ' ', 'GRANT', l_priv, 'ON', l_sig, 'TO', r.grantee, ';' ) ) ;
+            concat_ws ( ' ', 'GRANT', l_priv, 'ON', l_grant_sig, 'TO', r.grantee, ';' ) ) ;
 
     END LOOP ;
 
