@@ -195,7 +195,7 @@ BEGIN
         array_to_string ( l_comments, util_meta.new_line () ),
         '' ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
