@@ -21,6 +21,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- Functions -------------------------------------------------------------------
 
 -- Common utility functions
+\i util_meta/function/cleanup_whitespace.sql
 \i util_meta/function/indent.sql
 \i util_meta/function/is_valid_object.sql
 \i util_meta/function/new_line.sql
