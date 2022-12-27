@@ -167,6 +167,7 @@ BEGIN
         util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' )' ) ;
 
     ----------------------------------------------------------------------------
+    l_is_row_based := coalesce ( a_is_row_based, false ) ;
     IF l_is_row_based THEN
 
         l_result := concat_ws ( util_meta.new_line (),
