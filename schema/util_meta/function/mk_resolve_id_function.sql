@@ -214,7 +214,7 @@ BEGIN
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
         '',
-        util_meta.indent (1) || '-- Search for a match on the primary key',
+        util_meta.indent (1) || '-- Search for a match on the primary key second',
         util_meta.indent (1) || 'FOR r IN (',
         l_select_clause,
         l_from_clause,
@@ -244,6 +244,7 @@ BEGIN
         l_result := concat_ws ( util_meta.new_line (),
             l_result,
             '',
+            util_meta.indent (1) || '-- Finally, search for a match on the natural key parameter matching the primary key',
             util_meta.indent (1) || 'FOR r IN (',
             l_select_clause,
             l_from_clause,
@@ -270,7 +271,7 @@ BEGIN
             a_grantees => a_grantees,
             a_datatypes => l_param_types ) ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
