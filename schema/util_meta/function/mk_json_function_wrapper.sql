@@ -10,8 +10,8 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function mk_json_function_wrapper
- generates a draft JSON wrapper around a regular set returning function ( find_, get_, list_ )
+Function mk_json_function_wrapper generates a draft JSON wrapper around a
+regular set returning function ( find_, get_, list_ )
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
@@ -22,6 +22,10 @@ Function mk_json_function_wrapper
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted on the json function |
 
 Note that JSON objects schema defaults to the concatenation of a_object_schema with '_json'
+
+ASSERTIONS
+
+ * The function being wrapped uses a view as the return type
 
 */
 DECLARE
@@ -48,8 +52,6 @@ DECLARE
     l_param_types text[] ;
     l_param_type text ;
     l_proc_params text[] ;
-    l_view_name text ;
-    l_test text ;
 
 BEGIN
 
@@ -65,28 +67,18 @@ BEGIN
     l_func_type := split_part ( a_object_name, '_', 1 ) ;
 
     FOR r IN (
-        SELECT prefix
-            FROM (
-                VALUES
-                    ( 'dv_' ),
-                    ( 'rv_' ),
-                    ( 'sv_' )
-                ) AS dat ( prefix ) ) LOOP
+        SELECT regexp_match ( result_data_type, '([^ ]+)$' ) AS view_name
+            FROM util_meta.objects
+            WHERE schema_name = a_object_schema
+                AND object_name = a_object_name ) LOOP
 
-        l_test := regexp_replace ( a_object_name, '^' || l_func_type || '_', r.prefix ) ;
-        IF util_meta.is_valid_object ( a_object_schema, l_test, 'view' ) THEN
-            l_view_name := l_test ;
-            EXIT ;
-        END IF ;
+        l_full_view_name := r.view_name ;
 
     END LOOP ;
 
-    IF l_view_name IS NULL THEN
+    IF l_full_view_name IS NULL THEN
         RETURN 'ERROR: could not find view' ;
     END IF ;
-
-
-    l_full_view_name := a_object_schema || '.' || l_view_name ;
 
     l_doc_item := 'Returns the results of the ' || a_object_schema || '.' || a_object_name || ' function as JSON' ;
 
@@ -101,7 +93,6 @@ BEGIN
                     param_default,
                     param_direction,
                     arg_position,
-                    l_view_name AS view_name,
                     l_full_view_name AS full_view_name,
                     column_name,
                     comments
@@ -118,7 +109,6 @@ BEGIN
                 args.param_default,
                 args.param_direction,
                 args.arg_position,
-                args.view_name,
                 args.full_view_name,
                 columns.column_name,
                 coalesce ( columns.comments, args.comments, 'TBD' ) AS comments
@@ -184,9 +174,27 @@ BEGIN
         util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
         util_meta.indent (5) || array_to_string ( l_proc_params, ',' || util_meta.new_line () || util_meta.indent (5) ),
         util_meta.indent (4) || ')',
-        util_meta.indent (1) || ')',
-        util_meta.indent (1) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
-        util_meta.indent (2) || 'FROM t ;',
+        util_meta.indent (1) || ')' ) ;
+
+    -- TODO: need a better way of determining single tuple results vs multi-tuple results
+    IF l_func_type = 'get' THEN
+
+        l_result := concat_ws ( util_meta.new_line (),
+            l_result,
+            util_meta.indent (1) || 'SELECT row_to_json ( t ) AS json',
+            util_meta.indent (2) || 'FROM t ;' ) ;
+
+    ELSE
+
+        l_result := concat_ws ( util_meta.new_line (),
+            l_result,
+            util_meta.indent (1) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
+            util_meta.indent (2) || 'FROM t ;' ) ;
+
+    END IF ;
+
+    l_result := concat_ws ( util_meta.new_line (),
+        l_result,
         '',
         util_meta.snippet_function_backmatter (
             a_ddl_schema => l_ddl_schema,
