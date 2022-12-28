@@ -54,9 +54,12 @@ DECLARE
     l_table_alias text := 'base' ;
     l_view_name text ;
 
-BEGIN
+    l_boolean_type text ;
+    l_true_val text ;
+    l_false_val text ;
+    l_boolean_transform text ;
 
--- TODO: a_cast_booleans_as
+BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified table exists
@@ -91,10 +94,37 @@ BEGIN
     END LOOP ;
 
     ----------------------------------------------------------------------------
+    IF a_cast_booleans_as IS NULL THEN
+
+        l_boolean_type := 'boolean' ;
+
+    ELSE
+        l_true_val := trim ( split_part ( a_cast_booleans_as, ',', 1 ) ) ;
+        l_false_val := trim ( split_part ( a_cast_booleans_as, ',', 2 ) ) ;
+
+        IF coalesce ( l_true_val, '' ) = ''
+            OR coalesce ( l_false_val, '' ) = '' THEN
+
+            RETURN 'ERROR: Could not resolve true/false values' ;
+
+        END IF ;
+
+        IF a_cast_booleans_as = '1,0' THEN
+            l_boolean_type := 'integer' ;
+        ELSE
+            l_boolean_type := 'text' ;
+            l_true_val := ( quote_literal ( l_true_val ) )::text || '::text' ;
+            l_false_val := ( quote_literal ( l_false_val ) )::text || '::text' ;
+        END IF ;
+
+    END IF ;
+
+    ----------------------------------------------------------------------------
     FOR col IN (
         SELECT column_name,
                 concat_ws ( '.', l_table_alias, column_name ) AS table_column,
                 concat_ws ( '.', l_full_view_name, column_name ) AS full_column_name,
+                data_type,
                 ordinal_position,
                 CASE
                     WHEN is_nullable THEN 'LEFT JOIN'
@@ -107,7 +137,22 @@ BEGIN
                 AND object_name = a_object_name
             ORDER BY ordinal_position ) LOOP
 
-        l_columns := array_append ( l_columns, col.table_column ) ;
+        IF col.data_type = 'boolean' AND l_boolean_type <> 'boolean' THEN
+
+            l_boolean_transform := concat_ws ( util_meta.new_line () || util_meta.indent (3),
+                'CASE',
+                concat_ws ( ' ', 'WHEN', col.table_column, 'THEN', l_true_val ),
+                concat_ws ( ' ', 'ELSE', l_false_val ),
+                concat_ws ( ' ', 'END AS', col.column_name ) ) ;
+
+            l_columns := array_append ( l_columns, l_boolean_transform ) ;
+
+        ELSE
+
+            l_columns := array_append ( l_columns, col.table_column ) ;
+
+        END IF ;
+
         l_comments := array_append ( l_comments,
             util_meta.snippet_object_comment (
                 a_ddl_schema => l_ddl_schema,
@@ -140,7 +185,14 @@ BEGIN
 
                 has_join := true ;
 
-                l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
+                IF col.column_name ~ '_id$' THEN
+                    l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
+                ELSIF col.column_name ~ '_id_' THEN
+                    l_column_alias := regexp_replace ( col.column_name, '_id_', '_' ) ;
+                ELSE
+                    -- no clue, let the user/developer figure it out for now...
+                    l_column_alias := col.column_name || '_' || lpad ( col.ordinal_position::text, 4, '0' ) ;
+                END IF ;
 
                 l_columns := array_append ( l_columns, concat_ws ( ' ', fk_col.full_column_name, 'AS', l_column_alias ) ) ;
 
