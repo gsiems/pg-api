@@ -204,7 +204,7 @@ BEGIN
             a_parent_object_type => l_parent_noun,
             a_parent_id_param => l_parent_id_param ),
         '',
-        util_meta.indent (1) || 'call priv_' || l_proc_name || ' (',
+        util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
         util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
