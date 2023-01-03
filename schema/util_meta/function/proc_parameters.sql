@@ -144,7 +144,16 @@ base AS (
                 END AS param_name,
             CASE
                 WHEN col.is_audit_col THEN null::text
-                WHEN col.is_pk AND col.column_name = 'id' AND args.action IN ( 'insert', 'upsert' ) THEN 'inout' -- TODO: does it have to be 'id' ???
+                WHEN NOT args.action IN ( 'insert', 'upsert' ) THEN 'in'
+                WHEN NOT col.is_pk THEN 'in'
+                -- column is pk and action is in ( 'insert', 'upsert' )
+                WHEN col.column_name = 'id' THEN 'inout'
+                WHEN ( SELECT COUNT (*) FROM cbase WHERE is_pk) = 1
+                    AND ( SELECT COUNT (*) FROM util_meta.foreign_keys fk
+                            WHERE fk.schema_name = col.schema_name
+                                AND fk.table_name = col.object_name
+                                AND fk.column_names = col.column_name ) = 0 THEN 'inout'
+                --WHEN col.is_pk AND col.column_name = 'id' AND args.action IN ( 'insert', 'upsert' ) THEN 'inout' -- TODO: does it have to be 'id' ???
                 ELSE 'in'
                 END AS param_direction,
             CASE
@@ -178,7 +187,8 @@ base AS (
                 AND ref_data.table_name = col.object_name
                 AND ref_data.column_names = col.column_name
                 AND ref_data.ref_table_name ~ '^[rs]t_'
-                AND ref_data.ref_column_names = 'id' ) -- TODO: do we need to care that the name is 'id' ? or simply that the ref_column_names is a single column?
+                --AND ref_data.ref_column_names = 'id' ) -- TODO: do we need to care that the name is 'id' ? or simply that the ref_column_names is a single column?
+                AND ref_data.ref_column_names !~ ',' )
 ),
 params AS (
     SELECT base.schema_name,
