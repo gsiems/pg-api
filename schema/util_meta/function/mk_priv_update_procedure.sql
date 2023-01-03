@@ -198,7 +198,7 @@ BEGIN
                     l_local_checks := array_append ( l_local_checks, concat_ws ( util_meta.new_line (),
                             util_meta.indent (1) || concat_ws ( ' ', r.local_param_name, ':=', r.resolve_id_function, '(', concat_ws ( ', ', r.param_name, r.ref_param_name ), ')', ';' ),
                             util_meta.indent (1) || concat_ws ( ' ', 'IF', r.local_param_name, 'IS NULL AND (', r.param_name, 'IS NOT NULL OR', r.ref_param_name, 'IS NOT NULL ) THEN' ),
-                            util_meta.indent (2) || 'a_err := ''Invalid, ' || r.error_tag || ' specified'' ;',
+                            util_meta.indent (2) || 'a_err := ''Invalid ' || r.error_tag || ' specified'' ;',
                             l_log_err_line,
                             util_meta.indent (2) || 'RETURN ;',
                             util_meta.indent (1) || 'END IF ;' ) ) ;
