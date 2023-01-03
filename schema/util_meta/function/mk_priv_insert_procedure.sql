@@ -53,6 +53,7 @@ DECLARE
     l_parent_noun text ;
     l_pk_cols text[] ;
     l_pk_params text[] ;
+    l_pk_param_directions text[] ;
     l_proc_name text ;
     l_result text ;
     l_returning_into_id text ;
@@ -146,6 +147,7 @@ BEGIN
         IF r.is_pk THEN
             l_pk_cols := array_append ( l_pk_cols, r.column_name ) ;
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
+            l_pk_param_directions := array_append ( l_pk_param_directions, r.param_direction ) ;
         END IF ;
 
         IF r.param_name IS NOT NULL THEN
@@ -199,7 +201,7 @@ BEGIN
                     l_local_checks := array_append ( l_local_checks, concat_ws ( util_meta.new_line (),
                             util_meta.indent (1) || concat_ws ( ' ', r.local_param_name, ':=', r.resolve_id_function, '(', concat_ws ( ', ', r.param_name, r.ref_param_name ), ')', ';' ),
                             util_meta.indent (1) || concat_ws ( ' ', 'IF', r.local_param_name, 'IS NULL AND (', r.param_name, 'IS NOT NULL OR', r.ref_param_name, 'IS NOT NULL ) THEN' ),
-                            util_meta.indent (2) || 'a_err := ''Invalid, ' || r.error_tag || ' specified'' ;',
+                            util_meta.indent (2) || 'a_err := ''Invalid ' || r.error_tag || ' specified'' ;',
                             l_log_err_line,
                             util_meta.indent (2) || 'RETURN ;',
                             util_meta.indent (1) || 'END IF ;' ) ) ;
@@ -242,7 +244,9 @@ BEGIN
     END IF ;
 
     IF array_length ( l_pk_cols, 1 ) > 0 THEN
-        l_returning_into_id := concat_ws ( ' ', 'RETURNING', array_to_string ( l_pk_cols, ', ' ), 'INTO', array_to_string ( l_pk_params, ', ' ) ) ;
+        IF 'inout' = ANY ( l_pk_param_directions ) THEN
+                    l_returning_into_id := concat_ws ( ' ', 'RETURNING', array_to_string ( l_pk_cols, ', ' ), 'INTO', array_to_string ( l_pk_params, ', ' ) ) ;
+        END IF ;
     END IF ;
 
     ----------------------------------------------------------------------------
