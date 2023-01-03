@@ -64,7 +64,9 @@ BEGIN
                         ( 'rv_' )
                     ) AS dat ( prefix ) ) LOOP
 
-            l_test := regexp_replace ( a_object_name, '^' || l_proc_type || '_', r.prefix ) ;
+            l_test := regexp_replace ( a_object_name, '^' || l_proc_type || '_', '' ) ;
+            l_test := r.prefix || regexp_replace ( l_test, '^rt_', '' ) ;
+            
             IF util_meta.is_valid_object ( a_object_schema, l_test, 'view' ) THEN
                 l_view_name := l_test ;
                 EXIT ;
@@ -76,6 +78,11 @@ BEGIN
             RETURN 'ERROR: could not find view' ;
         END IF ;
 
+    END IF ;
+
+    IF l_proc_type IN ( 'update', 'upsert' ) THEN
+        l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
+        l_local_var_types := array_append ( l_local_var_types, 'record' ) ;
     END IF ;
 
     ----------------------------------------------------------------------------
@@ -99,10 +106,10 @@ BEGIN
         l_param_names := array_append ( l_param_names, r.param_name ) ;
         l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
 
-        IF r.direction = 'inout' THEN
+        IF r.param_direction = 'inout' THEN
 
             l_local_var_names := array_append ( l_local_var_names, r.local_var_name ) ;
-            l_local_var_types := array_append ( l_local_var_types, r.data_type  ) ;
+            l_local_var_types := array_append ( l_local_var_types, r.data_type ) ;
             l_proc_params := array_append ( l_proc_params, util_meta.indent (2) || concat_ws ( ' ', r.param_name, '=>', r.local_var_name ) ) ;
 
             IF r.param_name = 'a_err' THEN
@@ -115,7 +122,7 @@ BEGIN
                 l_func_param_types := array_append ( l_func_param_types, r.data_type ) ;
             END IF ;
 
-        ELSIF r.direction = 'out' THEN
+        ELSIF r.param_direction = 'out' THEN
 
             l_local_var_names := array_append ( l_local_var_names, r.local_var_name ) ;
             l_local_var_types := array_append ( l_local_var_types, r.data_type  ) ;
@@ -131,7 +138,7 @@ BEGIN
             l_local_var_types := array_append ( l_local_var_types, null::text ) ;
 
             l_proc_params := array_append ( l_proc_params, util_meta.indent (2) || concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
-            l_func_param_names := array_append ( l_func_param_names, util_meta.indent (1) || concat_ws ( ' ', r.param_name, r.data_type, 'default null' ) ) ;
+            l_func_param_names := array_append ( l_func_param_names, r.param_name ) ;
             l_func_param_directions := array_append ( l_func_param_directions, 'in' ) ;
             l_func_param_types := array_append ( l_func_param_types, r.data_type ) ;
 
@@ -147,7 +154,7 @@ BEGIN
             a_ddl_schema => a_test_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_return_type => boolean,
+            a_return_type => 'boolean',
             a_returns_set => false,
             a_param_names => l_func_param_names,
             a_directions => l_func_param_directions,
@@ -239,7 +246,7 @@ BEGIN
     IF l_proc_type IN ( 'insert', 'update', 'upsert' ) THEN
 
         FOR r IN (
-            SELECT max ( object_schema ) AS object_schema,
+            SELECT max ( schema_name ) AS object_schema,
                     object_name,
                     count (*) AS kount
                 FROM util_meta.objects
@@ -272,7 +279,7 @@ BEGIN
                         ordinal_position,
                         is_pk
                     FROM util_meta.columns
-                    WHERE object_schema = a_object_schema
+                    WHERE schema_name = a_object_schema
                         AND object_name = l_view_name
                         AND 'a_' || column_name = ANY ( l_param_names )
             ),
@@ -280,7 +287,7 @@ BEGIN
                 SELECT column_name,
                         is_pk
                     FROM util_meta.columns
-                    WHERE object_schema = l_table_schema
+                    WHERE schema_name = l_table_schema
                         AND object_name = l_table_name
                         --AND object_type = 'table'
                         AND 'a_' || column_name = ANY ( l_param_names )
@@ -362,7 +369,7 @@ BEGIN
         'END ;',
         '$' || '$ ;' ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
