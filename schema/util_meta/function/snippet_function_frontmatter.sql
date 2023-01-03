@@ -43,8 +43,10 @@ BEGIN
     IF l_aryl > 0 THEN
 
         FOR l_idx IN 1..l_aryl LOOP
-            l_params := array_append ( l_params, util_meta.indent (1)
-                || concat_ws ( ' ', a_param_names[l_idx], a_directions[l_idx], a_datatypes[l_idx], 'default null' ) ) ;
+            IF a_param_names[l_idx] IS NOT NULL AND a_directions[l_idx] IS NOT NULL AND a_datatypes[l_idx] IS NOT NULL THEN
+                l_params := array_append ( l_params, util_meta.indent (1)
+                    || concat_ws ( ' ', a_param_names[l_idx], a_directions[l_idx], a_datatypes[l_idx], 'default null' ) ) ;
+            END IF ;
         END LOOP ;
 
         l_return := concat_ws ( util_meta.new_line (),
