@@ -19,6 +19,7 @@ Function mk_test_procedure_wrapper generates a testing function for wrapping a d
 DECLARE
 
     r record ;
+    r2 record ;
 
     l_column_names text[] ;
     l_column_name text ;
@@ -50,40 +51,6 @@ BEGIN
     ----------------------------------------------------------------------------
     l_proc_type := split_part ( a_object_name, '_', 1 ) ; -- insert, update, delete, upsert
     l_func_name := concat_ws ( '__', a_object_schema, a_object_name ) ;
-
-    ----------------------------------------------------------------------------
-    -- For insert, update, and upsert we want to add checks to ensure that the
-    -- new table data matches the submitted data
-    IF l_proc_type IN ( 'insert', 'update', 'upsert' ) THEN
-
-        FOR r IN (
-            SELECT prefix
-                FROM (
-                    VALUES
-                        ( 'dv_' ),
-                        ( 'rv_' )
-                    ) AS dat ( prefix ) ) LOOP
-
-            l_test := regexp_replace ( a_object_name, '^' || l_proc_type || '_', '' ) ;
-            l_test := r.prefix || regexp_replace ( l_test, '^rt_', '' ) ;
-            
-            IF util_meta.is_valid_object ( a_object_schema, l_test, 'view' ) THEN
-                l_view_name := l_test ;
-                EXIT ;
-            END IF ;
-
-        END LOOP ;
-
-        IF l_view_name IS NULL THEN
-            RETURN 'ERROR: could not find view' ;
-        END IF ;
-
-    END IF ;
-
-    IF l_proc_type IN ( 'update', 'upsert' ) THEN
-        l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
-        l_local_var_types := array_append ( l_local_var_types, 'record' ) ;
-    END IF ;
 
     ----------------------------------------------------------------------------
     FOR r IN (
@@ -146,6 +113,10 @@ BEGIN
 
     END LOOP ;
 
+    IF l_proc_type IN ( 'update', 'upsert' ) THEN
+        l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
+        l_local_var_types := array_append ( l_local_var_types, 'record' ) ;
+    END IF ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
@@ -225,7 +196,7 @@ BEGIN
 
         IF l_local_var_names[idx] IS NOT NULL THEN
 
-            IF l_local_var_names[idx] <> 'l_err' THEN
+            IF l_local_var_names[idx] NOT IN ( 'r', 'l_err' ) THEN
 
                 l_result := concat_ws ( util_meta.new_line (),
                     l_result,
@@ -245,80 +216,100 @@ BEGIN
     -- Add the checks for new values
     IF l_proc_type IN ( 'insert', 'update', 'upsert' ) THEN
 
+        ------------------------------------------------------------------------
+        -- For insert, update, and upsert we want to add checks to ensure that the
+        -- new table data matches the submitted data.
+        -- ASSERTION: the view exists in the same schema as the procedure being wrapped
         FOR r IN (
-            SELECT max ( schema_name ) AS object_schema,
-                    object_name,
-                    count (*) AS kount
-                FROM util_meta.objects
-                WHERE object_name = regexp_replace ( l_view_name, '^([dr])v', '\1t' )
-                    AND object_type = 'table'
-                GROUP BY object_name ) LOOP
+            SELECT prefix
+                FROM (
+                    VALUES
+                        ( 'dv_' ),
+                        ( 'rv_' )
+                    ) AS dat ( prefix ) ) LOOP
 
-            IF r.kount <> 1 THEN
-                l_result := concat_ws ( util_meta.new_line (),
-                    l_result,
-                    '',
-                    '-- TODO: could not resolve the table name for reviewing data changes',
-                    '' ) ;
+            l_test := regexp_replace ( a_object_name, '^' || l_proc_type || '_', '' ) ;
+            l_test := r.prefix || regexp_replace ( l_test, '^rt_', '' ) ;
 
-            ELSE
-
-                l_table_schema := r.object_schema ;
-                l_table_name := r.object_name ;
-
+            IF util_meta.is_valid_object ( a_object_schema, l_test, 'view' ) THEN
+                l_view_name := l_test ;
+                EXIT ;
             END IF ;
 
         END LOOP ;
 
+        IF l_view_name IS NOT NULL THEN
 
-        FOR r IN (
-            WITH v_col AS (
-                SELECT column_name,
-                        'a_' || column_name AS param_name,
-                        'l_' || column_name AS local_var_name,
-                        ordinal_position,
-                        is_pk
-                    FROM util_meta.columns
-                    WHERE schema_name = a_object_schema
-                        AND object_name = l_view_name
-                        AND 'a_' || column_name = ANY ( l_param_names )
-            ),
-            t_col AS (
-                SELECT column_name,
-                        is_pk
-                    FROM util_meta.columns
-                    WHERE schema_name = l_table_schema
-                        AND object_name = l_table_name
-                        --AND object_type = 'table'
-                        AND 'a_' || column_name = ANY ( l_param_names )
-            )
-            SELECT v_col.column_name,
-                    v_col.param_name,
-                    v_col.local_var_name,
-                    coalesce ( t_col.is_pk, false ) AS is_pk
-                FROM v_col
-                FULL JOIN t_col
-                    ON ( t_col.column_name = v_col.column_name )
-                ORDER BY v_col.ordinal_position ) LOOP
+            -- Having found the view, search for the table
+            FOR r IN (
+                SELECT max ( schema_name ) AS table_schema,
+                        object_name AS table_name,
+                        count (*) AS kount
+                    FROM util_meta.objects
+                    WHERE object_name = regexp_replace ( l_view_name, '^([dr])v', '\1t' )
+                        AND object_type = 'table'
+                    GROUP BY object_name ) LOOP
 
-            IF r.is_pk THEN
+                -- ASSERTION: If there is only one matching table then it is the one we want
+                -- The table is used for determining the primary key columns to select against
+                IF r.kount = 1 THEN
 
-                IF r.local_var_name = ANY ( l_local_var_names ) THEN
-                    l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r.column_name, '=', r.local_var_name ) ) ;
-                ELSE
-                    l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
+                    FOR r2 IN (
+                        WITH v_col AS (
+                            SELECT column_name,
+                                    'a_' || column_name AS param_name,
+                                    'l_' || column_name AS local_var_name,
+                                    ordinal_position,
+                                    is_pk
+                                FROM util_meta.columns
+                                WHERE schema_name = a_object_schema
+                                    AND object_name = l_view_name
+                                    AND 'a_' || column_name = ANY ( l_param_names )
+                        ),
+                        t_col AS (
+                            SELECT column_name,
+                                    is_pk
+                                FROM util_meta.columns
+                                WHERE schema_name = r.table_schema
+                                    AND object_name = r.table_name
+                                    --AND object_type = 'table'
+                                    AND 'a_' || column_name = ANY ( l_param_names )
+                        )
+                        SELECT v_col.column_name,
+                                v_col.param_name,
+                                v_col.local_var_name,
+                                coalesce ( t_col.is_pk, false ) AS is_pk
+                            FROM v_col
+                            FULL JOIN t_col
+                                ON ( t_col.column_name = v_col.column_name )
+                            ORDER BY v_col.ordinal_position ) LOOP
+
+                        IF r2.is_pk THEN
+
+                            IF r2.local_var_name = ANY ( l_local_var_names ) THEN
+                                l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r2.column_name, '=', r2.local_var_name ) ) ;
+                            ELSE
+                                l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r2.column_name, '=', r2.param_name ) ) ;
+                            END IF ;
+
+                        ELSE
+
+                            l_column_names := array_append ( l_column_names, r2.column_name ) ;
+
+                        END IF ;
+
+                    END LOOP ;
+
                 END IF ;
 
-            ELSE
+            END LOOP ;
 
-                l_column_names := array_append ( l_column_names, r.column_name ) ;
-
-            END IF ;
-
-        END LOOP ;
+        END IF ;
 
         IF array_length ( l_where_cols, 1 ) > 0 AND array_length ( l_column_names, 1 ) > 0 THEN
 
+            -- NB: We select against the view based on the assertion that, if there are any transformations to the data,
+            -- the view data/datatypes will better match the calling parameters data/datatypes
             l_result := concat_ws ( util_meta.new_line (),
                 l_result,
                 '',
@@ -357,7 +348,6 @@ BEGIN
     END IF ;
 
     -- TODO: for delete procedures ensure that the delete succeeded
-
 
     --------------------------------------------------------------------
     -- end-matter
