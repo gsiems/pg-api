@@ -245,7 +245,7 @@ BEGIN
 
     IF array_length ( l_pk_cols, 1 ) > 0 THEN
         IF 'inout' = ANY ( l_pk_param_directions ) THEN
-                    l_returning_into_id := concat_ws ( ' ', 'RETURNING', array_to_string ( l_pk_cols, ', ' ), 'INTO', array_to_string ( l_pk_params, ', ' ) ) ;
+            l_returning_into_id := concat_ws ( ' ', 'RETURNING', array_to_string ( l_pk_cols, ', ' ), 'INTO', array_to_string ( l_pk_params, ', ' ) ) ;
         END IF ;
     END IF ;
 
@@ -359,7 +359,7 @@ l_parent_id_param
     ELSE
         l_result := concat_ws ( util_meta.new_line (),
             l_result,
-            util_meta.indent (2) || l_returning_into_id || ' ;' ) ;
+            util_meta.indent (3) || l_returning_into_id || ' ;' ) ;
 
     END IF ;
 
