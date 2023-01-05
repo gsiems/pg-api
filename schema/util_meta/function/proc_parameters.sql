@@ -123,13 +123,24 @@ base AS (
             col.column_name,
             col.data_type AS column_data_type,
             CASE
-                WHEN col.is_pk AND col.column_name = 'id' AND col.column_default IS NOT NULL AND args.action IN ( 'insert', 'upsert' )
-                    THEN replace ( replace ( replace ( col.column_default, '::regclass', '' ), ')', ' )' ), '(', ' ( ' )
                 WHEN col.is_audit_tmsp_col AND col.data_type = 'date' THEN 'current_date'
                 WHEN col.is_audit_tmsp_col AND col.data_type = 'time' THEN 'current_time'
                 WHEN col.is_audit_tmsp_col THEN 'now ()'
+                WHEN col.column_default IS NULL THEN null::text
+                WHEN col.column_default ~ '^nextval' AND args.action IN ( 'insert', 'upsert' ) AND col.column_default ~ '\.'
+                    THEN 'nextval ( ' || quote_literal ( split_part ( col.column_default, '''', 2 ) ) || ' )'
+                WHEN col.column_default ~ '^nextval' AND args.action IN ( 'insert', 'upsert' )
+                    THEN 'nextval ( ' || quote_literal ( col.schema_name || '.' || split_part ( col.column_default, '''', 2 ) ) || ' )'
                 ELSE col.column_default
                 END AS column_default,
+            --CASE
+            --    WHEN col.is_pk AND col.column_name = 'id' AND col.column_default IS NOT NULL AND args.action IN ( 'insert', 'upsert' )
+            --        THEN replace ( replace ( replace ( col.column_default, '::regclass', '' ), ')', ' )' ), '(', ' ( ' )
+            --    WHEN col.is_audit_tmsp_col AND col.data_type = 'date' THEN 'current_date'
+            --    WHEN col.is_audit_tmsp_col AND col.data_type = 'time' THEN 'current_time'
+            --    WHEN col.is_audit_tmsp_col THEN 'now ()'
+            --    ELSE col.column_default
+            --    END AS column_default,
             col.ordinal_position,
             col.is_pk,
             col.is_nk,
