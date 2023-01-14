@@ -72,7 +72,7 @@ BEGIN
             WHERE schema_name = a_object_schema
                 AND object_name = a_object_name ) LOOP
 
-        l_full_view_name := r.view_name ;
+        l_full_view_name := r.view_name[1] ;
 
     END LOOP ;
 
@@ -130,27 +130,23 @@ BEGIN
     -- ASSERTION: the function being wrapped and the view being used by the function
     -- are in the same schema
     FOR r IN (
-        SELECT --schema_name,
-                --object_name,
-                column_name,
-                data_type,
-                'a_' || column_name AS param_name
+        SELECT column_name,
+                util_meta.json_identifier ( column_name ) AS json_alias
             FROM util_meta.columns
             WHERE full_object_name = l_full_view_name
             ORDER BY ordinal_position ) LOOP
 
-        l_column_alias := util_meta.json_identifier ( r.column_name ) ;
-
-        IF l_column_alias = r.column_name THEN
+        IF r.json_alias = r.column_name THEN
             l_columns := array_append ( l_columns, r.column_name ) ;
         ELSE
-            l_columns := array_append ( l_columns, concat_ws ( ' ', r.column_name, 'AS', quote_ident ( l_column_alias ) ) ) ;
+            l_columns := array_append ( l_columns, concat_ws ( ' ', r.column_name, 'AS', quote_ident ( r.json_alias ) ) ) ;
         END IF ;
 
     END LOOP ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
+        l_result,
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
@@ -205,7 +201,7 @@ BEGIN
             a_grantees => a_grantees,
             a_datatypes => l_param_types ) ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
