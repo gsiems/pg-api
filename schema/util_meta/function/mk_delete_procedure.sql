@@ -127,7 +127,7 @@ BEGIN
             a_object_type => l_table_noun,
             a_id_param => l_pk_params[1] ),
         '',
-        util_meta.indent (1) || 'call priv_' || l_proc_name || ' (',
+        util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
         util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
@@ -137,7 +137,7 @@ BEGIN
             a_grantees => a_grantees,
             a_datatypes => l_param_types ) ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

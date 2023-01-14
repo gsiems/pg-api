@@ -344,7 +344,7 @@ l_parent_id_param
             a_owner => a_owner,
             a_datatypes => l_param_types ) ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
