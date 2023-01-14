@@ -26,8 +26,6 @@ Function snippet_function_frontmatter generates the pl/pg-sql code snippet for t
 | a_directions                   | in     | text[]     | The list of the calling parameter directions       |
 | a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
 
-ASSERTION: Functions are not used to update data, therefore functions are stable.
-
 */
 DECLARE
 
@@ -35,8 +33,16 @@ DECLARE
     l_params text [] ;
     l_idx integer ;
     l_aryl integer ;
+    l_is_stable boolean := true ;
 
 BEGIN
+
+    IF a_function_name ~ 'insert'
+        OR a_function_name ~ 'update'
+        OR a_function_name ~ 'upsert'
+        OR a_function_name ~ 'delete' THEN
+        l_is_stable := false ;
+    END IF ;
 
     l_aryl := array_length ( a_param_names, 1 ) ;
 
@@ -70,10 +76,18 @@ BEGIN
             'RETURNS ' || a_return_type ) ;
     END IF ;
 
+    l_return := concat_ws ( util_meta.new_line (),
+        l_return,
+        'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ) );
+
+    IF l_is_stable THEN
+        l_return := concat_ws ( util_meta.new_line (),
+            l_return,
+            'STABLE' ) ;
+    END IF ;
+
     RETURN concat_ws ( util_meta.new_line (),
         l_return,
-        'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ),
-        'STABLE',
         'SECURITY DEFINER',
         'AS $' || '$' ) ;
 
