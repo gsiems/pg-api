@@ -1,5 +1,5 @@
 
-DROP SCHEMA util_meta CASCADE ;
+DROP SCHEMA IF EXISTS util_meta CASCADE ;
 
 SET statement_timeout = 0 ;
 SET client_encoding = 'UTF8' ;
@@ -17,6 +17,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/view/columns.sql
 \i util_meta/view/foreign_keys.sql
 \i util_meta/view/object_grants.sql
+\i util_meta/view/dependencies.sql
 
 -- Functions -------------------------------------------------------------------
 
@@ -73,8 +74,10 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/json_identifier.sql
 
 -- JSON snippet functions
+\i util_meta/function/snippet_json_agg_build_object.sql
+\i util_meta/function/snippet_json_build_object.sql
 
--- "Final" DDL generating functions
+-- "Final" DDL generating functions for "JSON API" objects
 \i util_meta/function/mk_json_view.sql
 \i util_meta/function/mk_json_user_type.sql
 
