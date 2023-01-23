@@ -34,11 +34,6 @@ DECLARE
 
     l_result text ;
 
-    l_calling_params text[] ;
-    l_calling_types text[] ;
-    l_column_alias text ;
-    l_column_comment text ;
-    l_column_name text ;
     l_columns text[] ;
     l_ddl_schema text ;
     l_doc_item text ;
@@ -48,9 +43,7 @@ DECLARE
     l_param_comments text[] ;
     l_param_directions text[] ;
     l_param_names text[] ;
-    l_param_name text ;
     l_param_types text[] ;
-    l_param_type text ;
     l_proc_params text[] ;
 
 BEGIN
