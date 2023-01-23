@@ -50,7 +50,7 @@ BEGIN
     l_full_type_name := concat_ws ( '.', l_ddl_schema, l_type_name ) ;
 
     ----------------------------------------------------------------------------
-    -- Determine the comment for the view
+    -- Determine the comment for the user type
     FOR r IN (
         SELECT schema_name,
                 object_name,
@@ -99,7 +99,7 @@ BEGIN
         array_to_string ( l_comments, util_meta.new_line () ),
         '' ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
