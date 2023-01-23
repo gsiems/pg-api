@@ -107,7 +107,7 @@ BEGIN
             a_comment => l_view_comments ) ,
         '' ) ;
 
-    RETURN l_result ;
+    RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
