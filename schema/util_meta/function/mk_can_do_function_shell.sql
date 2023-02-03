@@ -35,7 +35,7 @@ BEGIN
     l_notes := array_append ( l_notes, 'To help prevent privilege escalation attacks, both the acting user and the connected user need to have sufficient permissions to perform the action' ) ;
 
     FOR r IN (
-        SELECT schema_name
+        SELECT schema_name AS ddl_schema
             FROM util_meta.objects
             WHERE schema_name = a_ddl_schema  ) LOOP
 
@@ -77,7 +77,7 @@ BEGIN
 
         RETURN concat_ws ( util_meta.new_line (),
             util_meta.snippet_function_frontmatter (
-                a_ddl_schema => a_ddl_schema,
+                a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
                 a_language => 'plpgsql',
                 a_return_type => 'boolean',
@@ -111,7 +111,7 @@ BEGIN
             '',
             util_meta.indent (1) || 'RETURN false ;',
             util_meta.snippet_function_backmatter (
-                a_ddl_schema => a_ddl_schema,
+                a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
                 a_language => 'plpgsql',
                 a_comment => null::text,
