@@ -37,7 +37,6 @@ DECLARE
 
     l_local_var_names text[] ;
     l_local_types text[] ;
-    l_log_err_line text ;
     l_param_comments text[] ;
     l_param_directions text[] ;
     l_param_names text[] ;
@@ -58,12 +57,6 @@ BEGIN
     -- Ensure that the specified object is valid
     IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
-    END IF ;
-
-    ----------------------------------------------------------------------------
-    -- Check that util_log schema exists
-    IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-        l_log_err_line := util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ;
     END IF ;
 
     ----------------------------------------------------------------------------
@@ -179,7 +172,6 @@ BEGIN
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_frontmatter (
-            a_object_name => a_object_name,
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an insert on ' || a_object_name,
