@@ -2,7 +2,6 @@ CREATE OR REPLACE FUNCTION util_meta.mk_user_type (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
     a_owner text default null,
     a_grantees text default null )
 RETURNS text
