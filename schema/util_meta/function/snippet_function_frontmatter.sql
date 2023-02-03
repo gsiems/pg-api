@@ -31,7 +31,6 @@ DECLARE
 
     l_return text ;
     l_params text [] ;
-    l_idx integer ;
     l_aryl integer ;
     l_is_stable boolean := true ;
 

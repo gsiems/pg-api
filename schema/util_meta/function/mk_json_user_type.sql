@@ -2,7 +2,6 @@ CREATE OR REPLACE FUNCTION util_meta.mk_json_user_type (
     a_object_schema text default null,
     a_object_name text default null,
     a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
     a_owner text default null,
     a_grantees text default null )
 RETURNS text
@@ -28,7 +27,6 @@ DECLARE
 
     l_result text ;
 
-    l_column_name text ;
     l_columns text[] ;
     l_comments text[] ;
     l_ddl_schema text ;

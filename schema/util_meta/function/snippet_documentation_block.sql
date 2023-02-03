@@ -34,7 +34,6 @@ DECLARE
     l_return text ;
     l_doc_format text := '| %-30s | %-6s | %-10s | %-50s |' ;
     l_doc_lines text[] ;
-    l_idx integer ;
 
 BEGIN
 

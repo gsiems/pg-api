@@ -17,8 +17,6 @@ Function snippet_declare_variables generates the pl/pg-sql code snippet for decl
 */
 DECLARE
 
-    l_return text ;
-    l_idx integer ;
     l_variable_lines text[] ;
 
 BEGIN

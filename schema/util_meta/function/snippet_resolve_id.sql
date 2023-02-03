@@ -22,7 +22,6 @@ Function snippet_resolve_id generates the pl/pg-sql code snippet for calling a r
 DECLARE
 
     l_resolve_id_params text[] ;
-    idx integer ;
 
 BEGIN
 

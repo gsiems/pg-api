@@ -47,7 +47,6 @@ DECLARE
     l_pk_cols text[] ;
     l_result text ;
     l_search_cols text[] ;
-    l_select_cols text[] ;
     l_select text ;
     l_table_noun text ;
     l_view_name text ;

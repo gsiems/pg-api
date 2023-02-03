@@ -34,8 +34,6 @@ DECLARE
     l_proc_params text[] ;
     l_proc_type text ;
     l_result text ;
-    l_table_name text ;
-    l_table_schema text ;
     l_test text ;
     l_view_name text ;
     l_where_cols text[] ;

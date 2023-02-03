@@ -17,7 +17,6 @@ Function snippet_log_params generates the pl/pg-sql code snippet for logging the
 */
 DECLARE
 
-    l_idx integer ;
     l_log_lines text[] ;
 
 BEGIN
