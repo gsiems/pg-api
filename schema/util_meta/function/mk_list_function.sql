@@ -51,29 +51,30 @@ DECLARE
     l_child_column text ;
     l_ddl_schema text ;
     l_doc_item text ;
+    l_exclude_binary_data boolean ;
     l_full_view_name text ;
     l_func_name text ;
-    l_local_var_names text[] ;
-    l_local_types text[] ;
     l_local_parent_param text ;
+    l_local_types text[] ;
+    l_local_var_names text[] ;
     l_param_comments text[] ;
     l_param_directions text[] ;
     l_param_names text[] ;
     l_param_types text[] ;
+    l_parent_column text ;
+    l_parent_data_type text ;
     l_parent_noun text ;
     l_parent_param text ;
     l_parent_schema text ;
-    l_parent_column text ;
     l_parent_table text ;
     l_resolve_id_func text ;
     l_resolve_id_params text[] ;
     l_result text ;
+    l_select_cols text[] ;
+    l_select text ;
     l_table_noun text ;
     l_view_name text ;
     l_where_clause text ;
-    l_exclude_binary_data boolean ;
-    l_select_cols text[] ;
-    l_select text ;
 
 BEGIN
 
@@ -199,6 +200,7 @@ BEGIN
         l_param_directions := array_append ( l_param_directions, 'in' ) ;
         l_param_types := array_append ( l_param_types, r.data_type ) ;
         l_param_comments := array_append ( l_param_comments, r.comments ) ;
+        l_parent_data_type := r.data_type ;
 
         l_resolve_id_params := array_append ( l_resolve_id_params, r.param_name ) ;
 
