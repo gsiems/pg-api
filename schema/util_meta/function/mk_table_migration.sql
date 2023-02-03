@@ -25,6 +25,7 @@ DECLARE
     l_pk_cols text[] ;
     l_result text ;
     l_seq_name text ;
+    l_seq_stmt text ;
     l_set_sequences text[] ;
 
 BEGIN
@@ -50,7 +51,7 @@ BEGIN
         SELECT DISTINCT 'ALTER TABLE ' || full_table_name || ' DROP CONSTRAINT ' || constraint_name || ' ;' AS cmd
             FROM util_meta.foreign_keys
             WHERE ref_schema_name = a_object_schema
-                AND ref_table = a_object_name ) LOOP
+                AND ref_table_name = a_object_name ) LOOP
 
             l_result := concat_ws ( l_new_line,
                 l_result,
@@ -104,7 +105,7 @@ BEGIN
 
             l_seq_name := split_part ( r.column_default, '''', 2 ) ;
 
-            l_set_sequences := array_append ( l_set_sequences, concat_ws ( l_new_line,
+            l_seq_stmt := concat_ws ( l_new_line,
                 'WITH cv AS (',
                 util_meta.indent (1) || 'SELECT 1 AS rn,',
                 util_meta.indent (3) || 'last_value',
@@ -112,14 +113,16 @@ BEGIN
                 '),',
                 'mv AS (',
                 util_meta.indent (1) || 'SELECT 1 AS rn,',
-                util_meta.indent (3) || 'max ( ' || || r.column_name || ' ) AS max_value',
+                util_meta.indent (3) || 'max ( ' || r.column_name || ' ) AS max_value',
                 util_meta.indent (2) || 'FROM ' || l_full_table_name,
                 ')',
                 'SELECT pg_catalog.setval ( ' || quote_literal ( l_seq_name ) || ', mv.max_value, false )',
                 util_meta.indent (1) || 'FROM mv',
                 util_meta.indent (1) || 'JOIN cv',
                 util_meta.indent (2) || 'ON ( cv.rn = mv.rn )',
-                util_meta.indent (1) || 'WHERE mv.max_value > cv.last_value ;' ) ) ;
+                util_meta.indent (1) || 'WHERE mv.max_value > cv.last_value ;' ) ;
+
+            l_set_sequences := array_append ( l_set_sequences, l_seq_stmt ) ;
 
         END IF ;
 
@@ -201,7 +204,7 @@ BEGIN
                 ORDER BY privilege_type,
                     grantee
         )
-        SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_name, 'TO', grantee, with_grant ) AS cmd
+        SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_name, 'TO', grantee, with_grant, ';' ) AS cmd
             FROM base ) LOOP
 
 
@@ -213,7 +216,7 @@ BEGIN
         l_result := concat_ws ( l_new_line,
             l_result,
             '',
-            array_to_string ( l_result,  l_new_line ) ) ;
+            array_to_string ( l_grants,  l_new_line ) ) ;
 
     END IF ;
 
