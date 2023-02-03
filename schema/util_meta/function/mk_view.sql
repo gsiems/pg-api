@@ -94,13 +94,15 @@ BEGIN
     END LOOP ;
 
     ----------------------------------------------------------------------------
-    IF a_cast_booleans_as IS NULL THEN
+    FOR r IN (
+        SELECT boolean_type,
+                true_val,
+                false_val
+            FROM util_meta.boolean_casting ( a_cast_booleans_as ) ) LOOP
 
-        l_boolean_type := 'boolean' ;
-
-    ELSE
-        l_true_val := trim ( split_part ( a_cast_booleans_as, ',', 1 ) ) ;
-        l_false_val := trim ( split_part ( a_cast_booleans_as, ',', 2 ) ) ;
+        l_boolean_type := r.boolean_type ;
+        l_true_val := r.true_val ;
+        l_false_val := r.false_val ;
 
         IF coalesce ( l_true_val, '' ) = ''
             OR coalesce ( l_false_val, '' ) = '' THEN
@@ -109,15 +111,7 @@ BEGIN
 
         END IF ;
 
-        IF a_cast_booleans_as = '1,0' THEN
-            l_boolean_type := 'integer' ;
-        ELSE
-            l_boolean_type := 'text' ;
-            l_true_val := ( quote_literal ( l_true_val ) )::text || '::text' ;
-            l_false_val := ( quote_literal ( l_false_val ) )::text || '::text' ;
-        END IF ;
-
-    END IF ;
+    END LOOP ;
 
     ----------------------------------------------------------------------------
     FOR col IN (
