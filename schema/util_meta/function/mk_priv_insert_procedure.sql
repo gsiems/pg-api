@@ -36,8 +36,7 @@ DECLARE
 
     l_assertions text[] ;
     l_ddl_schema text ;
-    l_dt_fk_count integer ;
-    l_false_chk text ;
+    --l_dt_fk_count integer ;
     l_false_val text ;
     l_insert_cols text[] ;
     l_insert_vals text[] ;
@@ -49,8 +48,8 @@ DECLARE
     l_param_directions text[] ;
     l_param_names text[] ;
     l_param_types text[] ;
-    l_parent_id_param text ;
-    l_parent_noun text ;
+    --l_parent_id_param text ;
+    --l_parent_noun text ;
     l_pk_cols text[] ;
     l_pk_params text[] ;
     l_pk_param_directions text[] ;
@@ -58,7 +57,6 @@ DECLARE
     l_result text ;
     l_returning_into_id text ;
     l_table_noun text ;
-    l_true_chk text ;
     l_true_val text ;
 
 BEGIN
@@ -86,9 +84,14 @@ BEGIN
     l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
 
     ----------------------------------------------------------------------------
-    IF a_cast_booleans_as IS NOT NULL THEN
-        l_true_val := trim ( split_part ( a_cast_booleans_as, ',', 1 ) ) ;
-        l_false_val := trim ( split_part ( a_cast_booleans_as, ',', 2 ) ) ;
+    FOR r IN (
+        SELECT boolean_type,
+                true_val,
+                false_val
+            FROM util_meta.boolean_casting ( a_cast_booleans_as ) ) LOOP
+
+        l_true_val := r.true_val ;
+        l_false_val := r.false_val ;
 
         IF coalesce ( l_true_val, '' ) = ''
             OR coalesce ( l_false_val, '' ) = '' THEN
@@ -97,7 +100,7 @@ BEGIN
 
         END IF ;
 
-    END IF ;
+    END LOOP ;
 
     ----------------------------------------------------------------------------
     -- ASSERTION: There will be a dt_user table of some sort and this table
@@ -175,21 +178,10 @@ BEGIN
 
             IF r.column_data_type = 'boolean' THEN
 
-                IF r.param_data_type = 'boolean' THEN
-                    l_true_chk := 'true' ;
-                    l_false_chk := 'false' ;
-                ELSIF r.param_data_type = 'text' THEN
-                    l_true_chk := quote_literal ( l_true_val ) ;
-                    l_false_chk := quote_literal ( l_false_val ) ;
-                ELSE
-                    l_true_chk := l_true_val ;
-                    l_false_chk := l_false_val ;
-                END IF ;
-
                 IF r.column_default = 'false' THEN
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_false_chk || ' ) = ' || l_true_chk || ' ;' ) ;
+                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_false_val || ' ) = ' || l_true_val || ' ;' ) ;
                 ELSE
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_true_chk || ' ) = ' || l_true_chk || ' ;' ) ;
+                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_true_val || ' ) = ' || l_true_val || ' ;' ) ;
                 END IF ;
 
             ELSE
@@ -253,7 +245,6 @@ BEGIN
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_frontmatter (
-            a_object_name => a_object_name,
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an insert on ' || a_object_name,
@@ -272,6 +263,7 @@ BEGIN
     ----------------------------------------------------------------------------
     -- Determine if there is a single FK relationship to a dt_ table and,
     -- if so, then determine the parent type and parameter name
+    /*
     l_dt_fk_count := 0 ;
 
      FOR r IN (
@@ -305,7 +297,7 @@ BEGIN
         END LOOP ;
 
     END IF ;
-
+    */
 
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
