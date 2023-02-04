@@ -38,7 +38,6 @@ DECLARE
     l_dc text ;
     l_ddl_schema text ;
     l_distinct_cols text[] ;
-    l_false_chk text ;
     l_false_val text ;
     l_local_checks text[] ;
     l_local_var_names text[] ;
@@ -54,7 +53,6 @@ DECLARE
     l_result text ;
     l_set_cols text[] ;
     l_table_noun text ;
-    l_true_chk text ;
     l_true_val text ;
     l_value_param text ;
     l_where_cols text[] ;
@@ -84,9 +82,14 @@ BEGIN
     l_local_types := array_append ( l_local_types, 'integer' ) ;
 
     ----------------------------------------------------------------------------
-    IF a_cast_booleans_as IS NOT NULL THEN
-        l_true_val := trim ( split_part ( a_cast_booleans_as, ',', 1 ) ) ;
-        l_false_val := trim ( split_part ( a_cast_booleans_as, ',', 2 ) ) ;
+    FOR r IN (
+        SELECT boolean_type,
+                true_val,
+                false_val
+            FROM util_meta.boolean_casting ( a_cast_booleans_as ) ) LOOP
+
+        l_true_val := r.true_val ;
+        l_false_val := r.false_val ;
 
         IF coalesce ( l_true_val, '' ) = ''
             OR coalesce ( l_false_val, '' ) = '' THEN
@@ -95,7 +98,7 @@ BEGIN
 
         END IF ;
 
-    END IF ;
+    END LOOP ;
 
     ----------------------------------------------------------------------------
     -- ASSERTION: There will be a dt_user table of some sort and this table
@@ -172,21 +175,10 @@ BEGIN
 
             IF r.column_data_type = 'boolean' THEN
 
-                IF r.param_data_type = 'boolean' THEN
-                    l_true_chk := 'true' ;
-                    l_false_chk := 'false' ;
-                ELSIF r.param_data_type = 'text' THEN
-                    l_true_chk := quote_literal ( l_true_val ) ;
-                    l_false_chk := quote_literal ( l_false_val ) ;
-                ELSE
-                    l_true_chk := l_true_val ;
-                    l_false_chk := l_false_val ;
-                END IF ;
-
                 IF r.column_default = 'false' THEN
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_false_chk || ' ) = ' || l_true_chk || ' ;' ) ;
+                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_false_val || ' ) = ' || l_true_val || ' ;' ) ;
                 ELSE
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_true_chk || ' ) = ' || l_true_chk || ' ;' ) ;
+                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_true_val || ' ) = ' || l_true_val || ' ;' ) ;
                 END IF ;
 
             ELSE
@@ -255,7 +247,6 @@ BEGIN
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_frontmatter (
-            a_object_name => a_object_name,
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an update on ' || a_object_name,
