@@ -1,5 +1,4 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_procedure_frontmatter (
-    a_object_name text default null,
     a_ddl_schema text default null,
     a_procedure_name text default null,
     a_procedure_purpose text default null,
@@ -21,7 +20,6 @@ Function snippet_procedure_frontmatter generates the pl/pg-sql code snippet for 
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
-| a_object_name                  | in     | text       | The (name of the) table to create the procedure for |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the procedure in |
 | a_procedure_name               | in     | text       | The (name of the) procedure to create              |
 | a_procedure_purpose            | in     | text       | The (brief) description of the purpose of the procedure |
@@ -40,7 +38,6 @@ DECLARE
 
     l_return text ;
     l_params text[] ;
-    l_idx integer ;
     l_param_count integer ;
 
 BEGIN
