@@ -143,7 +143,7 @@ Management System (SCM) used for the project directory.
     * It SHOULD be possible to automate the performance of the database level
     testing.
 
-    * The RECOMMENDED extension to use for testing is [pgTap](https://pgtap.org/)
+    * The RECOMMENDED extensions to use for testing are [pgTap](https://pgtap.org/) and [plpgsql_check](https://pgxn.org/dist/plpgsql_check/)
 
     * If database level testing is to be performed then:
 
@@ -361,7 +361,7 @@ they are or what they do; strive to avoid ambiguity,
 them for future reference,
 
 * conscious: think about, and understand, what you are doing; avoid engaging in
-["cargo-cult"] (https://en.wikipedia.org/wiki/Cargo_cult_programming)
+["cargo-cult"](https://en.wikipedia.org/wiki/Cargo_cult_programming)
 development, management, etc., and
 
 * compassionate: try to be considerate to those who will end up using and/or
