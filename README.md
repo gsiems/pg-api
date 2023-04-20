@@ -334,7 +334,7 @@ For human relationships these as:
 
 * clean: no lies, be honest,
 
-* clear: try to be clear in you communications; if you are unsure about
+* clear: try to be clear in your communications; if you are unsure about
 something then it is okay to ask for clarification; do not be angered if
 clarification is requested,
 
