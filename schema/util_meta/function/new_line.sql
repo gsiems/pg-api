@@ -6,20 +6,14 @@ STABLE
 SECURITY DEFINER
 AS $$
 
-/*
     WITH x AS (
-        SELECT chr ( 10 ) AS nl
+        SELECT E'\n' AS new_line
     )
     SELECT CASE
-                WHEN a_count BETWEEN 1 AND 10 THEN repeat ( nl, a_count )
-                ELSE nl
-                END AS new_line
+                WHEN a_count IS NULL THEN new_line
+                WHEN a_count BETWEEN 1 AND 10 THEN repeat ( new_line, a_count )
+                ELSE new_line
+                END AS new_lines
         FROM x ;
-*/
-
-SELECT CASE
-            WHEN a_count BETWEEN 1 AND 10 THEN repeat ( E'\n', a_count )
-            ELSE E'\n'
-            END ;
 
 $$ ;
