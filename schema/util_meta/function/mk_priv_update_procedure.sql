@@ -306,7 +306,7 @@ l_parent_id_param
         '',
         util_meta.indent (1) || 'UPDATE ' || a_object_schema || '.' || a_object_name || ' o',
         util_meta.indent (2) || 'SET ' || array_to_string ( l_set_cols, ',' || util_meta.new_line () || util_meta.indent (3) ) ,
-        util_meta.indent (2) || 'WHERE ' || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent (3) || 'AND' ) ) ;
+        util_meta.indent (2) || 'WHERE ' || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent (3) || 'AND ' ) ) ;
 
     IF array_length ( l_distinct_cols, 1 ) > 0 THEN
         l_dc := ' ( ' || array_to_string ( l_distinct_cols, util_meta.new_line () || util_meta.indent ( 4 ) || 'OR ' ) || ' )';
