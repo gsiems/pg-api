@@ -182,11 +182,11 @@ BEGIN
             l_select,
             util_meta.indent (2) || ') LOOP',
             util_meta.snippet_get_permissions (
+                a_indents => 1,
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_table_noun,
                 a_action => 'select',
-                a_id_param => 'r.' || l_pk_cols[1],
-                a_base_indent => 1 ),
+                a_id_param => 'r.' || l_pk_cols[1] ),
             '',
             util_meta.indent (2) || 'IF l_has_permission THEN',
             util_meta.indent (3) || 'RETURN NEXT r ;',
