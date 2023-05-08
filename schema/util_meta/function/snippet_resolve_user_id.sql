@@ -13,10 +13,10 @@ Function snippet_resolve_user_id    generates the pl/pg-sql code snippet for log
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
-| a_indents                      | in     | integer    | The number of indents to add to the code snippet (default 1) |
+| a_indents                      | in     | integer    | The number of indentations to prepend to each line of the code snippet (default 1) |
 | a_user_id_var                  | in     | text       | The name of the user ID variable to populate (default l_acting_user_id) |
 | a_user_id_param                | in     | text       | The parameter to check the user Id for (default a_user) |
-| a_check_result                 | in     | boolean    | Indicates if there should be a cehck of the return value |
+| a_check_result                 | in     | boolean    | Indicates if there should be a check of the return value |
 
 */
 DECLARE
@@ -32,6 +32,7 @@ DECLARE
 BEGIN
 
     l_indents := coalesce ( a_indents, 1 ) ;
+
     l_user_id_var :=  coalesce ( a_user_id_var, 'l_acting_user_id' ) ;
     l_user_id_param := coalesce ( a_user_id_param, 'a_user' ) ;
 
