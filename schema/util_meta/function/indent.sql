@@ -10,6 +10,7 @@ AS $$
         SELECT '    ' AS spaces
     )
     SELECT CASE
+                WHEN a_count IS NULL THEN spaces
                 WHEN a_count BETWEEN 1 AND 10 THEN repeat ( spaces, a_count )
                 ELSE spaces
                 END AS indent
