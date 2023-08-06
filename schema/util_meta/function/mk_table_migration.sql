@@ -20,6 +20,7 @@ DECLARE
 
     l_columns text[] ;
     l_full_table_name text ;
+    l_full_seq_name text ;
     l_grants text[] ;
     l_new_line text ;
     l_pk_cols text[] ;
@@ -58,6 +59,51 @@ BEGIN
                 r.cmd ) ;
 
     END LOOP ;
+
+    -- TODO: Consider using util_meta.dependencies to generate a "drop and re-create" dependent objects block
+    -- one problem being that functions/procedures don't appear in the pg_catalog.pg_rewrite table/view
+    --
+/*
+
+
+
+
+WITH RECURSIVE toc AS (
+    SELECT base.object_oid,
+            '{}'::integer[] AS deps,
+            base.dep_object_oid,
+            0 AS tree_depth,
+            ARRAY [ dense_rank () OVER (
+                ORDER BY base.name ) ] AS outln,
+            ARRAY[base.object_oid] AS id_path,
+            ARRAY[base.dep_object_name] AS name_path
+        FROM util_meta.dependencies base
+        WHERE base.schema_name = 'bio_data'
+            AND base.object_name = 'dt_station'
+            AND base.object_type = 'table'
+    UNION ALL
+    SELECT base.object_oid,
+            q.deps || base.dep_object_oid,
+            base.dep_object_oid,
+            ( q.tree_depth + 1 ) AS tree_depth,
+            ( q.outln || dense_rank () OVER (
+                PARTITION BY base.dep_object_oid
+                ORDER BY base.name ) ) AS outln,
+            q.id_path || base.object_oid,
+            q.name_path || base.dep_object_name
+        FROM util_meta.dependencies base
+        JOIN toc q
+            ON ( base.dep_object_oid = q.object_oid
+                AND NOT base.object_oid = ANY ( q.deps ) ) -- avoid cyclic references
+)
+select * from toc ;
+
+
+
+
+*/
+
+
 
     ----------------------------------------------------------------------------
     -- Ensure that there is a backup schema to move the existing table to
@@ -104,19 +150,26 @@ BEGIN
         IF r.column_default ~ '^nextval' THEN
 
             l_seq_name := split_part ( r.column_default, '''', 2 ) ;
+            -- In some situations the sequence name is already fully qualified, in other situations it is not...
+            -- Ensure that the sequence name is fully qualified.
+            IF l_seq_name like a_object_schema || '.%' THEN
+                l_full_seq_name := l_seq_name ;
+            ELSE
+                l_full_seq_name := a_object_schema || '.' || l_seq_name ;
+            END IF ;
 
             l_seq_stmt := concat_ws ( l_new_line,
                 'WITH cv AS (',
                 util_meta.indent (1) || 'SELECT 1 AS rn,',
                 util_meta.indent (3) || 'last_value',
-                util_meta.indent (2) || 'FROM ' || l_seq_name,
+                util_meta.indent (2) || 'FROM ' || l_full_seq_name,
                 '),',
                 'mv AS (',
                 util_meta.indent (1) || 'SELECT 1 AS rn,',
                 util_meta.indent (3) || 'max ( ' || r.column_name || ' ) AS max_value',
                 util_meta.indent (2) || 'FROM ' || l_full_table_name,
                 ')',
-                'SELECT pg_catalog.setval ( ' || quote_literal ( l_seq_name ) || ', mv.max_value, false )',
+                'SELECT pg_catalog.setval ( ' || quote_literal ( l_full_seq_name ) || ', mv.max_value, true )',
                 util_meta.indent (1) || 'FROM mv',
                 util_meta.indent (1) || 'JOIN cv',
                 util_meta.indent (2) || 'ON ( cv.rn = mv.rn )',
@@ -139,7 +192,7 @@ BEGIN
         util_meta.indent (3) || array_to_string ( l_columns, ',' || l_new_line || util_meta.indent (3) ) || ' )',
         util_meta.indent (1) || 'SELECT ' || array_to_string ( l_columns, ',' || l_new_line || util_meta.indent (3) ),
         util_meta.indent (2) || 'FROM bak_' || a_object_schema || '.' || a_object_name,
-        util_meta.indent (2) || 'ORDER BY ' || array_to_string ( l_pk_cols, ',' || l_new_line || util_meta.indent (3) ) || ' ;' ) ;
+        util_meta.indent (2) || concat_ws ( ' ', 'ORDER BY ' || array_to_string ( l_pk_cols, ',' || l_new_line || util_meta.indent (3) ), ';' ) ) ;
 
     ----------------------------------------------------------------------------
     -- VACUUM ANALYZE
