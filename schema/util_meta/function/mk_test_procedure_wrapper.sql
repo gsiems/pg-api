@@ -111,7 +111,7 @@ BEGIN
 
     END LOOP ;
 
-    IF l_proc_type IN ( 'update', 'upsert' ) THEN
+    IF l_proc_type IN ( 'insert', 'update', 'upsert' ) THEN
         l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
         l_local_var_types := array_append ( l_local_var_types, 'record' ) ;
     END IF ;
