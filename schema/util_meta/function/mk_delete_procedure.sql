@@ -34,7 +34,10 @@ DECLARE
     l_param_directions text[] ;
     l_param_names text[] ;
     l_param_types text[] ;
+    l_chk text ;
+    l_chk_where text[] ;
     l_pk_params text[] ;
+    --l_pk_cols text[] ;
     l_proc_args text[] ;
     l_proc_name text ;
     l_result text ;
@@ -53,6 +56,8 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'delete_' || l_table_noun ;
 
+    l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
+    l_local_types := array_append ( l_local_types, 'record' ) ;
     l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
     l_local_types := array_append ( l_local_types, 'boolean' ) ;
 
@@ -80,7 +85,11 @@ BEGIN
             ORDER BY ordinal_position ) LOOP
 
         IF r.is_pk THEN
+            l_chk_where := array_append ( l_chk_where, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
+            --l_pk_cols := array_append ( l_pk_cols, r.column_name ) ;
+            --l_local_var_names := array_append ( l_local_var_names, 'l_' || r.column_name ) ;
+            --l_local_types := array_append ( l_local_types, r.param_data_type ) ;
         END IF ;
 
         l_proc_args := array_append ( l_proc_args, concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
@@ -98,6 +107,38 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
+    -- Create the permissions check for the delete.
+    -- ASSERT: the table being deleted from has a single, integer, primary key column
+    l_chk := concat_ws ( util_meta.new_line (),
+        util_meta.indent (1) || 'FOR r IN (',
+        util_meta.indent (2) || 'SELECT ' || quote_literal ( l_pk_params[1] ) || ' AS param',
+        util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name,
+        util_meta.indent (3) || 'WHERE ' || array_to_string ( l_chk_where, util_meta.new_line () || util_meta.indent (4) || 'AND ' ) || ' ) LOOP',
+        '',
+        util_meta.snippet_get_permissions (
+            a_indents => 2,
+            a_action => 'delete',
+            a_ddl_schema => a_ddl_schema,
+            a_object_type => l_table_noun,
+            a_id_param => 'r.param' ),
+        '',
+        util_meta.indent (1) || 'END LOOP ;',
+        '',
+        util_meta.indent (1) || 'IF NOT l_has_permission THEN',
+        util_meta.indent (2) || 'a_err := ''Insufficient privileges or the ''' || l_table_noun || ' does not exist or has already been deleted'' ;' ) ;
+
+        IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+            l_chk := concat_ws ( util_meta.new_line (),
+                l_chk,
+                util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ) ;
+        END IF ;
+
+        l_chk := concat_ws ( util_meta.new_line (),
+            l_chk,
+            util_meta.indent (2) || 'RETURN ;',
+            util_meta.indent (1) || 'END IF ;' ) ;
+
+    ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
         util_meta.snippet_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -113,11 +154,8 @@ BEGIN
         util_meta.snippet_log_params (
             a_param_names => l_param_names,
             a_datatypes => l_param_types ),
-        util_meta.snippet_permissions_check (
-            a_action => 'delete',
-            a_ddl_schema => l_ddl_schema,
-            a_object_type => l_table_noun,
-            a_id_param => l_pk_params[1] ),
+        '',
+        l_chk,
         '',
         util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
         util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
