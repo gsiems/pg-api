@@ -67,4 +67,4 @@ COMMENT ON COLUMN util_meta.dependencies.dep_schema_name IS 'The name of the dep
 COMMENT ON COLUMN util_meta.dependencies.dep_object_oid IS 'The OID of the dependent object.' ;
 COMMENT ON COLUMN util_meta.dependencies.dep_object_name IS 'The name of the dependent object.' ;
 COMMENT ON COLUMN util_meta.dependencies.dep_owner_name IS 'The name of the owner of the dependent object.' ;
-COMMENT ON COLUMN util_meta.dependencies.object_type IS 'The type of the dependent object.' ;
+COMMENT ON COLUMN util_meta.dependencies.dep_object_type IS 'The type of the dependent object.' ;
