@@ -174,7 +174,7 @@ BEGIN
         IF r.local_param_name IS NOT NULL AND r.local_param_name <> 'l_acting_user_id' THEN
 
             l_local_var_names := array_append ( l_local_var_names, r.local_param_name ) ;
-            l_local_types := array_append ( l_local_types, r.param_data_type ) ;
+            l_local_types := array_append ( l_local_types, r.column_data_type ) ;
 
             IF r.column_data_type = 'boolean' THEN
 
