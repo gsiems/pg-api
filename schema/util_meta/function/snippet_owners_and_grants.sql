@@ -30,9 +30,15 @@ DECLARE
     l_alter_sig text ;
     l_grant_sig text ;
     l_priv text ;
+    l_owner text ;
 
 BEGIN
 
+    ----------------------------------------------------------------------------
+    -- check parameters/defaults
+    l_owner = util_meta.resolve_parameter ( 'a_owner'::text, a_owner ) ;
+
+    ----------------------------------------------------------------------------
     l_alter_sig := concat_ws ( ' ', upper ( a_object_type ), a_ddl_schema || '.' || a_object_name ) ;
 
     IF upper ( a_object_type ) IN ( 'FUNCTION', 'PROCEDURE' ) THEN
@@ -53,12 +59,12 @@ BEGIN
 
     END IF ;
 
-    IF a_owner IS NOT NULL THEN
+    IF l_owner IS NOT NULL THEN
 
         l_return := concat_ws ( util_meta.new_line (),
             l_return,
             '',
-            concat_ws ( ' ', 'ALTER', l_alter_sig, 'OWNER TO', a_owner, ';' ) ) ;
+            concat_ws ( ' ', 'ALTER', l_alter_sig, 'OWNER TO', l_owner, ';' ) ) ;
 
     END IF ;
 
