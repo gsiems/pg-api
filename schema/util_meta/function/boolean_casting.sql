@@ -17,21 +17,25 @@ Function boolean_casting
 
 */
 
-    WITH base AS (
-        SELECT a_cast_booleans_as AS cast_booleans_as,
+    WITH args AS (
+        SELECT util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, a_cast_booleans_as ) AS cast_booleans_as
+    ),
+    base AS (
+        SELECT args.cast_booleans_as AS cast_booleans_as,
                 CASE
-                    WHEN a_cast_booleans_as IS NULL THEN 'boolean'
-                    WHEN a_cast_booleans_as = '1,0' THEN 'integer'
+                    WHEN args.cast_booleans_as IS NULL THEN 'boolean'
+                    WHEN args.cast_booleans_as = '1,0' THEN 'integer'
                     ELSE 'text'
                     END AS boolean_type,
                 CASE
-                    WHEN a_cast_booleans_as IS NULL THEN 'true'::text
-                    ELSE trim ( split_part ( a_cast_booleans_as, ',', 1 ) )
+                    WHEN args.cast_booleans_as IS NULL THEN 'true'::text
+                    ELSE trim ( split_part ( args.cast_booleans_as, ',', 1 ) )
                     END AS true_val,
                 CASE
-                    WHEN a_cast_booleans_as IS NULL THEN 'false'::text
-                    ELSE trim ( split_part ( a_cast_booleans_as, ',', 2 ) )
+                    WHEN args.cast_booleans_as IS NULL THEN 'false'::text
+                    ELSE trim ( split_part ( args.cast_booleans_as, ',', 2 ) )
                     END AS false_val
+            FROM args
     )
     SELECT boolean_type,
             CASE
