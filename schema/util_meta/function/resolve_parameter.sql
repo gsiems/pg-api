@@ -41,7 +41,7 @@ BEGIN
 
     */
 
-    FOR r IN IN (
+    FOR r IN (
         SELECT dp.allowed_values,
                 coalesce ( cd.config_value, dp.default_value ) AS default_value
             FROM util_meta.st_default_param dp
