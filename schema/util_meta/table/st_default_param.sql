@@ -26,7 +26,7 @@ WITH n AS (
                 ( 3, 'a_cast_booleans_as', 'The csv pair (true,false) of values to cast booleans as (if booleans are going to be cast to non-boolean values).' ),
                 ( 4, 'a_insert_audit_columns', 'The csv list of insert audit columns (user created, timestamp created, etc.) that the database (client) user doesn''t directly edit.' ),
                 ( 5, 'a_update_audit_columns', 'The csv list of update audit columns (user updated, timestamp last updated, etc.) that the database (client) user doesn''t directly edit.' )
-            ) AS dat (id, name, description )
+            ) AS dat ( id, name, description )
 ),
 missing AS (
     SELECT n.id,
