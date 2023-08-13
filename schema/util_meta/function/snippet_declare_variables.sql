@@ -11,8 +11,8 @@ Function snippet_declare_variables generates the pl/pg-sql code snippet for decl
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
-| a_var_names               | in     | text[]     | The list of variable names                         |
-| a_var_datatypes           | in     | text[]     | The list of the datatypes for the variables        |
+| a_var_names                    | in     | text[]     | The list of variable names                         |
+| a_var_datatypes                | in     | text[]     | The list of the datatypes for the variables        |
 
 */
 DECLARE
