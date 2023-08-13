@@ -63,17 +63,25 @@ WITH args AS (
             a_object_schema AS table_schema,
             a_object_name AS table_name,
             a_ddl_schema AS target_schema,
-            CASE
-                WHEN a_cast_booleans_as IS NULL THEN 'boolean'
-                WHEN a_cast_booleans_as = '1,0' THEN 'integer'
+            util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, a_cast_booleans_as ) AS cast_booleans_as,
+            util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ) AS insert_audit_columns,
+            util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) AS update_audit_columns
+),
+bools AS (
+    SELECT CASE
+                WHEN args.cast_booleans_as IS NULL THEN 'boolean'
+                WHEN util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, args.cast_booleans_as ) = '1,0' THEN 'integer'
                 ELSE 'text'
                 END AS boolean_type
+        FROM args
 ),
 ins_audit_cols AS (
-    SELECT trim ( regexp_split_to_table ( a_insert_audit_columns, ',' ) ) AS column_name
+    SELECT trim ( regexp_split_to_table ( args.insert_audit_columns, ',' ) ) AS column_name
+        FROM args
 ),
 upd_audit_cols AS (
-    SELECT trim ( regexp_split_to_table ( a_update_audit_columns, ',' ) ) AS column_name
+    SELECT trim ( regexp_split_to_table ( args.update_audit_columns, ',' ) ) AS column_name
+        FROM args
 ),
 audit_cols AS (
     SELECT column_name,
@@ -169,7 +177,7 @@ base AS (
                 END AS param_direction,
             CASE
                 WHEN col.is_audit_col THEN null::text
-                WHEN col.data_type = 'boolean' THEN coalesce ( args.boolean_type, 'boolean' )
+                WHEN col.data_type = 'boolean' THEN coalesce ( bools.boolean_type, 'boolean' )
                 ELSE col.data_type
                 END AS param_data_type,
             CASE
@@ -181,7 +189,7 @@ base AS (
             CASE
                 WHEN col.is_audit_user_col THEN 'l_acting_user_id'
                 WHEN col.data_type = 'boolean' AND col.column_default IS NOT NULL THEN 'l_' || col.column_name
-                WHEN col.data_type = 'boolean' AND args.boolean_type <> col.data_type THEN 'l_' || col.column_name
+                WHEN col.data_type = 'boolean' AND bools.boolean_type <> col.data_type THEN 'l_' || col.column_name
                 WHEN ref_data.ref_column_names IS NOT NULL THEN 'l_' || col.column_name
                 END AS local_param_name,
             CASE
@@ -193,6 +201,7 @@ base AS (
             trim ( col.comments ) AS comments
         FROM cbase col
         CROSS JOIN args
+        CROSS JOIN bools
         LEFT JOIN util_meta.foreign_keys ref_data
             ON ( ref_data.schema_name = col.schema_name
                 AND ref_data.table_name = col.object_name
