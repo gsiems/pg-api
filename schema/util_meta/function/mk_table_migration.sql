@@ -6,12 +6,25 @@ LANGUAGE plpgsql stable
 SECURITY DEFINER
 AS $$
 /**
-Function mk_table_migration generates a script for migrating the structure of a table
+Function mk_table_migration generates a psql script for migrating the structure of a table
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table to migrate |
 | a_object_name                  | in     | text       | The (name of the) table to create a migration script for |
+
+The generated script should:
+
+ 1. Drop any foreign keys to the table being migrated.
+ 2. Drop any indices and constraints on the table being migrated.
+ 3. Move the table to a backup schema.
+ 4. Call the DDL file for the table to re-create the table.
+ 5. Add a SQL statement for inserting the old table data into the new table.
+ 6. Reset any sequences associated with the table.
+ 7. Recreate any foreign keys to the table being migrated.
+ 8. Restore any grants on the table.
+ 9. Rebuild any dependent views, functions or procedures.
+ 10. TODO: Provide a back-out script for restoring the old table.
 
 */
 DECLARE
@@ -24,6 +37,7 @@ DECLARE
     l_grants text[] ;
     l_new_line text ;
     l_pk_cols text[] ;
+    l_rebuild_dependents text[] ;
     l_result text ;
     l_seq_name text ;
     l_seq_stmt text ;
@@ -60,50 +74,73 @@ BEGIN
 
     END LOOP ;
 
-    -- TODO: Consider using util_meta.dependencies to generate a "drop and re-create" dependent objects block
-    -- one problem being that functions/procedures don't appear in the pg_catalog.pg_rewrite table/view
-    --
-/*
+    -- Use util_meta.dependencies to generate a "drop and re-create" dependent objects block
+    -- NB that one potential problem is that functions/procedures don't generally appear in pg_catalog.pg_rewrite
+    FOR r IN (
+        WITH RECURSIVE toc AS (
+            SELECT base.object_oid,
+                    '{}'::oid[] AS deps,
+                    base.dep_object_oid,
+                    0 AS tree_depth,
+                    ARRAY [ dense_rank () OVER (
+                        ORDER BY base.schema_name, base.object_name ) ] AS outln,
+                    ARRAY[base.object_oid] AS id_path,
+                    ARRAY[base.dep_object_name] AS name_path
+                FROM util_meta.dependencies base
+                WHERE base.schema_name = a_object_schema
+                    AND base.object_name = a_object_name
+                    AND base.object_type = 'table'
+            UNION ALL
+            SELECT base.object_oid,
+                    q.deps || base.dep_object_oid,
+                    base.dep_object_oid,
+                    ( q.tree_depth + 1 ) AS tree_depth,
+                    ( q.outln || dense_rank () OVER (
+                        PARTITION BY base.dep_object_oid
+                        ORDER BY base.schema_name, base.object_name ) ) AS outln,
+                    q.id_path || base.object_oid,
+                    q.name_path || base.dep_object_name
+                FROM util_meta.dependencies base
+                JOIN toc q
+                    ON ( base.dep_object_oid = q.object_oid
+                        AND NOT base.object_oid = ANY ( q.deps ) ) -- avoid cyclic references
+        ),
+        objs AS (
+            SELECT toc.tree_depth,
+                    toc.outln,
+                    obj.schema_name,
+                    obj.object_name,
+                    obj.full_object_name,
+                    obj.object_type,
+                    obj.directory_name,
+                    obj.file_name,
+                    obj.calling_arguments
+                FROM toc
+                JOIN util_meta.objects obj
+                    ON ( obj.object_oid = toc.dep_object_oid )
+                ORDER BY toc.tree_depth,
+                    toc.outln
+        ),
+        stmts AS (
+            SELECT concat_ws ( ' ', 'DROP', object_type, full_object_name, calling_arguments, ';' ) AS stmt,
+                    - row_number () OVER (
+                        ORDER BY tree_depth, outln ) AS rn
+                FROM objs
+            UNION
+            SELECT concat_ws ( ' ', '\i', concat_ws ( '/', directory_name, file_name ) ) AS stmt,
+                    row_number () OVER (
+                        ORDER BY tree_depth, outln ) AS rn
+                FROM objs
+        )
+        SELECT stmt,
+                rn
+            FROM stmts
+            ORDER BY rn
+        ) LOOP
 
+        l_rebuild_dependents := array_append ( l_rebuild_dependents, r.stmt ) ;
 
-
-
-WITH RECURSIVE toc AS (
-    SELECT base.object_oid,
-            '{}'::integer[] AS deps,
-            base.dep_object_oid,
-            0 AS tree_depth,
-            ARRAY [ dense_rank () OVER (
-                ORDER BY base.name ) ] AS outln,
-            ARRAY[base.object_oid] AS id_path,
-            ARRAY[base.dep_object_name] AS name_path
-        FROM util_meta.dependencies base
-        WHERE base.schema_name = 'bio_data'
-            AND base.object_name = 'dt_station'
-            AND base.object_type = 'table'
-    UNION ALL
-    SELECT base.object_oid,
-            q.deps || base.dep_object_oid,
-            base.dep_object_oid,
-            ( q.tree_depth + 1 ) AS tree_depth,
-            ( q.outln || dense_rank () OVER (
-                PARTITION BY base.dep_object_oid
-                ORDER BY base.name ) ) AS outln,
-            q.id_path || base.object_oid,
-            q.name_path || base.dep_object_name
-        FROM util_meta.dependencies base
-        JOIN toc q
-            ON ( base.dep_object_oid = q.object_oid
-                AND NOT base.object_oid = ANY ( q.deps ) ) -- avoid cyclic references
-)
-select * from toc ;
-
-
-
-
-*/
-
-
+    END LOOP ;
 
     ----------------------------------------------------------------------------
     -- Ensure that there is a backup schema to move the existing table to
@@ -271,6 +308,15 @@ select * from toc ;
             '',
             array_to_string ( l_grants,  l_new_line ) ) ;
 
+    END IF ;
+
+    ----------------------------------------------------------------------------
+    -- Rebuild dependents
+    IF array_length ( l_rebuild_dependents, 1 ) > 0 THEN
+        l_result := concat_ws ( l_new_line,
+            l_result,
+            '',
+            array_to_string ( l_rebuild_dependents,  l_new_line ) ) ;
     END IF ;
 
     ----------------------------------------------------------------------------
