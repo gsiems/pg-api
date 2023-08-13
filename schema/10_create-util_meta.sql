@@ -11,6 +11,10 @@ CREATE SCHEMA IF NOT EXISTS util_meta ;
 
 COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions, procedures) for creating database API objects.' ;
 
+-- Tables ----------------------------------------------------------------------
+\i util_meta/table/st_default_param.sql
+\i util_meta/table/rt_config_default.sql
+
 -- Views -----------------------------------------------------------------------
 \i util_meta/view/schemas.sql
 \i util_meta/view/objects.sql
@@ -22,6 +26,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- Functions -------------------------------------------------------------------
 
 -- Common utility functions
+\i util_meta/function/resolve_parameter.sql
 \i util_meta/function/cleanup_whitespace.sql
 \i util_meta/function/indent.sql
 \i util_meta/function/is_valid_object.sql
