@@ -5,7 +5,8 @@ CREATE OR REPLACE FUNCTION util_meta.mk_list_function (
     a_parent_table_name text default null,
     a_ddl_schema text default null,
     a_exclude_binary_data boolean default null,
-    a_audit_columns text default null,
+    a_insert_audit_columns text default null,
+    a_update_audit_columns text default null,
     a_owner text default null,
     a_grantees text default null )
 RETURNS text
@@ -24,7 +25,8 @@ Function mk_list_function generates a draft "list entries that are a children of
 | a_parent_table_name            | in     | text       | The (name of the) parent table                     |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the function in (if different from the table schema) |
 | a_exclude_binary_data          | in     | boolean    | Indicates if binary (bytea, jsonb) data is to be excluded from the result-set (default is to include binary data) |
-| a_audit_columns                | in     | text       | The (optional) csv list of audit columns (user created, timestamp last updated, etc.) that the database user doesn't directly edit |
+| a_insert_audit_columns         | in     | text       | The (optional) csv list of insert audit columns (user created, timestamp created, etc.) that the database user doesn't directly edit |
+| a_update_audit_columns         | in     | text       | The (optional) csv list of update audit columns (user updated, timestamp last updated, etc.) that the database user doesn't directly edit |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the function  |
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted execute on the function |
 
@@ -48,6 +50,7 @@ DECLARE
 
     r record ;
 
+    l_audit_columns text ;
     l_child_column text ;
     l_ddl_schema text ;
     l_doc_item text ;
@@ -84,6 +87,13 @@ BEGIN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
+
+    ----------------------------------------------------------------------------
+    -- check parameters/defaults
+    l_audit_columns = concat_ws ( ',',
+        util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ),
+        util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) ) ;
+
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
@@ -108,7 +118,7 @@ BEGIN
     -- Ensure that there is one, and only one, parent dt_ table (otherwise, how can we know which one to use?)
     FOR r IN (
         WITH audit_cols AS (
-            SELECT trim ( regexp_split_to_table ( a_audit_columns, ',' ) ) AS column_name
+            SELECT trim ( regexp_split_to_table ( l_audit_columns, ',' ) ) AS column_name
         )
         SELECT count (*) AS kount
             FROM util_meta.foreign_keys fks
@@ -138,7 +148,7 @@ BEGIN
     -- Obtain the primary parent for the table
     FOR r IN (
         WITH audit_cols AS (
-            SELECT trim ( regexp_split_to_table ( a_audit_columns, ',' ) ) AS column_name
+            SELECT trim ( regexp_split_to_table ( l_audit_columns, ',' ) ) AS column_name
         )
         SELECT fks.schema_name,
                 fks.table_name,
