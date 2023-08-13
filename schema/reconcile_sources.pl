@@ -81,13 +81,15 @@ sub reconcile_schema {
     my $create_file = $create_schema_files{$schema} ;
     $create_file ||= "xx_create-${schema}.sql";
 
-    open( $fh, '<:raw', $create_file )
-      || die "Could not open $create_file. $!\n";
-
-    @orig_lines = (<$fh>);
-    close $fh;
-
-    chomp @orig_lines;
+    if (open( $fh, '<:raw', $create_file )) {
+        if ($fh) {
+            @orig_lines = (<$fh>);
+            close $fh;
+            chomp @orig_lines;
+        }
+    } else {
+        warn "Could not open $create_file.\n";
+    }
 
     foreach my $new_line (@orig_lines) {
         my $chk = $new_line;
