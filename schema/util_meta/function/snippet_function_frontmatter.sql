@@ -4,9 +4,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_function_frontmatter (
     a_language text default null,
     a_return_type text default null,
     a_returns_set boolean default null,
-    a_param_names text[] default null,
-    a_directions text[] default null,
-    a_datatypes text[] default null )
+    a_calling_parameters util_meta.ut_parameters default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -22,16 +20,14 @@ Function snippet_function_frontmatter generates the pl/pg-sql code snippet for t
 | a_language                     | in     | text       | The language that the function is written in (defaults to plpgsql) |
 | a_return_type                  | in     | text       | The data type to return                            |
 | a_returns_set                  | in     | text       | Indicates if the return type is a set (vs. scalar) (defaults to scalar) |
-| a_param_names                  | in     | text[]     | The list of calling parameter names                |
-| a_directions                   | in     | text[]     | The list of the calling parameter directions       |
-| a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
+| a_calling_parameters           | in     | ut_parameters | The list of calling parameters                  |
 
 */
 DECLARE
 
     l_return text ;
     l_params text [] ;
-    l_aryl integer ;
+    l_param_count integer ;
     l_is_stable boolean := true ;
 
 BEGIN
@@ -43,15 +39,13 @@ BEGIN
         l_is_stable := false ;
     END IF ;
 
-    l_aryl := array_length ( a_param_names, 1 ) ;
+    l_param_count := array_length ( a_calling_parameters.names, 1 ) ;
 
-    IF l_aryl > 0 THEN
+    IF l_param_count > 0 THEN
 
-        FOR l_idx IN 1..l_aryl LOOP
-            IF a_param_names[l_idx] IS NOT NULL AND a_directions[l_idx] IS NOT NULL AND a_datatypes[l_idx] IS NOT NULL THEN
-                l_params := array_append ( l_params, util_meta.indent (1)
-                    || concat_ws ( ' ', a_param_names[l_idx], a_directions[l_idx], a_datatypes[l_idx], 'default null' ) ) ;
-            END IF ;
+        FOR l_idx IN 1..l_param_count LOOP
+            l_params := array_append ( l_params,
+                util_meta.indent (1) || concat_ws ( ' ', a_calling_parameters.names[l_idx], a_calling_parameters.directions[l_idx], a_calling_parameters.datatypes[l_idx], 'default null' ) ) ;
         END LOOP ;
 
         l_return := concat_ws ( util_meta.new_line (),

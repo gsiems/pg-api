@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_function_backmatter (
     a_comment text default null,
     a_owner text default null,
     a_grantees text default null,
-    a_datatypes text[] default null )
+    a_calling_parameters util_meta.ut_parameters default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -22,7 +22,7 @@ Function snippet_function_backmatter generates the pl/pg-sql code snippet for th
 | a_comment                      | in     | text       | The text of the comment for the object             |
 | a_owner                        | in     | text       | The role that is to be the owner of the function   |
 | a_grantees                     | in     | text       | The csv list of roles that should be granted execute on the function |
-| a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
+| a_calling_parameters           | in     | ut_parameters | The list of calling parameters                  |
 
 */
 DECLARE
@@ -55,14 +55,14 @@ BEGIN
             a_object_type => 'function',
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => a_datatypes ),
+            a_calling_parameters => a_calling_parameters ),
         '',
         util_meta.snippet_object_comment (
             a_ddl_schema => a_ddl_schema,
             a_object_name => a_function_name,
             a_object_type => 'function',
             a_comment => a_comment,
-            a_param_types => a_datatypes ),
+            a_calling_parameters => a_calling_parameters ),
             '' ) ;
 
     RETURN l_return ;

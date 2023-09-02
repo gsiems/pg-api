@@ -22,13 +22,10 @@ DECLARE
 
     r record ;
 
-    l_local_types text[] ;
-    l_local_var_names text[]  ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_notes text [] ;
+
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -39,41 +36,52 @@ BEGIN
             FROM util_meta.objects
             WHERE schema_name = a_ddl_schema  ) LOOP
 
-        l_param_names := array_append ( l_param_names, 'a_user' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'text' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The user to check permissions for' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_user',
+            a_datatype => 'text',
+            a_comment => 'The user to check permissions for' ) ;
 
-        l_param_names := array_append ( l_param_names, 'a_action' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'text' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The action to perform' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_action',
+            a_datatype => 'text',
+            a_comment => 'The action to perform' ) ;
 
-        l_param_names := array_append ( l_param_names, 'a_object_type' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'text' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The (name of) the type of object to perform the action on' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_object_type',
+            a_datatype => 'text',
+            a_comment => 'The (name of) the type of object to perform the action on' ) ;
 
-        l_param_names := array_append ( l_param_names, 'a_id' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'integer' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The ID of the object to check permissions for' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_id',
+            a_datatype => 'integer',
+            a_comment => 'The ID of the object to check permissions for' ) ;
 
-        l_param_names := array_append ( l_param_names, 'a_parent_object_type' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'text' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The (name of) the type of object that is the parent of the object to check permissions for (this is for inserts)' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_parent_object_type',
+            a_datatype => 'text',
+            a_comment => 'The (name of) the type of object that is the parent of the object to check permissions for (this is for inserts)' ) ;
 
-        l_param_names := array_append ( l_param_names, 'a_parent_id' ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, 'integer' ) ;
-        l_param_comments := array_append ( l_param_comments, 'The ID of the parent object to check permissions for (this is for inserts)' ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => 'a_parent_id',
+            a_datatype => 'integer',
+            a_comment => 'The ID of the parent object to check permissions for (this is for inserts)' ) ;
 
-        l_local_var_names := array_append ( l_local_var_names, 'l_acting_user_id' ) ;
-        l_local_types := array_append ( l_local_types, 'integer' ) ;
+        ------------------------------------------------------------------------
+        l_local_vars := util_meta.append_parameter (
+            a_parameters => l_local_vars,
+            a_name => 'l_acting_user_id',
+            a_datatype => 'integer' ) ;
 
-        l_local_var_names := array_append ( l_local_var_names, 'l_connected_user_id' ) ;
-        l_local_types := array_append ( l_local_types, 'integer' ) ;
+        l_local_vars := util_meta.append_parameter (
+            a_parameters => l_local_vars,
+            a_name => 'l_connected_user_id',
+            a_datatype => 'integer' ) ;
 
         RETURN concat_ws ( util_meta.new_line (),
             util_meta.snippet_function_frontmatter (
@@ -81,21 +89,15 @@ BEGIN
                 a_function_name => 'can_do',
                 a_language => 'plpgsql',
                 a_return_type => 'boolean',
-                a_param_names => l_param_names,
-                a_directions => l_param_directions,
-                a_datatypes => l_param_types ),
+                a_calling_parameters => l_calling_params ),
             util_meta.snippet_documentation_block (
                 a_object_name => 'can_do',
                 a_object_type => 'function',
                 a_object_purpose => 'determines if a user has permission to perform the specified action on the specified object (optionally for the specified ID)',
-                a_param_names => l_param_names,
-                a_directions => l_param_directions,
-                a_datatypes => l_param_types,
-                a_comments => l_param_comments,
+                a_calling_parameters => l_calling_params,
                 a_notes => l_notes ),
             util_meta.snippet_declare_variables (
-                a_var_names => l_local_var_names,
-                a_var_datatypes => l_local_types ),
+                a_variables => l_local_vars ),
             '',
             'BEGIN',
             '',
@@ -117,7 +119,7 @@ BEGIN
                 a_comment => null::text,
                 a_owner => a_owner,
                 a_grantees => a_grantees,
-                a_datatypes => l_param_types ) ) ;
+                a_calling_parameters => l_calling_params ) ) ;
 
     END LOOP ;
 

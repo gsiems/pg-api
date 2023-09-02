@@ -2,10 +2,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_documentation_block (
     a_object_name text default null,
     a_object_type text default null,
     a_object_purpose text default null,
-    a_param_names text[] default null,
-    a_directions text[] default null,
-    a_datatypes text[] default null,
-    a_comments text[] default null,
+    a_calling_parameters util_meta.ut_parameters default null,
     a_assertions text[] default null,
     a_notes text[] default null )
 RETURNS text
@@ -21,10 +18,7 @@ Function snippet_documentation_block generates the documentation block for an ob
 | a_object_name                  | in     | text       | The name of the database object                    |
 | a_object_type                  | in     | text       | The type {function, procedure} of the object       |
 | a_object_purpose               | in     | text       | The (brief) description of the purpose of the object |
-| a_param_names                  | in     | text[]     | The list of calling parameter names                |
-| a_directions                   | in     | text[]     | The list of the calling parameter directions       |
-| a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
-| a_comments                     | in     | text[]     | The list of the comments for the parameters        |
+| a_calling_parameters           | in     | ut_parameters | The list of calling parameters                  |
 | a_notes                        | in     | text[]     | The list of notes for the user/developer of the function |
 | a_assertions                   | in     | text[]     | The list of assertions made by the function/procedure |
 
@@ -40,14 +34,14 @@ BEGIN
     l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  'Parameter', 'In/Out', 'Datatype', 'Remarks' ) ) ;
     l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  '------------------------------', '------', '----------', '--------------------------------------------------' ) ) ;
 
-    FOR l_idx IN 1..array_length ( a_param_names, 1 ) LOOP
+    FOR l_idx IN 1..array_length ( a_calling_parameters.names, 1 ) LOOP
 
         l_doc_lines := array_append ( l_doc_lines,
                 format ( l_doc_format,
-                    a_param_names[l_idx],
-                    a_directions[l_idx],
-                    a_datatypes[l_idx],
-                    coalesce ( a_comments[l_idx], 'TBD' ) ) ) ;
+                    a_calling_parameters.names[l_idx],
+                    a_calling_parameters.directions[l_idx],
+                    a_calling_parameters.datatypes[l_idx],
+                    coalesce ( a_calling_parameters.comments[l_idx], 'TBD' ) ) ) ;
 
     END LOOP ;
 

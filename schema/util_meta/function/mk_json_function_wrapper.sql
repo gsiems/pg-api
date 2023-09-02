@@ -40,11 +40,8 @@ DECLARE
     l_full_view_name text ;
     l_func_name text ;
     l_func_type text ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
-    l_proc_params text[] ;
+
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -110,12 +107,12 @@ BEGIN
                 ON ( columns.full_object_name = args.full_view_name
                     AND columns.column_name = args.column_name ) ) LOOP
 
-        l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-        l_param_types := array_append ( l_param_types, r.data_type ) ;
-        l_param_comments := array_append ( l_param_comments, r.comments ) ;
-
-        l_proc_params := array_append ( l_proc_params, concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => r.param_name,
+            a_direction => r.param_direction,
+            a_datatype => r.data_type,
+            a_comment => r.comments ) ;
 
     END LOOP ;
 
@@ -146,22 +143,17 @@ BEGIN
             a_language => 'sql',
             a_return_type => 'text',
             a_returns_set => false,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types,
-            a_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         '',
         util_meta.indent (1) || 'WITH t AS (',
         util_meta.indent (2) || 'SELECT ' || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent (4) ),
         util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
-        util_meta.indent (5) || array_to_string ( l_proc_params, ',' || util_meta.new_line () || util_meta.indent (5) ),
+        util_meta.indent (5) || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent (5) ),
         util_meta.indent (4) || ')',
         util_meta.indent (1) || ')' ) ;
 
@@ -192,7 +184,7 @@ BEGIN
             a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

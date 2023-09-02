@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_owners_and_grants (
     a_object_type text default null,
     a_owner text default null,
     a_grantees text default null,
-    a_datatypes text[] default null )
+    a_calling_parameters util_meta.ut_parameters default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -20,7 +20,7 @@ Function snippet_owners_and_grants generates the pl/pg-sql code snippet for sett
 | a_object_type                  | in     | text       | The type of object to create                       |
 | a_owner                        | in     | text       | The role that is to be the owner of the procedure  |
 | a_grantees                     | in     | text       | The csv list of roles that should be granted execute on the procedure |
-| a_datatypes                    | in     | text[]     | The list of the datatypes for the parameters       |
+| a_calling_parameters           | in     | ut_parameters | The (optional) list of calling parameters       |
 
 */
 DECLARE
@@ -43,7 +43,7 @@ BEGIN
 
     IF upper ( a_object_type ) IN ( 'FUNCTION', 'PROCEDURE' ) THEN
 
-        l_alter_sig := concat_ws ( ' ', l_alter_sig, '(', array_to_string ( a_datatypes, ', ' ), ')' ) ;
+        l_alter_sig := concat_ws ( ' ', l_alter_sig, '(', array_to_string ( a_calling_parameters.datatypes, ', ' ), ')' ) ;
         l_grant_sig := l_alter_sig ;
         l_priv := 'EXECUTE' ;
 

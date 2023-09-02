@@ -27,16 +27,15 @@ DECLARE
     l_func_param_directions text[] ;
     l_func_param_names text[] ;
     l_func_param_types text[] ;
-    l_local_var_names text[] ;
     l_local_var_types text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
     l_proc_params text[] ;
     l_proc_type text ;
     l_result text ;
     l_test text ;
     l_view_name text ;
     l_where_cols text[] ;
+
+    l_local_vars util_meta.ut_parameters ;
 
 BEGIN
 
@@ -129,8 +128,7 @@ BEGIN
             a_directions => l_func_param_directions,
             a_datatypes => l_func_param_types ),
         util_meta.snippet_declare_variables (
-            a_var_names => l_local_var_names,
-            a_var_datatypes => l_local_var_types ),
+            a_variables => l_local_vars ),
         '',
         'BEGIN',
         '' ) ;

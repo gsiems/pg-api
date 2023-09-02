@@ -1,6 +1,5 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_declare_variables (
-    a_var_names text[] default null,
-    a_var_datatypes text[] default null )
+    a_variables util_meta.ut_parameters default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -11,8 +10,7 @@ Function snippet_declare_variables generates the pl/pg-sql code snippet for decl
 
 | Parameter                      | In/Out | Datatype   | Remarks                                            |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
-| a_var_names                    | in     | text[]     | The list of variable names                         |
-| a_var_datatypes                | in     | text[]     | The list of the datatypes for the variables        |
+| a_variables                    | in     | ut_parameters | The list of variables                           |
 
 */
 DECLARE
@@ -21,9 +19,9 @@ DECLARE
 
 BEGIN
 
-    FOR l_idx IN 1..array_length ( a_var_names, 1 ) LOOP
-        IF a_var_names[l_idx] IS NOT NULL AND a_var_datatypes[l_idx] IS NOT NULL THEN
-            l_variable_lines := array_append ( l_variable_lines, concat_ws ( ' ', a_var_names[l_idx], a_var_datatypes[l_idx], ';' ) ) ;
+    FOR l_idx IN 1..array_length ( a_variables.names, 1 ) LOOP
+        IF a_variables.names[l_idx] IS NOT NULL AND a_variables.datatypes[l_idx] IS NOT NULL THEN
+            l_variable_lines := array_append ( l_variable_lines, concat_ws ( ' ', a_variables.names[l_idx], a_variables.datatypes[l_idx], ';' ) ) ;
         END IF ;
     END LOOP ;
 

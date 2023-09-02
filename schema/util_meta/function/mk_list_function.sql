@@ -58,12 +58,6 @@ DECLARE
     l_full_view_name text ;
     l_func_name text ;
     l_local_parent_param text ;
-    l_local_types text[] ;
-    l_local_var_names text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_parent_column text ;
     l_parent_data_type text ;
     l_parent_noun text ;
@@ -78,6 +72,9 @@ DECLARE
     l_table_noun text ;
     l_view_name text ;
     l_where_clause text ;
+
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -111,8 +108,10 @@ BEGIN
     ----------------------------------------------------------------------------
     l_exclude_binary_data := coalesce ( a_exclude_binary_data, false ) ;
 
-    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
-    l_local_types := array_append ( l_local_types, 'boolean' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_has_permission',
+        a_datatype => 'boolean' ) ;
 
     ----------------------------------------------------------------------------
     -- Ensure that there is one, and only one, parent dt_ table (otherwise, how can we know which one to use?)
@@ -206,11 +205,11 @@ BEGIN
                     OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
-        l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, r.data_type ) ;
-        l_param_comments := array_append ( l_param_comments, r.comments ) ;
-        l_parent_data_type := r.data_type ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => r.param_name,
+            a_datatype => r.data_type,
+            a_comment => r.comments ) ;
 
         l_resolve_id_params := array_append ( l_resolve_id_params, r.param_name ) ;
 
@@ -219,15 +218,18 @@ BEGIN
     IF array_length ( l_resolve_id_params, 1 ) = 0 THEN
         RETURN 'ERROR: could not resolve PK parameter' ;
     ELSIF array_length ( l_resolve_id_params, 1 ) > 1 THEN
-        l_local_var_names := array_append ( l_local_var_names, l_local_parent_param ) ;
-        l_local_types := array_append ( l_local_types, l_parent_data_type ) ;
+        l_local_vars := util_meta.append_parameter (
+            a_parameters => l_local_vars,
+            a_name => l_local_parent_param,
+            a_datatype => l_parent_data_type ) ;
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_param_names := array_append ( l_param_names, 'a_user' ) ;
-    l_param_directions := array_append ( l_param_directions, 'in' ) ;
-    l_param_types := array_append ( l_param_types, 'text' ) ;
-    l_param_comments := array_append ( l_param_comments, 'The ID or username of the user requesting the list' ) ;
+    l_calling_params := util_meta.append_parameter (
+        a_parameters => l_calling_params,
+        a_name => 'a_user',
+        a_datatype => 'text',
+        a_comment => 'The ID or username of the user requesting the list' ) ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
@@ -238,20 +240,14 @@ BEGIN
             a_language => 'plpgsql',
             a_return_type => l_full_view_name,
             a_returns_set => true,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types,
-            a_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_declare_variables (
-            a_var_names => l_local_var_names,
-            a_var_datatypes => l_local_types ),
+            a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
@@ -339,7 +335,7 @@ BEGIN
             a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

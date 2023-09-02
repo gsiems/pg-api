@@ -42,16 +42,10 @@ DECLARE
     l_doc_item text ;
     l_from_clause text ;
     l_func_name text ;
-    l_local_var_names text[] ;
-    l_local_types text[] ;
     l_nk_cast text ;
     l_nk_param text[] ;
     l_nk_type text[] ;
     l_nk_where text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_pk_cast text ;
     l_pk_col text ;
     l_pk_param text ;
@@ -61,7 +55,12 @@ DECLARE
     l_select_clause text ;
     l_table_noun text ;
 
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
+
 BEGIN
+
+    -- TODO: for tables with multi-column PKs this needs to return all the columns in the key
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified table exists
@@ -101,8 +100,10 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
-    l_local_types := array_append ( l_local_types, 'record' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'r',
+        a_datatype => 'record' ) ;
 
     ----------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -128,10 +129,12 @@ BEGIN
         -- Calling parameters related
         IF r.param_name IS NOT NULL THEN
 
-            l_param_names := array_append ( l_param_names, r.param_name ) ;
-            l_param_directions := array_append ( l_param_directions, r.direction ) ;
-            l_param_types := array_append ( l_param_types, r.data_type ) ;
-            l_param_comments := array_append ( l_param_comments, r.comments ) ;
+            l_calling_params := util_meta.append_parameter (
+                a_parameters => l_calling_params,
+                a_name => r.param_name,
+                a_direction => r.direction,
+                a_datatype => r.data_type,
+                a_comment => r.comments ) ;
 
             IF r.is_pk THEN
 
@@ -170,20 +173,14 @@ BEGIN
             a_language => 'plpgsql',
             a_return_type => l_return_type,
             --a_returns_set => false,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types ),
+            a_calling_parameters => l_calling_params ),
          util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => 'resolves ' || l_doc_item,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types,
-            a_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_declare_variables (
-            a_var_names => l_local_var_names,
-            a_var_datatypes => l_local_types ),
+            a_variables => l_local_vars ),
          '',
          'BEGIN' ) ;
 
@@ -269,7 +266,7 @@ BEGIN
             a_comment => 'Returns ' || l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

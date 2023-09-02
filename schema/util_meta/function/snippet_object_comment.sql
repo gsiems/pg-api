@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION util_meta.snippet_object_comment (
     a_object_name text default null,
     a_object_type text default null,
     a_comment text default null,
-    a_param_types text[] default null )
+    a_calling_parameters util_meta.ut_parameters default null )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -18,7 +18,7 @@ Function snippet_object_comment generates a COMMENT ON ... snippet
 | a_object_name                  | in     | text       | The (name of the) object being commented on        |
 | a_object_type                  | in     | text       | The (name of the) object type                      |
 | a_comment                      | in     | text       | The text of the comment for the object             |
-| a_param_types                  | in     | text[]     | The (optional) list of calling parameter data types |
+| a_calling_parameters           | in     | ut_parameters | The (optional) list of calling parameters       |
 
 */
 BEGIN
@@ -27,13 +27,13 @@ BEGIN
         RETURN null::text ;
     END IF ;
 
-    IF a_param_types IS NOT NULL AND array_length ( a_param_types, 1 ) > 0 THEN
+    IF a_calling_parameters IS NOT NULL AND array_length ( a_calling_parameters.datatypes, 1 ) > 0 THEN
 
         RETURN concat_ws ( ' ',
             'COMMENT ON',
             upper ( a_object_type ),
             a_ddl_schema || '.' || a_object_name,
-            '(', array_to_string ( a_param_types, ', ' ), ')',
+            '(', array_to_string ( a_calling_parameters.datatypes, ', ' ), ')',
             'IS',
             quote_literal ( trim ( coalesce ( a_comment, 'TBD' ) ) ),
             ';' ) ;

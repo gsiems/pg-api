@@ -37,12 +37,6 @@ DECLARE
     l_doc_item text ;
     l_full_view_name text ;
     l_func_name text ;
-    l_local_var_names text[] ;
-    l_local_types text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_pk_column_name text ;
     l_pk_data_type text ;
     l_pk_param text ;
@@ -54,6 +48,9 @@ DECLARE
     l_where_clause text ;
     l_resolve_id text;
 
+    l_calling_params util_meta.ut_parameters ;
+    l_local_vars util_meta.ut_parameters ;
+
 BEGIN
 
     ----------------------------------------------------------------------------
@@ -61,6 +58,9 @@ BEGIN
     IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
+
+-- TODO: if there are more than one column in the primary key then this doesn't work
+-- and results in some rather wrong code
 
     --------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
@@ -82,8 +82,10 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
-    l_local_types := array_append ( l_local_types, 'boolean' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_has_permission',
+        a_datatype => 'boolean' ) ;
 
     ----------------------------------------------------------------------------
     -- Obtain the parameters for resolving the entry
@@ -104,10 +106,11 @@ BEGIN
                     OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
-        l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, 'in' ) ;
-        l_param_types := array_append ( l_param_types, r.data_type ) ;
-        l_param_comments := array_append ( l_param_comments, r.comments ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => r.param_name,
+            a_datatype => r.data_type,
+            a_comment => r.comments ) ;
 
         l_resolve_id_params := array_append ( l_resolve_id_params, r.param_name ) ;
 
@@ -129,9 +132,12 @@ BEGIN
 
         l_pk_param := 'l_' || l_pk_column_name ;
 
-        l_local_var_names := array_append ( l_local_var_names, l_pk_param ) ;
-        l_local_types := array_append ( l_local_types, l_pk_data_type ) ;
+        l_local_vars := util_meta.append_parameter (
+            a_parameters => l_local_vars,
+            a_name => l_pk_param,
+            a_datatype => l_pk_data_type ) ;
 
+        ------------------------------------------------------------------------
         l_resolve_id := util_meta.snippet_resolve_id (
             a_id_param => l_pk_param,
             a_function_schema => l_ddl_schema,
@@ -146,10 +152,11 @@ BEGIN
     l_where_clause := concat_ws ( ' ',  l_pk_column_name, '=', l_pk_param ) ;
 
     ----------------------------------------------------------------------------
-    l_param_names := array_append ( l_param_names, 'a_user' ) ;
-    l_param_directions := array_append ( l_param_directions, 'in' ) ;
-    l_param_types := array_append ( l_param_types, 'text' ) ;
-    l_param_comments := array_append ( l_param_comments, 'The ID or username of the user requesting the entry' ) ;
+    l_calling_params := util_meta.append_parameter (
+        a_parameters => l_calling_params,
+        a_name => 'a_user',
+        a_datatype => 'text',
+        a_comment => 'The ID or username of the user doing the search' ) ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
@@ -160,20 +167,14 @@ BEGIN
             a_language => 'plpgsql',
             a_return_type =>l_full_view_name,
             a_returns_set => true,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types,
-            a_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_declare_variables (
-            a_var_names => l_local_var_names,
-            a_var_datatypes => l_local_types ),
+            a_variables => l_local_vars ),
         '',
         'BEGIN' ) ;
 
@@ -204,7 +205,7 @@ BEGIN
             a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

@@ -32,15 +32,12 @@ DECLARE
 
     l_assertions text[] ;
     l_ddl_schema text ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_pk_params text[] ;
     l_proc_name text ;
     l_result text ;
     l_table_noun text ;
     l_where_cols text[] ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -85,10 +82,12 @@ BEGIN
             l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
         END IF ;
 
-        l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-        l_param_types := array_append ( l_param_types, r.param_data_type ) ;
-        l_param_comments := array_append ( l_param_comments, r.comments ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => r.param_name,
+            a_direction => r.param_direction,
+            a_datatype => r.param_data_type,
+            a_comment => r.comments ) ;
 
     END LOOP ;
 
@@ -104,13 +103,9 @@ BEGIN
             a_procedure_purpose => 'performs a delete on ' || a_object_name,
             a_language => 'plpgsql',
             a_assertions => l_assertions,
-            a_param_names => l_param_names,
-            a_param_directions => l_param_directions,
-            a_param_datatypes => l_param_types,
-            a_param_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_log_params (
-            a_param_names => l_param_names,
-            a_datatypes => l_param_types ),
+            a_parameters => l_calling_params ),
         '',
         util_meta.indent (1) || 'DELETE FROM ' || a_object_schema || '.' || a_object_name,
         util_meta.indent (2) || 'WHERE ' || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent (3) || 'AND ' ) || ' ;',
@@ -119,7 +114,7 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_comment => null::text,
             a_owner => a_owner,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

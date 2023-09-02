@@ -40,13 +40,7 @@ DECLARE
     l_distinct_cols text[] ;
     l_false_val text ;
     l_local_checks text[] ;
-    l_local_var_names text[] ;
-    l_local_types text[] ;
     l_log_err_line text ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_pk_cols text[] ;
     l_pk_params text[] ;
     l_proc_name text ;
@@ -56,6 +50,9 @@ DECLARE
     l_true_val text ;
     l_value_param text ;
     l_where_cols text[] ;
+
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -78,8 +75,10 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'priv_update_' || l_table_noun ;
 
-    l_local_var_names := array_append ( l_local_var_names, 'l_acting_user_id' ) ;
-    l_local_types := array_append ( l_local_types, 'integer' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_acting_user_id',
+        a_datatype => 'integer' ) ;
 
     ----------------------------------------------------------------------------
     FOR r IN (
@@ -152,26 +151,32 @@ BEGIN
 
         IF r.param_name IS NOT NULL THEN
 
-            l_param_names := array_append ( l_param_names, r.param_name ) ;
-            l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-            l_param_types := array_append ( l_param_types, r.param_data_type ) ;
-            l_param_comments := array_append ( l_param_comments, r.comments ) ;
+            l_calling_params := util_meta.append_parameter (
+                a_parameters => l_calling_params,
+                a_name => r.param_name,
+                a_direction => r.param_direction,
+                a_datatype => r.param_data_type,
+                a_comment => r.comments ) ;
 
         END IF ;
 
         IF r.ref_param_name IS NOT NULL AND NOT r.is_audit_col THEN
 
-            l_param_names := array_append ( l_param_names, r.ref_param_name ) ;
-            l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-            l_param_types := array_append ( l_param_types, r.ref_data_type ) ;
-            l_param_comments := array_append ( l_param_comments, r.ref_param_comments ) ;
+            l_calling_params := util_meta.append_parameter (
+                a_parameters => l_calling_params,
+                a_name => r.ref_param_name,
+                a_direction => r.param_direction,
+                a_datatype => r.ref_data_type,
+                a_comment => r.ref_param_comments ) ;
 
         END IF ;
 
         IF r.local_param_name IS NOT NULL AND r.local_param_name <> 'l_acting_user_id' THEN
 
-            l_local_var_names := array_append ( l_local_var_names, r.local_param_name ) ;
-            l_local_types := array_append ( l_local_types, r.column_data_type ) ;
+            l_local_vars := util_meta.append_parameter (
+                a_parameters => l_local_vars,
+                a_name => r.local_param_name,
+                a_datatype => r.column_data_type ) ;
 
             IF r.column_data_type = 'boolean' THEN
 
@@ -252,15 +257,10 @@ BEGIN
             a_procedure_purpose => 'performs an update on ' || a_object_name,
             a_language => 'plpgsql',
             a_assertions => l_assertions,
-            a_param_names => l_param_names,
-            a_param_directions => l_param_directions,
-            a_param_datatypes => l_param_types,
-            a_param_comments => l_param_comments,
-            a_local_var_names => l_local_var_names,
-            a_local_var_datatypes => l_local_types ),
+            a_calling_parameters => l_calling_params,
+            a_variables => l_local_vars ),
         util_meta.snippet_log_params (
-            a_param_names => l_param_names,
-            a_datatypes => l_param_types ) ) ;
+            a_parameters => l_calling_params ) ) ;
 
     l_result := concat_ws ( util_meta.new_line (),
         l_result,
@@ -277,8 +277,11 @@ BEGIN
 
 l_parent_id_param
 
-            l_local_var_names := array_append ( l_local_var_names, r.local_param_name ) ;
-            l_local_types := array_append ( l_local_types, r.param_data_type ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => r.local_param_name,
+        a_datatype => r.param_data_type ) ;
+
 
 
 
@@ -333,7 +336,7 @@ l_parent_id_param
             a_procedure_name => l_proc_name,
             a_comment => null::text,
             a_owner => a_owner,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

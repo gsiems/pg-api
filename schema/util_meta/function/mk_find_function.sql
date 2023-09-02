@@ -31,6 +31,7 @@ DECLARE
 
     r record ;
 
+
     l_ddl_schema text ;
     l_doc_item text ;
     l_found_cte text ;
@@ -38,18 +39,15 @@ DECLARE
     l_func_name text ;
     l_is_row_based boolean ;
     l_join_clause text[] ;
-    l_local_var_names text[]  ;
-    l_local_types text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_pk_cols text[] ;
     l_result text ;
     l_search_cols text[] ;
     l_select text ;
     l_table_noun text ;
     l_view_name text ;
+
+    l_calling_params util_meta.ut_parameters ;
+    l_local_vars util_meta.ut_parameters ;
 
 BEGIN
 
@@ -74,24 +72,35 @@ BEGIN
         RETURN 'ERROR: required view (' || l_full_view_name || ') does not exist' ;
     END IF ;
 
+    l_is_row_based := coalesce ( a_is_row_based, false ) ;
+
     ----------------------------------------------------------------------------
     IF l_is_row_based THEN
-        l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
-        l_local_types := array_append ( l_local_types, 'record' ) ;
+
+        l_local_vars := util_meta.append_parameter (
+            a_parameters => l_local_vars,
+            a_name => 'r',
+            a_datatype => 'record' ) ;
+
     END IF ;
 
-    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
-    l_local_types := array_append ( l_local_types, 'boolean' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_has_permission',
+        a_datatype => 'boolean' ) ;
 
-    l_param_names := array_append ( l_param_names, 'a_user' ) ;
-    l_param_directions := array_append ( l_param_directions, 'in' ) ;
-    l_param_types := array_append ( l_param_types, 'text' ) ;
-    l_param_comments := array_append ( l_param_comments, 'The ID or username of the user doing the search' ) ;
+    ----------------------------------------------------------------------------
+    l_calling_params := util_meta.append_parameter (
+        a_parameters => l_calling_params,
+        a_name => 'a_user',
+        a_datatype => 'text',
+        a_comment => 'The ID or username of the user doing the search' ) ;
 
-    l_param_names := array_append ( l_param_names, 'a_search_term' ) ;
-    l_param_directions := array_append ( l_param_directions, 'in' ) ;
-    l_param_types := array_append ( l_param_types, 'text' ) ;
-    l_param_comments := array_append ( l_param_comments, 'The string to search for' ) ;
+    l_calling_params := util_meta.append_parameter (
+        a_parameters => l_calling_params,
+        a_name => 'a_search_term',
+        a_datatype => 'text',
+        a_comment => 'The string to search for' ) ;
 
     FOR r IN (
         SELECT schema_name,
@@ -127,25 +136,20 @@ BEGIN
             a_language => 'plpgsql',
             a_return_type => l_full_view_name,
             a_returns_set => true,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
-            a_param_names => l_param_names,
-            a_directions => l_param_directions,
-            a_datatypes => l_param_types,
-            a_comments => l_param_comments ),
+            a_calling_parameters => l_calling_params ),
         util_meta.snippet_declare_variables (
-            a_var_names => l_local_var_names,
-            a_var_datatypes => l_local_types ),
+            a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
         util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
         util_meta.indent (1) || '-- TODO: verify the columns to search on' ) ;
+
 
     ----------------------------------------------------------------------------
     l_found_cte := concat_ws ( util_meta.new_line (),
@@ -163,7 +167,7 @@ BEGIN
         util_meta.indent (2) || 'SELECT de.*',
         util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
         util_meta.indent (3) || 'JOIN found',
-        util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND' ) || ' )' ) ;
+        util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND ' ) || ' )' ) ;
 
     ----------------------------------------------------------------------------
     l_is_row_based := coalesce ( a_is_row_based, false ) ;
@@ -227,7 +231,7 @@ BEGIN
             a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

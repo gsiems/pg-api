@@ -28,20 +28,16 @@ DECLARE
     r record ;
 
     l_ddl_schema text ;
-    l_local_var_names text[] ;
-    l_local_types text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_chk text ;
     l_chk_where text[] ;
     l_pk_params text[] ;
     --l_pk_cols text[] ;
-    l_proc_args text[] ;
     l_proc_name text ;
     l_result text ;
     l_table_noun text ;
+
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -56,10 +52,15 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'delete_' || l_table_noun ;
 
-    l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
-    l_local_types := array_append ( l_local_types, 'record' ) ;
-    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
-    l_local_types := array_append ( l_local_types, 'boolean' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'r',
+        a_datatype => 'record' ) ;
+
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_has_permission',
+        a_datatype => 'boolean' ) ;
 
     ------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -87,17 +88,14 @@ BEGIN
         IF r.is_pk THEN
             l_chk_where := array_append ( l_chk_where, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
-            --l_pk_cols := array_append ( l_pk_cols, r.column_name ) ;
-            --l_local_var_names := array_append ( l_local_var_names, 'l_' || r.column_name ) ;
-            --l_local_types := array_append ( l_local_types, r.param_data_type ) ;
         END IF ;
 
-        l_proc_args := array_append ( l_proc_args, concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
-
-        l_param_names := array_append ( l_param_names, r.param_name ) ;
-        l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-        l_param_types := array_append ( l_param_types, r.param_data_type ) ;
-        l_param_comments := array_append ( l_param_comments, r.comments ) ;
+        l_calling_params := util_meta.append_parameter (
+            a_parameters => l_calling_params,
+            a_name => r.param_name,
+            a_direction => r.param_direction,
+            a_datatype => r.param_data_type,
+            a_comment => r.comments ) ;
 
     END LOOP ;
 
@@ -145,27 +143,22 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs a delete on ' || a_object_name,
             a_language => 'plpgsql',
-            a_param_names => l_param_names,
-            a_param_directions => l_param_directions,
-            a_param_datatypes => l_param_types,
-            a_param_comments => l_param_comments,
-            a_local_var_names => l_local_var_names,
-            a_local_var_datatypes => l_local_types ),
+            a_calling_parameters => l_calling_params,
+            a_variables => l_local_vars ),
         util_meta.snippet_log_params (
-            a_param_names => l_param_names,
-            a_datatypes => l_param_types ),
+            a_parameters => l_calling_params ),
         '',
         l_chk,
         '',
         util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
-        util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
+        util_meta.indent (2) || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_comment => null::text,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 

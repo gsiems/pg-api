@@ -35,12 +35,6 @@ DECLARE
 
     l_ddl_schema text ;
 
-    l_local_var_names text[] ;
-    l_local_types text[] ;
-    l_param_comments text[] ;
-    l_param_directions text[] ;
-    l_param_names text[] ;
-    l_param_types text[] ;
     l_parent_id_param text ;
     l_parent_noun text ;
 
@@ -50,6 +44,9 @@ DECLARE
     l_proc_name text ;
     l_result text ;
     l_table_noun text ;
+
+    l_local_vars util_meta.ut_parameters ;
+    l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
@@ -64,8 +61,10 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'insert_' || l_table_noun ;
 
-    l_local_var_names := array_append ( l_local_var_names, 'l_has_permission' ) ;
-    l_local_types := array_append ( l_local_types, 'boolean' ) ;
+    l_local_vars := util_meta.append_parameter (
+        a_parameters => l_local_vars,
+        a_name => 'l_has_permission',
+        a_datatype => 'boolean' ) ;
 
     --------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -112,23 +111,23 @@ BEGIN
 
         IF r.param_name IS NOT NULL THEN
 
-            l_proc_args := array_append ( l_proc_args, concat_ws ( ' ', r.param_name, '=>', r.param_name ) ) ;
-
-            l_param_names := array_append ( l_param_names, r.param_name ) ;
-            l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-            l_param_types := array_append ( l_param_types, r.param_data_type ) ;
-            l_param_comments := array_append ( l_param_comments, r.comments ) ;
+            l_calling_params := util_meta.append_parameter (
+                a_parameters => l_calling_params,
+                a_name => r.param_name,
+                a_direction => r.param_direction,
+                a_datatype => r.param_data_type,
+                a_comment => r.comments ) ;
 
         END IF ;
 
         IF r.ref_param_name IS NOT NULL AND NOT r.is_audit_col THEN
 
-            l_proc_args := array_append ( l_proc_args, concat_ws ( ' ', r.ref_param_name, '=>', r.ref_param_name ) ) ;
-
-            l_param_names := array_append ( l_param_names, r.ref_param_name ) ;
-            l_param_directions := array_append ( l_param_directions, r.param_direction ) ;
-            l_param_types := array_append ( l_param_types, r.ref_data_type ) ;
-            l_param_comments := array_append ( l_param_comments, r.ref_param_comments ) ;
+            l_calling_params := util_meta.append_parameter (
+                a_parameters => l_calling_params,
+                a_name => r.ref_param_name,
+                a_direction => r.param_direction,
+                a_datatype => r.ref_data_type,
+                a_comment => r.ref_param_comments ) ;
 
         END IF ;
 
@@ -176,15 +175,10 @@ BEGIN
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs an insert on ' || a_object_name,
             a_language => 'plpgsql',
-            a_param_names => l_param_names,
-            a_param_directions => l_param_directions,
-            a_param_datatypes => l_param_types,
-            a_param_comments => l_param_comments,
-            a_local_var_names => l_local_var_names,
-            a_local_var_datatypes => l_local_types ),
+            a_calling_parameters => l_calling_params,
+            a_variables => l_local_vars ),
         util_meta.snippet_log_params (
-            a_param_names => l_param_names,
-            a_datatypes => l_param_types ),
+            a_parameters => l_calling_params ),
         '',
         util_meta.indent (1) || '----------------------------------------------------------------------------------------------------------',
         util_meta.indent (1) || '-- TODO: determine if the parent type and ID is needed for can_do and, if so, what the ID of the parent is',
@@ -204,7 +198,7 @@ BEGIN
             a_comment => null::text,
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_datatypes => l_param_types ) ) ;
+            a_calling_parameters => l_calling_params ) ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;
 
