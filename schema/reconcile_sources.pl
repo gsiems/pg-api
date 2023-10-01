@@ -1,13 +1,12 @@
 #!/usr/bin/env perl
 use warnings;
 use strict;
-#use Data::Dumper;
 
 =pod
 
 A quick and dirty script for the purpose of reconciling the files to
 run in the create scripts with the actual source files in the schema
-subdirectories.
+sub-directories.
 
 The idea is to ensure that any files listed in the create scripts that
 do not exist in the schema source files are commented out while any new
@@ -35,7 +34,7 @@ foreach my $schema ( @schemas ) {
 sub get_schemas {
 
     my $source_dir = './';
-    opendir(my $dh, $source_dir) || warn "Can't opendir $source_dir: $!\n";
+    opendir(my $dh, $source_dir) || warn "Can't open $source_dir: $!\n";
     return unless ( $dh ) ;
 
     my @listing = readdir($dh);
@@ -49,7 +48,7 @@ sub get_source_list {
     my ( $schema ) = @_;
     my @source_files;
 
-    foreach my $type (qw(type sequence table view materialized_view function procedure)){
+    foreach my $type (qw(foreign_table function materialized_view procedure sequence table type view)){
 
         my $source_dir = "$schema/$type" ;
 
@@ -81,14 +80,16 @@ sub reconcile_schema {
     my $create_file = $create_schema_files{$schema} ;
     $create_file ||= "xx_create-${schema}.sql";
 
-    if (open( $fh, '<:raw', $create_file )) {
-        if ($fh) {
-            @orig_lines = (<$fh>);
-            close $fh;
-            chomp @orig_lines;
+    if ( -f $create_file ) {
+        if (open( $fh, '<:raw', $create_file )) {
+            if ($fh) {
+                @orig_lines = (<$fh>);
+                close $fh;
+                chomp @orig_lines;
+            }
+        } else {
+            warn "Could not open $create_file.\n";
         }
-    } else {
-        warn "Could not open $create_file.\n";
     }
 
     foreach my $new_line (@orig_lines) {
