@@ -28,7 +28,7 @@ This does not (currently) attempt to recurse beyond the parent tables for the sp
 
 Aspirational goal: to recurse parent reference tables.
 
-Aspirational goal: to recognise self-referential tables and add the recursive CTE for all parent records.
+Aspirational goal: to recognize self-referential tables and add the recursive CTE for all parent records.
 
 Note that this should work for all table types (dt, rt, st)
 
