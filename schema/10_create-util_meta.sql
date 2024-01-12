@@ -20,6 +20,12 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/table/rt_config_default.sql
 
 -- Views -----------------------------------------------------------------------
+\i util_meta/view/conftypes.sql
+\i util_meta/view/contypes.sql
+\i util_meta/view/prokinds.sql
+\i util_meta/view/relkinds.sql
+\i util_meta/view/typtypes.sql
+
 \i util_meta/view/schemas.sql
 \i util_meta/view/objects.sql
 \i util_meta/view/columns.sql
