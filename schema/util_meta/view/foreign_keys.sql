@@ -1,48 +1,25 @@
 CREATE OR REPLACE VIEW util_meta.foreign_keys
 AS
-WITH constraint_types AS (
-    SELECT *
-        FROM (
-            VALUES
-                ( 'f', 'FOREIGN KEY' ),
-                ( 'p', 'PRIMARY KEY' ),
-                ( 'u', 'UNIQUE' )
-            ) AS t ( contype, constraint_type )
-),
-rule_types AS (
-    SELECT *
-        FROM (
-            VALUES
-                ( 'a', 'NO ACTION' ),
-                ( 'c', 'CASCADE' ),
-                ( 'd', 'SET DEFAULT' ),
-                ( 'f', 'FULL' ),
-                ( 'n', 'SET NULL' ),
-                ( 'p', 'PARTIAL' ),
-                ( 'r', 'RESTRICT' ),
-                ( 's', 'NONE' )
-            ) AS t ( conftype, rule_text )
-),
-referential_constraints AS (
+WITH referential_constraints AS (
     SELECT ncon.nspname::text AS constraint_schema,
             con.conname::text AS constraint_name,
             con.oid,
             npkc.nspname::text AS unique_constraint_schema,
             pkc.conname::text AS unique_constraint_name,
-            mr.rule_text AS match_option,
-            ur.rule_text AS update_rule,
-            dr.rule_text AS delete_rule
+            mr.label AS match_option,
+            ur.label AS update_rule,
+            dr.label AS delete_rule
         FROM pg_catalog.pg_constraint con
         JOIN pg_catalog.pg_namespace ncon
             ON ( ncon.oid = con.connamespace )
         JOIN pg_catalog.pg_class c
             ON ( con.conrelid = c.oid
                 AND con.contype = 'f' )
-        LEFT JOIN rule_types mr
+        LEFT JOIN util_meta.conftypes mr
             ON ( mr.conftype = con.confmatchtype::text )
-        LEFT JOIN rule_types ur
+        LEFT JOIN util_meta.conftypes ur
             ON ( ur.conftype = con.confupdtype::text )
-        LEFT JOIN rule_types dr
+        LEFT JOIN util_meta.conftypes dr
             ON ( dr.conftype = con.confdeltype::text )
         LEFT JOIN pg_catalog.pg_depend d1
             ON ( d1.objid = con.oid
@@ -71,7 +48,7 @@ table_constraints AS (
             c.conname::text AS constraint_name,
             nr.nspname::text AS schema_name,
             r.relname::text AS object_name,
-            constraint_types.constraint_type,
+            contypes.label AS constraint_type,
             c.condeferrable AS is_deferrable,
             c.condeferred AS initially_deferred
         FROM pg_catalog.pg_constraint c
@@ -84,8 +61,8 @@ table_constraints AS (
         JOIN util_meta.objects o
             ON ( o.schema_name = nr.nspname
                 AND o.object_name = r.relname )
-        JOIN constraint_types
-            ON ( constraint_types.contype = c.contype )
+        JOIN util_meta.contypes
+            ON ( contypes.contype = c.contype::text )
         WHERE r.relkind IN ( 'r', 'p' )
             AND NOT pg_is_other_temp_schema ( nr.oid )
             AND nc.nspname <> 'information_schema'

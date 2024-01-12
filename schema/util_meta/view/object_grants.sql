@@ -3,7 +3,7 @@ AS
 WITH rol AS (
     SELECT oid,
             rolname::text AS role_name
-        FROM pg_authid
+        FROM pg_catalog.pg_authid
     UNION
     SELECT 0::oid AS oid,
             'public'::text
@@ -24,25 +24,14 @@ classes AS ( -- Tables, views, etc.
             c.oid,
             c.relname::text AS object_name,
             c.relowner AS owner_oid,
-            CASE
-                WHEN c.relkind = 'r' THEN 'table'
-                WHEN c.relkind = 'v' THEN 'view'
-                WHEN c.relkind = 'm' THEN 'materialized view'
-                WHEN c.relkind = 'c' THEN 'type'
-                WHEN c.relkind = 'i' THEN 'index'
-                WHEN c.relkind = 'S' THEN 'sequence'
-                WHEN c.relkind = 's' THEN 'special'
-                WHEN c.relkind = 't' THEN 'TOAST table'
-                WHEN c.relkind = 'f' THEN 'foreign table'
-                WHEN c.relkind = 'p' THEN 'partitioned table'
-                WHEN c.relkind = 'I' THEN 'partitioned index'
-                ELSE c.relkind::text
-                END AS object_type,
+            coalesce ( ct.label, c.relkind::text ) AS object_type,
             CASE
                 WHEN c.relkind = 'S' THEN coalesce ( c.relacl, acldefault ( 's'::"char", c.relowner ) )
                 ELSE coalesce ( c.relacl, acldefault ( 'r'::"char", c.relowner ) )
                 END AS acl
-        FROM pg_class c
+        FROM pg_catalog.pg_class c
+        LEFT JOIN util_meta.relkinds ct
+            ON ( ct.relkind = c.relkind::text )
         JOIN schemas
             ON ( schemas.schema_oid = c.relnamespace )
         WHERE c.relkind IN ( 'r', 'v', 'm', 'S', 'f', 'p' )
@@ -54,7 +43,7 @@ cols AS ( -- Columns
             'column' AS object_type,
             c.owner_oid,
             coalesce ( a.attacl, acldefault ( 'c'::"char", c.owner_oid ) ) AS acl
-        FROM pg_attribute a
+        FROM pg_catalog.pg_attribute a
         JOIN classes c
             ON ( a.attrelid = c.oid )
         WHERE a.attnum > 0
@@ -66,17 +55,14 @@ procs AS ( -- Procedures and functions
             p.oid,
             p.proname::text AS object_name,
             p.proowner AS owner_oid,
-            CASE p.prokind
-                WHEN 'a' THEN 'aggregate'
-                WHEN 'w' THEN 'window'
-                WHEN 'p' THEN 'procedure'
-                ELSE 'function'
-                END AS object_type,
+            coalesce ( pt.label, 'function' ) AS object_type,
             pg_catalog.pg_get_function_arguments ( p.oid ) AS calling_arguments,
             coalesce ( p.proacl, acldefault ( 'f'::"char", p.proowner ) ) AS acl
-        FROM pg_proc p
+        FROM pg_catalog.pg_proc p
         JOIN schemas
             ON ( schemas.schema_oid = p.pronamespace )
+        LEFT JOIN util_meta.prokinds pt
+            ON ( pt.prokind = p.prokind::text )
 ),
 udts AS ( -- User defined types
     SELECT schemas.schema_oid,
@@ -84,20 +70,13 @@ udts AS ( -- User defined types
             t.oid,
             t.typname::text AS object_name,
             t.typowner AS owner_oid,
-            CASE t.typtype
-                WHEN 'b' THEN 'base type'
-                WHEN 'c' THEN 'composite type'
-                WHEN 'd' THEN 'domain'
-                WHEN 'e' THEN 'enum type'
-                WHEN 't' THEN 'pseudo-type'
-                WHEN 'r' THEN 'range type'
-                WHEN 'm' THEN 'multirange'
-                ELSE t.typtype::text
-                END AS object_type,
+            coalesce ( typtypes.label, t.typtype::text ) AS object_type,
             coalesce ( t.typacl, acldefault ( 'T'::"char", t.typowner ) ) AS acl
-        FROM pg_type t
+        FROM pg_catalog.pg_type t
         JOIN schemas
             ON ( schemas.schema_oid = t.typnamespace )
+        LEFT JOIN util_meta.typtypes
+            ON ( typtypes.typtype = t.typtype::text )
         WHERE ( t.typrelid = 0
                 OR ( SELECT c.relkind = 'c'
                         FROM pg_catalog.pg_class c
@@ -119,7 +98,7 @@ fdws AS ( -- Foreign data wrappers
             p.fdwowner AS owner_oid,
             'foreign data wrapper' AS object_type,
             coalesce ( p.fdwacl, acldefault ( 'F'::"char", p.fdwowner ) ) AS acl
-        FROM pg_foreign_data_wrapper p
+        FROM pg_catalog.pg_foreign_data_wrapper p
 ),
 fsrvs AS ( -- Foreign servers
     SELECT null::oid AS schema_oid,
@@ -129,7 +108,7 @@ fsrvs AS ( -- Foreign servers
             p.srvowner AS owner_oid,
             'foreign server' AS object_type,
             coalesce ( p.srvacl, acldefault ( 'S'::"char", p.srvowner ) ) AS acl
-        FROM pg_foreign_server p
+        FROM pg_catalog.pg_foreign_server p
 ),
 all_objects AS (
     SELECT schema_name AS object_schema,
