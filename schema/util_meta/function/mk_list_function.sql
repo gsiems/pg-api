@@ -15,9 +15,9 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function mk_list_function generates a draft "list entries that are a children of the specified parent" function for a table.
+Function mk_list_function generates a draft "list entries that are children of the specified parent" function for a table.
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the function for |
@@ -209,7 +209,7 @@ BEGIN
             a_parameters => l_calling_params,
             a_name => r.param_name,
             a_datatype => r.data_type,
-            a_comment => r.comments ) ;
+            a_description => r.comments ) ;
 
         l_resolve_id_params := array_append ( l_resolve_id_params, r.param_name ) ;
 
@@ -229,7 +229,7 @@ BEGIN
         a_parameters => l_calling_params,
         a_name => 'a_user',
         a_datatype => 'text',
-        a_comment => 'The ID or username of the user requesting the list' ) ;
+        a_description => 'The ID or username of the user requesting the list' ) ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),

@@ -13,7 +13,7 @@ AS $$
 /**
 Function mk_find_function generates a draft "find matching entries" function for a table.
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the function for |
@@ -30,7 +30,6 @@ ASSERTIONS
 DECLARE
 
     r record ;
-
 
     l_ddl_schema text ;
     l_doc_item text ;
@@ -94,13 +93,13 @@ BEGIN
         a_parameters => l_calling_params,
         a_name => 'a_user',
         a_datatype => 'text',
-        a_comment => 'The ID or username of the user doing the search' ) ;
+        a_description => 'The ID or username of the user doing the search' ) ;
 
     l_calling_params := util_meta.append_parameter (
         a_parameters => l_calling_params,
         a_name => 'a_search_term',
         a_datatype => 'text',
-        a_comment => 'The string to search for' ) ;
+        a_description => 'The string to search for' ) ;
 
     FOR r IN (
         SELECT schema_name,

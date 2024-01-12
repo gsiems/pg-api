@@ -10,7 +10,7 @@ AS $$
 /**
 Function mk_can_do_function_shell generates the shell of a draft can_do function
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the function in |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the function |
@@ -40,37 +40,37 @@ BEGIN
             a_parameters => l_calling_params,
             a_name => 'a_user',
             a_datatype => 'text',
-            a_comment => 'The user to check permissions for' ) ;
+            a_description => 'The user to check permissions for' ) ;
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
             a_name => 'a_action',
             a_datatype => 'text',
-            a_comment => 'The action to perform' ) ;
+            a_description => 'The action to perform' ) ;
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
             a_name => 'a_object_type',
             a_datatype => 'text',
-            a_comment => 'The (name of) the type of object to perform the action on' ) ;
+            a_description => 'The (name of) the type of object to perform the action on' ) ;
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
             a_name => 'a_id',
             a_datatype => 'integer',
-            a_comment => 'The ID of the object to check permissions for' ) ;
+            a_description => 'The ID of the object to check permissions for' ) ;
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
             a_name => 'a_parent_object_type',
             a_datatype => 'text',
-            a_comment => 'The (name of) the type of object that is the parent of the object to check permissions for (this is for inserts)' ) ;
+            a_description => 'The (name of) the type of object that is the parent of the object to check permissions for (this is for inserts)' ) ;
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
             a_name => 'a_parent_id',
             a_datatype => 'integer',
-            a_comment => 'The ID of the parent object to check permissions for (this is for inserts)' ) ;
+            a_description => 'The ID of the parent object to check permissions for (this is for inserts)' ) ;
 
         ------------------------------------------------------------------------
         l_local_vars := util_meta.append_parameter (

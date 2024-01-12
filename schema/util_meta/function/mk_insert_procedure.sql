@@ -15,7 +15,7 @@ AS $$
 /**
 Function mk_insert_procedure generates a draft "public" insert procedure for a table
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the procedure for |
@@ -116,7 +116,7 @@ BEGIN
                 a_name => r.param_name,
                 a_direction => r.param_direction,
                 a_datatype => r.param_data_type,
-                a_comment => r.comments ) ;
+                a_description => r.comments ) ;
 
         END IF ;
 
@@ -127,7 +127,7 @@ BEGIN
                 a_name => r.ref_param_name,
                 a_direction => r.param_direction,
                 a_datatype => r.ref_data_type,
-                a_comment => r.ref_param_comments ) ;
+                a_description => r.ref_param_comments ) ;
 
         END IF ;
 

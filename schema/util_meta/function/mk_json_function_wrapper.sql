@@ -13,7 +13,7 @@ AS $$
 Function mk_json_function_wrapper generates a draft JSON wrapper around a
 regular set returning function ( find_, get_, list_ )
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the regular function |
 | a_object_name                  | in     | text       | The (name of the) name of the regular function     |
@@ -112,7 +112,7 @@ BEGIN
             a_name => r.param_name,
             a_direction => r.param_direction,
             a_datatype => r.data_type,
-            a_comment => r.comments ) ;
+            a_description => r.comments ) ;
 
     END LOOP ;
 

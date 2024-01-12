@@ -13,7 +13,7 @@ AS $$
 /**
 Function snippet_documentation_block generates the documentation block for an object
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_name                  | in     | text       | The name of the database object                    |
 | a_object_type                  | in     | text       | The type {function, procedure} of the object       |
@@ -26,12 +26,12 @@ Function snippet_documentation_block generates the documentation block for an ob
 DECLARE
 
     l_return text ;
-    l_doc_format text := '| %-30s | %-6s | %-10s | %-50s |' ;
+    l_doc_format constant text := '| %-30s | %-6s | %-10s | %-50s |' ;
     l_doc_lines text[] ;
 
 BEGIN
 
-    l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  'Parameter', 'In/Out', 'Datatype', 'Remarks' ) ) ;
+    l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  'Parameter', 'In/Out', 'Datatype', 'Description' ) ) ;
     l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  '------------------------------', '------', '----------', '--------------------------------------------------' ) ) ;
 
     FOR l_idx IN 1..array_length ( a_calling_parameters.names, 1 ) LOOP
@@ -41,7 +41,7 @@ BEGIN
                     a_calling_parameters.names[l_idx],
                     a_calling_parameters.directions[l_idx],
                     a_calling_parameters.datatypes[l_idx],
-                    coalesce ( a_calling_parameters.comments[l_idx], 'TBD' ) ) ) ;
+                    coalesce ( a_calling_parameters.descriptions[l_idx], 'TBD' ) ) ) ;
 
     END LOOP ;
 
@@ -77,10 +77,6 @@ BEGIN
         '*' || '/' ) ;
 
     RETURN l_return ;
-
-
-
-
 
 END ;
 $$ ;

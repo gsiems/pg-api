@@ -12,7 +12,7 @@ AS $$
 /**
 Function mk_resolve_id_function generates a draft function for resolving reference table IDs
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the function for |
@@ -134,7 +134,7 @@ BEGIN
                 a_name => r.param_name,
                 a_direction => r.direction,
                 a_datatype => r.data_type,
-                a_comment => r.comments ) ;
+                a_description => r.comments ) ;
 
             IF r.is_pk THEN
 
