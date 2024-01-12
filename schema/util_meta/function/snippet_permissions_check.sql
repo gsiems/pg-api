@@ -14,7 +14,7 @@ AS $$
 /**
 Function snippet_permissions_check generates the pl/pg-sql code snippet for calling a permissions check
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The number of indentations to prepend to each line of the code snippet (default 0) |
 | a_action                       | in     | text       | The (name of the) action that that is to be performed |

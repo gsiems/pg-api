@@ -12,7 +12,7 @@ AS $$
 /**
 Function snippet_json_build_object generates a json_build_object function call query for a table or view
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The (optional) number of indents to add to the code snippet (default 0) |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table/view to wrap with the json view |

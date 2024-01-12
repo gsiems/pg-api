@@ -14,7 +14,7 @@ AS $$
 /**
 Function snippet_procedure_frontmatter generates the pl/pg-sql code snippet for the start of a procedure
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the procedure in |
 | a_procedure_name               | in     | text       | The (name of the) procedure to create              |

@@ -10,7 +10,7 @@ AS $$
 /**
 Function is_valid_object checks if the specified object exists in the database
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the object  |
 | a_object_name                  | in     | text       | The (name of the) object to check the existence of |

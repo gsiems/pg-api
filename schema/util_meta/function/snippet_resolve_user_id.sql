@@ -11,7 +11,7 @@ AS $$
 /**
 Function snippet_resolve_user_id    generates the pl/pg-sql code snippet for logging the calling parameters to a function or procedure
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The number of indentations to prepend to each line of the code snippet (default 1) |
 | a_user_id_var                  | in     | text       | The name of the user ID variable to populate (default l_acting_user_id) |
@@ -32,7 +32,6 @@ DECLARE
 BEGIN
 
     l_indents := coalesce ( a_indents, 1 ) ;
-
     l_user_id_var :=  coalesce ( a_user_id_var, 'l_acting_user_id' ) ;
     l_user_id_param := coalesce ( a_user_id_param, 'a_user' ) ;
 

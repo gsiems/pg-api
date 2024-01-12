@@ -8,7 +8,7 @@ AS $$
 /**
 Function snippet_declare_variables generates the pl/pg-sql code snippet for declaring the local variables for a function or procedure
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_variables                    | in     | ut_parameters | The list of variables                           |
 

@@ -13,7 +13,7 @@ AS $$
 /**
 Function snippet_owners_and_grants generates the pl/pg-sql code snippet for setting ownership and granting execute
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the object in   |
 | a_object_name                  | in     | text       | The (name of the) object to create                 |

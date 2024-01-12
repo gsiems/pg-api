@@ -12,7 +12,7 @@ AS $$
 /**
 Function mk_json_user_type generates a user type for a table or view with lowerCamelCase column names
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table/view to create a user type from |
 | a_object_name                  | in     | text       | The (name of the) table/view to create a user type from |

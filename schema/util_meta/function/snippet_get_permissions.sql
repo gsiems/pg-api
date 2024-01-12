@@ -12,9 +12,9 @@ STABLE
 SECURITY DEFINER
 AS $$
 /**
-Function snippet_get_permissions generates the pl/pg-sql code snippet for calling a getting the users permissions for an action on an object
+Function snippet_get_permissions generates the pl/pgsql code snippet for calling a getting the users permissions for an action on an object
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The number of indentations to prepend to each line of the code snippet (default 0) |
 | a_action                       | in     | text       | The (name of the) action that that is to be performed |
@@ -32,7 +32,7 @@ ASSERTION: In the DDL schema there exists a function:
         a_id integer,
         a_parent_object_type text,
         a_parent_object_id integer ) ;
-    that returns a true/false value indicating if the specified user can to the specified action to the specified object
+    that returns a true/false value indicating if the specified user can perform the specified action on the specified object/object type
 
 */
 DECLARE

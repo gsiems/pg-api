@@ -12,13 +12,13 @@ AS $$
 /**
 Function mk_user_type generates a user defined type for a table or view
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table/view to create a user type from |
 | a_object_name                  | in     | text       | The (name of the) table/view to create a user type from |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the type in (if different from the table schema) |
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the type |
-| a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted select on the view |
+| a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted privs on the type |
 
 */
 DECLARE

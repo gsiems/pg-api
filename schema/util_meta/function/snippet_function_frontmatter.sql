@@ -13,7 +13,7 @@ AS $$
 /**
 Function snippet_function_frontmatter generates the pl/pg-sql code snippet for the start of a function
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) schema to create the function in |
 | a_function_name                | in     | text       | The (name of the) function  to create              |

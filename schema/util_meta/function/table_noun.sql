@@ -9,7 +9,7 @@ AS $$
 /**
 Function table_noun guesses at the proper "noun" for a table (or view)
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_name                  | in     | text       | The (name of the) table                            |
 | a_ddl_schema                   | in     | text       | The (name of the) schema where whatever function/procedure is being created in |

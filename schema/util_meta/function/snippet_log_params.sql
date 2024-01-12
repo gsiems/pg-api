@@ -9,7 +9,7 @@ AS $$
 /**
 Function snippet_log_params generates the pl/pg-sql code snippet for logging a list of parameters (or variables)
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_parameters                   | in     | ut_parameters | The list of parameters to log                   |
 

@@ -12,7 +12,7 @@ AS $$
 /**
 Function snippet_object_comment generates a COMMENT ON ... snippet
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) schema of the object being commented on |
 | a_object_name                  | in     | text       | The (name of the) object being commented on        |

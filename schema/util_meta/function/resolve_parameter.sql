@@ -13,7 +13,7 @@ If the parameter value is specified then it is checked (as applicable) to determ
 
 If the parameter value is not specified then the default for that parameter (as applicable) is returned.
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_name                         | in     | text       | The name of the parameter to resolve               |
 | a_value                        | in     | text       | The supplied value of the parameter to resolve     |

@@ -14,7 +14,7 @@ AS $$
 /**
 Function snippet_function_backmatter generates the pl/pg-sql code snippet for the end of a function
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_ddl_schema                   | in     | text       | The (name of the) module (and hence schema) to create the function in (if different from the table schema) |
 | a_function_name                | in     | text       | The (name of the) function  to create              |

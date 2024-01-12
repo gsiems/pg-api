@@ -8,7 +8,7 @@ AS $$
 /**
 Function mk_table_migration generates a psql script for migrating the structure of a table
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table to migrate |
 | a_object_name                  | in     | text       | The (name of the) table to create a migration script for |

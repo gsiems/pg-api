@@ -7,7 +7,7 @@ AS $$
 /**
 Function cleanup_whitespace cleans up any excess white space from the specified text
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_text                         | in     | text       | The text to clean up                               |
 
@@ -18,13 +18,13 @@ DECLARE
 
 BEGIN
 
-    -- replace trailing white-space
+    -- remove trailing tab and/or space characters
     l_result := regexp_replace ( a_text, E'[ \t](\n)', E'\n', 'g' ) ;
 
-    -- replace excess vertical space
+    -- remove excess vertical space
     l_result := regexp_replace ( l_result, E'\n\n\n+', E'\n\n', 'g' ) ;
 
-    -- replace any excess closing vertical space
+    -- remove any excess closing vertical space
     l_result := regexp_replace ( l_result, E'\n\n+\$', E'\n' ) ;
 
     RETURN l_result ;

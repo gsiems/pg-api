@@ -38,7 +38,7 @@ AS $$
 /**
 Function proc_parameters returns the data needed for specifying the parameter list for insert, update, and/or upsert procedures
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_action                       | in     | text       | The data management action that the procedure should perform {insert, update, upsert} |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |

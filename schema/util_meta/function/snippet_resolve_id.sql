@@ -12,7 +12,7 @@ AS $$
 /**
 Function snippet_resolve_id generates the pl/pg-sql code snippet for calling a resolve ID function
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_indents                      | in     | integer    | The number of indentations to prepend to each line of the code snippet (default 0) |
 | a_id_param                     | in     | text       | The (name of the) parameter to set the resolved ID to  |
