@@ -13,7 +13,7 @@ AS $$
 /**
 Function mk_view generates a draft view of a table
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the table   |
 | a_object_name                  | in     | text       | The (name of the) table to create the view for     |
@@ -33,6 +33,7 @@ Aspirational goal: to recognize self-referential tables and add the recursive CT
 Note that this should work for all table types (dt, rt, st)
 
 */
+
 DECLARE
 
     r record ;
@@ -58,6 +59,8 @@ DECLARE
     l_true_val text ;
     l_false_val text ;
     l_boolean_transform text ;
+
+    l_fnk_count integer ;
 
 BEGIN
 
@@ -167,9 +170,21 @@ BEGIN
 
             has_join := false ;
 
+            -- Determine if the parent table has a multi-column natural key or not
+            SELECT count (*)
+                INTO l_fnk_count
+                FROM util_meta.columns
+                WHERE schema_name = fk.ref_schema_name
+                    AND object_name = fk.ref_table_name
+                    AND is_nk ;
+
             FOR fk_col IN (
                 SELECT column_name,
                         col.join_alias || '.' || column_name AS full_column_name,
+                        --CASE
+                        --    WHEN l_fnk_count = 1 THEN col.join_alias || '.' || column_name
+                        --    ELSE col.join_alias || '.' || regexp_replace ( col.column_name, '_' || column_name ||'$' ) || '_' || column_name
+                        --    END AS full_column_name,
                         comments
                     FROM util_meta.columns
                     WHERE schema_name = fk.ref_schema_name
@@ -186,6 +201,10 @@ BEGIN
                 ELSE
                     -- no clue, let the user/developer figure it out for now...
                     l_column_alias := col.column_name || '_' || lpad ( col.ordinal_position::text, 4, '0' ) ;
+                END IF ;
+
+                IF l_fnk_count > 1 THEN
+                    l_column_alias := l_column_alias || '_' || fk_col.column_name ;
                 END IF ;
 
                 l_columns := array_append ( l_columns, concat_ws ( ' ', fk_col.full_column_name, 'AS', l_column_alias ) ) ;
