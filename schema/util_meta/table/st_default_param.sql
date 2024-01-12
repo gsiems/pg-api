@@ -25,7 +25,9 @@ WITH n AS (
                 ( 2, 'a_plpgsql_type', 'The default type of PL/pgSQL code (function,procedure) to generate for insert, update, upsert, and delete functionality.' ),
                 ( 3, 'a_cast_booleans_as', 'The csv pair (true,false) of values to cast booleans as (if booleans are going to be cast to non-boolean values).' ),
                 ( 4, 'a_insert_audit_columns', 'The csv list of insert audit columns (user created, timestamp created, etc.) that the database (client) user doesn''t directly edit.' ),
-                ( 5, 'a_update_audit_columns', 'The csv list of update audit columns (user updated, timestamp last updated, etc.) that the database (client) user doesn''t directly edit.' )
+                ( 5, 'a_update_audit_columns', 'The csv list of update audit columns (user updated, timestamp last updated, etc.) that the database (client) user doesn''t directly edit.' ),
+                ( 6, 'indent_char', 'The character(s) to use when adding indentation to code lines.' ),
+                ( 7, 'json_casing', 'The type of attribute casing to use for emitting/ingesting JSON.' )
             ) AS dat ( id, name, description )
 ),
 missing AS (
@@ -51,15 +53,12 @@ UPDATE util_meta.st_default_param
         default_value = 'function'
     WHERE name = 'a_plpgsql_type' ;
 
-
-/* Other potential options:
-
-'a_json_casing', 'The type of attribute casing to use for emitting/ingesting JSON.'
-
 UPDATE util_meta.st_default_param
     SET allowed_values = 'snake,lowerCamel,upperCamel',
         default_value = 'lowerCamel'
-    WHERE name = 'a_json_casing' ;
+    WHERE name = 'json_casing' ;
+
+/* Other potential options:
 
 ----
 
