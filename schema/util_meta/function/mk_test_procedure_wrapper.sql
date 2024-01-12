@@ -9,7 +9,7 @@ AS $$
 /**
 Function mk_test_procedure_wrapper generates a testing function for wrapping a database procedure
 
-| Parameter                      | In/Out | Datatype   | Remarks                                            |
+| Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
 | a_object_schema                | in     | text       | The (name of the) schema that contains the procedure to wrap |
 | a_object_name                  | in     | text       | The (name of the) procedure to wrap                |
@@ -114,6 +114,19 @@ BEGIN
         l_local_var_names := array_append ( l_local_var_names, 'r' ) ;
         l_local_var_types := array_append ( l_local_var_types, 'record' ) ;
     END IF ;
+
+    ----------------------------------------------------------------------------
+    l_local_var_names := array_append ( l_local_var_names, 'l_err' ) ;
+    l_local_var_types := array_append ( l_local_var_types, 'text' ) ;
+
+    l_local_var_names := array_append ( l_local_var_names, 'l_pg_cx' ) ;
+    l_local_var_types := array_append ( l_local_var_types, 'text' ) ;
+
+    l_local_var_names := array_append ( l_local_var_names, 'l_pg_ed' ) ;
+    l_local_var_types := array_append ( l_local_var_types, 'text' ) ;
+
+    l_local_var_names := array_append ( l_local_var_names, 'l_pg_ec' ) ;
+    l_local_var_types := array_append ( l_local_var_types, 'text' ) ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws ( util_meta.new_line (),
@@ -352,6 +365,15 @@ BEGIN
         '',
         util_meta.indent (1) || 'RETURN true ;',
         '',
+        'EXCEPTION',
+        util_meta.indent (1) ||'WHEN others THEN',
+        util_meta.indent (2) || 'GET STACKED DIAGNOSTICS',
+        util_meta.indent (4) || 'l_pg_cx = PG_CONTEXT,',
+        util_meta.indent (4) || 'l_pg_ed = PG_EXCEPTION_DETAIL,',
+        util_meta.indent (4) || 'l_pg_ec = PG_EXCEPTION_CONTEXT ;',
+        util_meta.indent (2) || 'call util_log.log_exception ( l_err ) ;',
+        util_meta.indent (2) || 'RAISE NOTICE E''EXCEPTION: %'', l_err ;',
+        util_meta.indent (2) || 'RETURN false ;',
         'END ;',
         '$' || '$ ;' ) ;
 
