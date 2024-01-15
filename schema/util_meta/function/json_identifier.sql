@@ -37,7 +37,8 @@ DECLARE
 BEGIN
 
     l_casing := coalesce ( util_meta.resolve_parameter (
-                a_name => 'json_casing' ), 'lowerCamel' ) AS chars ;
+                a_name => 'json_casing',
+                a_value =>  a_json_casing ), 'lowerCamel' ) AS chars ;
 
     IF l_casing = 'snake' THEN
         l_separator := '_' ;
