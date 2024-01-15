@@ -7,8 +7,11 @@ WITH base AS (
             pg_catalog.pg_get_userbyid ( n.nspowner )::text AS owner_name,
             concat_ws ( '/', 'schema', n.nspname::text ) AS directory_name
         FROM pg_catalog.pg_namespace n
+        LEFT JOIN pg_catalog.pg_extension px
+            ON ( px.extnamespace = n.oid )
         WHERE n.nspname !~ '^pg_'
             AND n.nspname <> 'information_schema'
+            AND px.oid IS NULL
 )
 SELECT *
     FROM base ;
