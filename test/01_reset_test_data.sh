@@ -71,7 +71,7 @@ function run_normal() {
 }
 
 if [ -z "${quieter}" ] || [ "${quieter}" == "0" ]; then
-    run_quietly
-else
     run_normal
+else
+    run_quietly
 fi
