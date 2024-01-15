@@ -13,7 +13,7 @@ SYNOPSIS
 
 DESCRIPTION
 
-    Runs a set of one or more pgTap test files
+    Runs a set of one or more pgTap test files on the localhost pg instance
 
 OPTIONS
 
