@@ -16,4 +16,7 @@ SELECT *
             ( 'S', 'sequence' )
         ) AS t ( relkind, label ) ;
 
-COMMENT ON VIEW util_meta.relkinds IS 'Labels for pg_class.relkind values' ;
+COMMENT ON VIEW util_meta.relkinds IS 'Labels for pg_class.relkind (object type) values' ;
+
+COMMENT ON COLUMN util_meta.relkinds.relkind IS 'The pg_class.relkind value' ;
+COMMENT ON COLUMN util_meta.relkinds.label IS 'The label/name associated with the prokind value' ;

@@ -12,4 +12,7 @@ SELECT *
             ( 'm', 'multirange' )
         ) AS t ( typtype, label ) ;
 
-COMMENT ON VIEW util_meta.typtypes IS 'Labels for pg_type.typtype values' ;
+COMMENT ON VIEW util_meta.typtypes IS 'Labels for pg_type.typtype (user defined type) values' ;
+
+COMMENT ON COLUMN util_meta.typtypes.typtype IS 'The pg_type.typtype value' ;
+COMMENT ON COLUMN util_meta.typtypes.label IS 'The label/name associated with the typtype value' ;
