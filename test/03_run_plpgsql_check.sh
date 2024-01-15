@@ -65,7 +65,6 @@ psqlFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
 
 cat <<EOT >${psqlFile}
 
-\x on
 \pset pager off
 
 SELECT  (pcf).functionid::regprocedure::text AS "procedure",
@@ -104,6 +103,6 @@ SELECT  (pcf).functionid::regprocedure::text AS "procedure",
         (pcf).lineno ;
 EOT
 
-psql -U ${usr} -d ${db} -p ${port} -f >${psqlFile} | sed 's/\+[[:blank:]]*$//;s/[[:blank:]]*$//'
+psql -X -U ${usr} -d ${db} -p ${port} -f ${psqlFile} | sed 's/\+[[:blank:]]*$//;s/[[:blank:]]*$//'
 
-rm >${psqlFile}
+rm ${psqlFile}
