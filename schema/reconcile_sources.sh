@@ -79,13 +79,18 @@ function update_create_schema_file() {
             '\i '*)
                 # if \i and not for any currently existing sql file then comment out
 
-                local lnTst=$(grep "${line}" ${newFilesList})
+                local trimmed=$(echo "${line}" | sed 's/[[:space:]]*$//')
+                local matched=$(grep "${trimmed}" ${newFilesList})
 
-                if [ -z "${lnTst}" ]; then
-                    echo "--${line}" >>${newFile}
+                if [ -z "${matched}" ]; then
+                    echo "--${trimmed}" >>${newFile}
                     fileChanged=1
                 else
-                    echo "${line}" >>${newFile}
+                    echo "${trimmed}" >>${newFile}
+                    if [ "${trimmed}" != "${line}" ]; then
+                        # cleanup trailing whitespace
+                        fileChanged=1
+                    fi
                 fi
                 ;;
 
@@ -105,8 +110,8 @@ function update_create_schema_file() {
         case "${line}" in
 
             '\i '*)
-                local lnTst=$(grep "${line}" ${currentFile})
-                if [ -z "${lnTst}" ]; then
+                local matched=$(grep "${line}" ${currentFile})
+                if [ -z "${matched}" ]; then
 
                     if [ "${hasNew}" == "0" ]; then
 
