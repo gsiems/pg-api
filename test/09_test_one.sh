@@ -50,7 +50,7 @@ if [ ! -z "${usage}" ]; then
     usage
 fi
 
-if [ ${truncateLogs} -eq 1 ]; then
+if [ "${truncateLogs}" == "1" ]; then
     psql -U ${usr} -d ${db} -p ${port} -c 'truncate table util_log.dt_proc_log ;'
 fi
 
