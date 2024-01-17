@@ -134,7 +134,7 @@ function extract_schema_toc() {
         local objectType=$(echo $rec | cut -d ":" -f 1)
         local objectName=$(echo $rec | cut -d ":" -f 2)
         local returnType=$(echo $rec | cut -d ":" -f 4)
-        local link=$(echo ${objectName} | tr "[A-Z]" "[a-z]" | tr "_" "-")
+        local link=$(echo "${objectType}-${objectName}" | tr "[A-Z]" "[a-z]")
 
         case "${objectType}" in
             "function")
@@ -271,19 +271,29 @@ function extract_documentation() {
     echo "" >>${readmeFile}
 
     cat <<EOT >${psqlFile}
-SELECT DISTINCT schema_name
-    FROM util_meta.objects
+SELECT schema_name
+    FROM util_meta.schemas
     WHERE schema_name NOT IN ( 'public', 'util_log', 'util_meta' )
-        AND object_type IN ( 'function', 'procedure' )
-        -- exclude private schemas
-        AND schema_name !~ '^_'
-        AND schema_name !~ '^priv_'
-        AND schema_name !~ '_priv$'
-        -- exclude "backup" schemas
-        AND schema_name !~ '^bak_'
-        -- exclude private functions and procedures
-        AND object_name !~ '^_'
-        AND object_name !~ '^priv_'
+        ---- Exclude private schemas
+        --AND schema_name !~ '^_'
+        --AND schema_name !~ '^priv_'
+        --AND schema_name !~ '_priv$'
+        ---- Exclude "backup" schemas
+        --AND schema_name !~ '^bak_'
+        ---- Other schemas to exclude
+        --AND schema_name IN (  )
+        AND EXISTS (
+            SELECT 1
+                FROM util_meta.objects o
+                WHERE o.schema_oid = schemas.schema_oid
+                    AND o.object_type IN ( 'function', 'procedure' )
+                    -- Exclude private functions and procedures
+                    AND o.object_name !~ '^_'
+                    AND o.object_name !~ '^priv_'
+                    -- Exclude trigger functions
+                    AND ( o.result_data_type IS NULL
+                        OR o.result_data_type <> 'trigger' )
+        )
     ORDER BY schema_name ;
 EOT
 
