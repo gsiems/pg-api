@@ -9,7 +9,7 @@ NAME
 
 SYNOPSIS
 
-    02_run_tests.sh [-f] [-d] [-p] [-q] [-u] [-T] [-h]
+    02_run_tests.sh [-f] [-c] [-d] [-p] [-q] [-u] [-T] [-h]
 
 DESCRIPTION
 
@@ -690,19 +690,21 @@ select plprofiler_client.reset_shared () ;
 
     plprofiler_coverage_report
 
-    # delete the profile?
+    # delete the profileName profile?
+    # Use the same profileName for each run or dynamically generate a profileName
+    # for each run (implies deleting profile when done)
 
 }
 
 ################################################################################
 
-if [ ${truncateLogs} -eq 1 ]; then
+if [ "${truncateLogs}" == "1" ]; then
     psql -U ${usr} -d ${db} -p ${port} -c 'truncate table util_log.dt_proc_log ;'
 fi
 
 psql -U ${usr} -d ${db} -p ${port} -f 10_init_testrun.sql 2>&1 >/dev/null
 
-if [ ! -z "${coverage}" ]; then
+if [ "${coverage}" == "1" ]; then
     init_plprofiler
     run_tests
     generate_plprofiler_reports
