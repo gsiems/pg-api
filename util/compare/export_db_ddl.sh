@@ -33,7 +33,7 @@ DESCRIPTION
 
     -t target_directory
 
-        The directory to write the API documentation to ( defaults to the doc/api directory)
+        The directory to write exported DDL files to
 
     -h
 
