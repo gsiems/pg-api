@@ -21,7 +21,7 @@ SELECT DISTINCT schemas.schema_oid,
         dep_schemas.schema_oid AS dep_schema_oid,
         dep_schemas.schema_name AS dep_schema_name,
         c2.oid AS dep_object_oid,
-        c2.relname ::text AS dep_object_name,
+        c2.relname::text AS dep_object_name,
         pg_catalog.pg_get_userbyid ( c2.relowner )::text AS dep_owner_name,
         coalesce ( dep_type.label, 'other (' || c2.relkind || ')' ) AS dep_object_type
     FROM pg_catalog.pg_class c
@@ -37,6 +37,33 @@ SELECT DISTINCT schemas.schema_oid,
         ON ( obj_type.relkind = c.relkind::text )
     LEFT JOIN util_meta.relkinds AS dep_type
         ON ( dep_type.relkind = c2.relkind::text )
+UNION
+-- functions/procedures
+SELECT nc.oid AS schema_oid,
+        nc.nspname AS schema_name,
+        c.oid AS object_oid,
+        c.relname AS object_name,
+        pg_catalog.pg_get_userbyid ( c.relowner )::text AS owner_name,
+        coalesce ( obj_type.label, 'other (' || c.relkind || ')' ) AS object_type,
+        np.oid AS dep_schema_oid,
+        np.nspname AS dep_schema_name,
+        p.oid AS dep_object_oid,
+        p.proname AS dep_object_name,
+        pg_catalog.pg_get_userbyid ( p.proowner )::text AS dep_owner_name,
+        coalesce ( dep_type.label, 'other (' || c.relkind || ')' ) AS dep_object_type
+    FROM pg_catalog.pg_proc p
+    JOIN pg_catalog.pg_namespace np
+        ON ( np.oid = p.pronamespace )
+    JOIN pg_catalog.pg_type t
+        ON ( t.oid = p.prorettype )
+    JOIN pg_catalog.pg_class c
+        ON ( c.oid = t.typrelid )
+    JOIN pg_catalog.pg_namespace nc
+        ON ( nc.oid = c.relnamespace )
+    LEFT JOIN util_meta.relkinds AS obj_type
+        ON ( obj_type.relkind = c.relkind::text )
+    LEFT JOIN util_meta.prokinds AS dep_type
+        ON ( dep_type.prokind = p.prokind::text )
 UNION
 -- triggers
 SELECT schemas.schema_oid,
