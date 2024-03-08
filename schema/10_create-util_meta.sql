@@ -71,7 +71,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- "Final" DDL generating functions for "regular API" objects
 \i util_meta/function/mk_view.sql
 \i util_meta/function/mk_user_type.sql
-\i util_meta/function/mk_table_migration.sql
+\i util_meta/function/mk_object_migration.sql
 
 \i util_meta/function/mk_resolve_id_function.sql
 \i util_meta/function/mk_can_do_function_shell.sql
