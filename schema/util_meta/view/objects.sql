@@ -23,7 +23,7 @@ WITH objs AS (
             ON ( pt.prokind = p.prokind::text )
     UNION
     -- triggers
-    SELECT  schemas.schema_oid,
+    SELECT schemas.schema_oid,
             schemas.schema_name,
             t.oid AS object_oid,
             t.tgname::text AS object_name,
@@ -55,7 +55,7 @@ WITH objs AS (
                 ELSE coalesce ( rt.label, c.relkind::text )
                 END AS object_type,
             c.reltuples::bigint AS row_count,
-            null::text as procedure_language,
+            null::text AS procedure_language,
             null::text AS result_data_type,
             null::text AS calling_arguments,
             pg_catalog.obj_description ( c.oid, 'pg_class' ) AS comments
@@ -79,9 +79,9 @@ dirs AS (
                 WHEN object_type = 'sequence' AND object_name !~ '_id_seq$'
                     THEN concat_ws ( '/', 'schema', schema_name, 'sequence' )
                 END AS directory_name
-    FROM objs
+        FROM objs
 )
-SELECT  objs.schema_oid,
+SELECT objs.schema_oid,
         objs.schema_name,
         objs.object_oid,
         objs.object_name,
@@ -96,6 +96,9 @@ SELECT  objs.schema_oid,
         objs.procedure_language,
         objs.result_data_type,
         objs.calling_arguments,
+        regexp_replace (
+            regexp_replace ( objs.calling_arguments, ' DEFAULT [^,]+', '', 'g' ),
+                 '(IN|OUT|INOUT) ', '', 'g' ) AS calling_signature,
         objs.comments
     FROM objs
     LEFT JOIN dirs
@@ -115,5 +118,6 @@ COMMENT ON COLUMN util_meta.objects.directory_name IS 'The sub-directory in the 
 COMMENT ON COLUMN util_meta.objects.file_name IS 'The filename in the (presumably git) repository that contains the object DDL.' ;
 COMMENT ON COLUMN util_meta.objects.procedure_language IS 'The language that the function or procedure is written in.' ;
 COMMENT ON COLUMN util_meta.objects.result_data_type IS 'The datatype of the function result.' ;
-COMMENT ON COLUMN util_meta.objects.calling_arguments IS 'The names and datatypes of the calling arguments to the function or procedure.' ;
+COMMENT ON COLUMN util_meta.objects.calling_arguments IS 'The names, datatypes, etc. of the calling arguments to the function or procedure.' ;
+COMMENT ON COLUMN util_meta.objects.calling_signature IS 'The cleaned-up names and datatypes of the calling arguments to the function or procedure.' ;
 COMMENT ON COLUMN util_meta.objects.comments IS 'The database comments for the object.' ;
