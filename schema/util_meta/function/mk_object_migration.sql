@@ -203,21 +203,29 @@ BEGIN
         ------------------------------------------------------------------------
         -- Re-create the foreign keys against the re-built table
         FOR r IN (
-            SELECT DISTINCT 'ALTER TABLE ' || full_table_name
-                        || ' ADD CONSTRAINT ' || constraint_name || ' FOREIGN KEY ( '
-                        || column_names || ' ) REFERENCES ' || ref_full_table_name || ' ( '
-                        || ref_column_names || ' )'
-                        || CASE
+            WITH fk AS (
+                SELECT DISTINCT full_table_name,
+                        column_names,
+                        ref_full_table_name,
+                        ref_column_names,
+                        CASE
                             WHEN update_rule <> 'NO ACTION' THEN ' ON UPDATE ' || update_rule
-                            ELSE ''
-                            END
-                        || CASE
+                            END AS on_update,
+                        CASE
                             WHEN delete_rule <> 'NO ACTION' THEN ' ON DELETE ' || delete_rule
-                            ELSE ''
-                            END || ' ;' AS cmd
-                FROM util_meta.foreign_keys
-                WHERE ref_schema_name = a_object_schema
-                    AND ref_table_name = a_object_name ) LOOP
+                            END AS on_delete
+                    FROM util_meta.foreign_keys
+                    WHERE ref_schema_name = a_object_schema
+                        AND ref_table_name = a_object_name
+            )
+            SELECT concat_ws ( ' ', 'ALTER TABLE', full_table_name,
+                        'ADD CONSTRAINT', constraint_name, 'FOREIGN KEY (',
+                        column_names, ') REFERENCES (', ref_column_names, ')',
+                        on_update,
+                        on_delete,
+                        ' ;' ) AS cmd
+                FROM fk
+                ORDER BY constraint_name ) LOOP
 
             l_result := concat_ws ( l_new_line,
                 l_result,
@@ -252,6 +260,12 @@ BEGIN
         FROM util_meta.objects
         WHERE object_oid = l_object_oid ;
 
+    CREATE TEMPORARY TABLE temp_all_deps AS
+    SELECT object_oid,
+            dep_object_oid
+        FROM util_meta.dependencies
+        WHERE object_oid <> dep_object_oid ;
+
     l_found_dep := true ;
     WHILE l_found_dep LOOP
         l_found_dep := false ;
@@ -270,7 +284,7 @@ BEGIN
                     obj.directory_name,
                     obj.file_name,
                     obj.calling_signature
-                FROM util_meta.dependencies dep
+                FROM temp_all_deps dep
                 CROSS JOIN mx
                 JOIN util_meta.objects obj
                     ON ( obj.object_oid = dep.dep_object_oid )
@@ -322,19 +336,19 @@ BEGIN
 
         FOR r IN (
             WITH n AS (
-                SELECT DISTINCT dependencies.object_oid,
-                        dependencies.dep_object_oid,
+                SELECT DISTINCT tad.object_oid,
+                        tad.dep_object_oid,
                         dep.tree_depth,
                         CASE
                             WHEN dep.tree_depth <= obj.tree_depth THEN obj.tree_depth + 1
                             ELSE dep.tree_depth
                             END AS new_depth
-                    FROM util_meta.dependencies dependencies
+                    FROM temp_all_deps tad
                     JOIN temp_obj_deps obj
-                        ON ( obj.object_oid = dependencies.object_oid )
+                        ON ( obj.object_oid = tad.object_oid )
                     JOIN temp_obj_deps dep
-                        ON ( dep.object_oid = dependencies.dep_object_oid )
-                    WHERE dependencies.object_oid <> dependencies.dep_object_oid
+                        ON ( dep.object_oid = tad.dep_object_oid )
+                    WHERE tad.object_oid <> tad.dep_object_oid
             )
             SELECT n.dep_object_oid AS object_oid,
                     n.new_depth
@@ -429,21 +443,25 @@ BEGIN
 
         FOR r2 IN (
             WITH base AS (
-                SELECT CASE
-                            WHEN object_type IN ( 'schema', 'database' ) THEN object_name
-                            ELSE object_schema || '.' || object_name
-                            END AS obj_name,
-                        privilege_type,
-                        grantee,
-                        CASE WHEN is_grantable THEN 'WITH GRANT OPTION'
-                            END AS with_grant
+            SELECT privilege_type,
+                    CASE
+                        WHEN object_type NOT IN ( 'table', 'view', 'materialized_view' ) THEN upper ( object_type )
+                        END AS obj_type,
+                    CASE
+                        WHEN object_type IN ( 'schema', 'database' ) THEN object_name
+                        ELSE object_schema || '.' || object_name
+                        END AS obj_name,
+                    grantee,
+                    CASE
+                        WHEN is_grantable THEN 'WITH GRANT OPTION'
+                        END AS with_grant
                     FROM util_meta.object_grants
                     WHERE object_schema = r.schema_name
                         AND object_name = r.object_name
                     ORDER BY privilege_type,
                         grantee
             )
-            SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_name, 'TO', grantee, with_grant, ';' ) AS cmd
+            SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_type, obj_name, 'TO', grantee, with_grant, ';' ) AS cmd
                 FROM base ) LOOP
 
             l_grants := array_append ( l_grants, r2.cmd ) ;
@@ -452,6 +470,7 @@ BEGIN
 
     END LOOP ;
 
+    DROP TABLE temp_all_deps ;
     DROP TABLE temp_obj_deps ;
 
     ----------------------------------------------------------------------------
@@ -459,16 +478,17 @@ BEGIN
     -- Restore any grants on the migrated object
     FOR r IN (
         WITH base AS (
-            SELECT CASE
+            SELECT privilege_type,
+                    CASE
+                        WHEN object_type NOT IN ( 'table', 'view', 'materialized_view' ) THEN upper ( object_type )
+                        END AS obj_type,
+                    CASE
                         WHEN object_type IN ( 'schema', 'database' ) THEN object_name
                         ELSE object_schema || '.' || object_name
                         END AS obj_name,
-                    --CASE
-                    --    WHEN object_type NOT IN ( 'table', 'view', 'materialized_view' ) THEN 'ON ' || object_type
-                    --    END AS obj_type,
-                    privilege_type,
                     grantee,
-                    CASE WHEN is_grantable THEN 'WITH GRANT OPTION'
+                    CASE
+                        WHEN is_grantable THEN 'WITH GRANT OPTION'
                         END AS with_grant
                 FROM util_meta.object_grants
                 WHERE object_schema = a_object_schema
@@ -476,7 +496,7 @@ BEGIN
                 ORDER BY privilege_type,
                     grantee
         )
-        SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_name, 'TO', grantee, with_grant, ';' ) AS cmd
+        SELECT concat_ws ( ' ', 'GRANT', privilege_type, 'ON', obj_type, obj_name, 'TO', grantee, with_grant, ';' ) AS cmd
             FROM base ) LOOP
 
         l_grants := array_append ( l_grants, r.cmd ) ;
