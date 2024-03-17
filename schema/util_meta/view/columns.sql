@@ -1,22 +1,11 @@
 CREATE OR REPLACE VIEW util_meta.columns
 AS
-WITH relation_types AS (
-    SELECT *
-        FROM (
-            VALUES
-                ( 'f', 'foreign table' ),
-                ( 'm', 'materialized view' ),
-                ( 'p', 'partitioned table' ),
-                ( 'r', 'table' ),
-                ( 'v', 'view' )
-            ) AS t ( relkind, object_type )
-),
-columns AS (
+WITH columns AS (
     SELECT o.schema_oid,
             o.schema_name,
             o.object_oid,
             o.object_name,
-            o.object_oid::bigint * 10000::bigint + a.attnum::bigint as column_id,
+            o.object_oid::bigint * 10000::bigint + a.attnum::bigint AS column_id,
             a.attname AS column_name,
             a.attnum::integer AS ordinal_position,
             pg_catalog.format_type ( a.atttypid, a.atttypmod ) AS data_type,
@@ -46,10 +35,9 @@ columns AS (
         JOIN util_meta.objects o
             ON ( o.schema_name = n.nspname::text
                 AND o.object_name = c.relname::text )
-        JOIN relation_types rt
-            ON ( rt.relkind = c.relkind )
         WHERE a.attnum > 0
             AND NOT a.attisdropped
+            AND c.relkind IN ( 'f', 'm', 'p', 'r', 'v' )
             AND n.nspname <> 'information_schema'
             AND n.nspname !~ '^pg_'
 ),
@@ -133,7 +121,7 @@ type_cols AS (
             types.schema_name,
             types.object_oid,
             types.object_name,
-            types.object_oid::bigint * 10000::bigint + a.attnum::bigint as column_id,
+            types.object_oid::bigint * 10000::bigint + a.attnum::bigint AS column_id,
             a.attname::text AS column_name,
             a.attnum AS ordinal_position,
             pg_catalog.format_type ( a.atttypid, a.atttypmod ) AS data_type,
