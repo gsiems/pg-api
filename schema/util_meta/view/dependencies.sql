@@ -11,106 +11,107 @@ dep_map AS (
         FROM dependents
         WHERE dependent_oid NOT LIKE '%QUERY'
             AND ev_class <> dependent_oid::oid
+),
+rels AS materialized (
+    SELECT schemas.schema_oid,
+            schemas.schema_name,
+            c.oid AS object_oid,
+            c.relname::text AS object_name,
+            pg_catalog.pg_get_userbyid ( c.relowner )::text AS owner_name,
+            coalesce ( obj_type.label, 'other (' || c.relkind || ')' ) AS object_type
+        FROM pg_catalog.pg_class c
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = c.relnamespace )
+        LEFT JOIN util_meta.relkinds AS obj_type
+            ON ( obj_type.relkind = c.relkind::text )
+),
+procs AS materialized (
+    SELECT n.oid AS schema_oid,
+            n.nspname::text AS schema_name,
+            p.oid AS object_oid,
+            p.proname::text AS object_name,
+            ( pg_catalog.pg_get_userbyid ( p.proowner ) )::text AS owner_name,
+            pt.label AS object_type,
+            p.prorettype AS return_type_oid
+        FROM pg_catalog.pg_proc p
+        JOIN pg_catalog.pg_namespace n
+            ON ( n.oid = p.pronamespace )
+        LEFT JOIN util_meta.prokinds pt
+            ON ( pt.prokind = p.prokind::text )
 )
-SELECT DISTINCT schemas.schema_oid,
-        schemas.schema_name,
-        c.oid AS object_oid,
-        c.relname::text AS object_name,
-        pg_catalog.pg_get_userbyid ( c.relowner )::text AS owner_name,
-        coalesce ( obj_type.label, 'other (' || c.relkind || ')' ) AS object_type,
-        dep_schemas.schema_oid AS dep_schema_oid,
-        dep_schemas.schema_name AS dep_schema_name,
-        c2.oid AS dep_object_oid,
-        c2.relname::text AS dep_object_name,
-        pg_catalog.pg_get_userbyid ( c2.relowner )::text AS dep_owner_name,
-        coalesce ( dep_type.label, 'other (' || c2.relkind || ')' ) AS dep_object_type
-    FROM pg_catalog.pg_class c
-    JOIN dep_map d
-        ON ( c.oid = d.child_oid )
-    JOIN pg_catalog.pg_class c2
-        ON ( c2.oid = d.parent_oid )
-    JOIN util_meta.schemas
-        ON ( schemas.schema_oid = c.relnamespace )
-    JOIN util_meta.schemas dep_schemas
-        ON ( dep_schemas.schema_oid = c2.relnamespace )
-    LEFT JOIN util_meta.relkinds AS obj_type
-        ON ( obj_type.relkind = c.relkind::text )
-    LEFT JOIN util_meta.relkinds AS dep_type
-        ON ( dep_type.relkind = c2.relkind::text )
+SELECT c.schema_oid,
+        c.schema_name,
+        c.object_oid,
+        c.object_name,
+        c.owner_name,
+        c.object_type,
+        c2.schema_oid AS dep_schema_oid,
+        c2.schema_name AS dep_schema_name,
+        c2.object_oid AS dep_object_oid,
+        c2.object_name AS dep_object_name,
+        c2.owner_name AS dep_owner_name,
+        c2.object_type AS dep_object_type
+    FROM dep_map d
+    JOIN rels c
+        ON ( c.object_oid = d.child_oid )
+    JOIN rels c2
+        ON ( c2.object_oid = d.parent_oid )
 UNION
 -- functions/procedures
-SELECT nc.oid AS schema_oid,
-        nc.nspname AS schema_name,
-        c.oid AS object_oid,
-        c.relname AS object_name,
-        pg_catalog.pg_get_userbyid ( c.relowner )::text AS owner_name,
-        coalesce ( obj_type.label, 'other (' || c.relkind || ')' ) AS object_type,
-        np.oid AS dep_schema_oid,
-        np.nspname AS dep_schema_name,
-        p.oid AS dep_object_oid,
-        p.proname AS dep_object_name,
-        pg_catalog.pg_get_userbyid ( p.proowner )::text AS dep_owner_name,
-        coalesce ( dep_type.label, 'other (' || c.relkind || ')' ) AS dep_object_type
-    FROM pg_catalog.pg_proc p
-    JOIN pg_catalog.pg_namespace np
-        ON ( np.oid = p.pronamespace )
+SELECT c.schema_oid,
+        c.schema_name,
+        c.object_oid,
+        c.object_name,
+        c.owner_name,
+        c.object_type,
+        p.schema_oid AS dep_schema_oid,
+        p.schema_name AS dep_schema_name,
+        p.object_oid AS dep_object_oid,
+        p.object_name AS dep_object_name,
+        p.owner_name AS dep_owner_name,
+        coalesce ( p.object_type, c.object_type ) AS dep_object_type
+    FROM procs p
     JOIN pg_catalog.pg_type t
-        ON ( t.oid = p.prorettype )
-    JOIN pg_catalog.pg_class c
-        ON ( c.oid = t.typrelid )
-    JOIN pg_catalog.pg_namespace nc
-        ON ( nc.oid = c.relnamespace )
-    LEFT JOIN util_meta.relkinds AS obj_type
-        ON ( obj_type.relkind = c.relkind::text )
-    LEFT JOIN util_meta.prokinds AS dep_type
-        ON ( dep_type.prokind = p.prokind::text )
+        ON ( t.oid = p.return_type_oid )
+    JOIN rels c
+        ON ( c.object_oid = t.typrelid )
 UNION
 -- triggers
-SELECT schemas.schema_oid,
-        schemas.schema_name,
-        c.oid AS object_oid,
-        c.relname::text AS object_name,
-        pg_catalog.pg_get_userbyid ( c.relowner )::text AS owner_name,
-        coalesce ( obj_type.label, 'other (' || c.relkind || ')' ) AS object_type,
-        schemas.schema_oid AS dep_schema_oid,
-        schemas.schema_name AS dep_schema_name,
-        c.oid AS dep_object_oid,
+SELECT c.schema_oid,
+        c.schema_name,
+        c.object_oid,
+        c.object_name,
+        c.owner_name,
+        c.object_type,
+        c.schema_oid AS dep_schema_oid,
+        c.schema_name AS dep_schema_name,
+        c.object_oid AS dep_object_oid,
         t.tgname::text AS dep_object_name,
-        pg_catalog.pg_get_userbyid ( c.relowner )::text AS dep_owner_name,
+        c.owner_name AS dep_owner_name,
         'trigger' AS dep_object_type
     FROM pg_catalog.pg_trigger t
-    JOIN pg_catalog.pg_class c
-        ON ( c.oid = t.tgrelid )
-    JOIN util_meta.schemas
-        ON ( schemas.schema_oid = c.relnamespace )
-    LEFT JOIN util_meta.relkinds AS obj_type
-        ON ( obj_type.relkind = c.relkind::text )
+    JOIN rels c
+        ON ( c.object_oid = t.tgrelid )
     WHERE NOT t.tgisinternal
 UNION
 -- trigger functions
-SELECT pschemas.schema_oid,
-        pschemas.schema_name,
-        p.oid AS object_oid,
-        p.proname::text AS object_name,
-        ( pg_catalog.pg_get_userbyid ( p.proowner ) )::text AS owner_name,
-        coalesce ( pt.label, 'function' ) AS object_type,
-        schemas.schema_oid AS dep_schema_oid,
-        schemas.schema_name AS dep_schema_name,
+SELECT p.schema_oid,
+        p.schema_name,
+        p.object_oid,
+        p.object_name,
+        p.owner_name,
+        coalesce ( p.object_type, 'function' ) AS object_type,
+        c.schema_oid AS dep_schema_oid,
+        c.schema_name AS dep_schema_name,
         t.oid AS dep_object_oid,
         t.tgname::text AS dep_object_name,
-        ( pg_catalog.pg_get_userbyid ( c.relowner ) )::text AS dep_owner_name,
+        c.owner_name AS dep_owner_name,
         'trigger' AS dep_object_type
     FROM pg_catalog.pg_trigger t
-    JOIN pg_catalog.pg_class c
-        ON ( c.oid = t.tgrelid )
-    JOIN util_meta.schemas
-        ON ( schemas.schema_oid = c.relnamespace )
-    JOIN pg_catalog.pg_proc p
-        ON ( p.oid = t.tgfoid )
-    JOIN util_meta.schemas pschemas
-        ON ( pschemas.schema_oid = p.pronamespace )
-    LEFT JOIN util_meta.prokinds pt
-        ON ( pt.prokind = p.prokind::text )
+    JOIN rels c
+        ON ( c.object_oid = t.tgrelid )
+    JOIN procs p
+        ON ( p.object_oid = t.tgfoid )
     WHERE NOT t.tgisinternal ;
 
 COMMENT ON VIEW util_meta.dependencies IS 'View of the application database object dependencies' ;
