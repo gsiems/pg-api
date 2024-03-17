@@ -3,7 +3,7 @@ AS
 WITH rol AS (
     SELECT oid,
             rolname::text AS role_name
-        FROM pg_catalog.pg_authid
+        FROM pg_catalog.pg_roles
     UNION
     SELECT 0::oid AS oid,
             'public'::text
