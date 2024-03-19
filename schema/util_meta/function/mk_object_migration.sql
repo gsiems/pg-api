@@ -445,7 +445,7 @@ BEGIN
             WITH base AS (
             SELECT privilege_type,
                     CASE
-                        WHEN object_type NOT IN ( 'table', 'view', 'materialized_view' ) THEN upper ( object_type )
+                        WHEN object_type NOT IN ( 'table', 'view', 'materialized view', 'foreign table' ) THEN upper ( object_type )
                         END AS obj_type,
                     CASE
                         WHEN object_type IN ( 'schema', 'database' ) THEN object_name
@@ -480,7 +480,7 @@ BEGIN
         WITH base AS (
             SELECT privilege_type,
                     CASE
-                        WHEN object_type NOT IN ( 'table', 'view', 'materialized_view' ) THEN upper ( object_type )
+                        WHEN object_type NOT IN ( 'table', 'view', 'materialized view', 'foreign table' ) THEN upper ( object_type )
                         END AS obj_type,
                     CASE
                         WHEN object_type IN ( 'schema', 'database' ) THEN object_name
