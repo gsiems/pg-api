@@ -205,6 +205,7 @@ BEGIN
         FOR r IN (
             WITH fk AS (
                 SELECT DISTINCT full_table_name,
+                        constraint_name,
                         column_names,
                         ref_full_table_name,
                         ref_column_names,
