@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION util_meta.cleanup_whitespace (
     a_text text default null )
 RETURNS text
-LANGUAGE plpgsql stable
+LANGUAGE plpgsql 
+STABLE
 SECURITY DEFINER
 AS $$
 /**
