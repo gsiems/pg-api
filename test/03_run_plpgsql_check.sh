@@ -63,7 +63,28 @@ psqlFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
 #         query text,
 #         context text )
 
-cat <<EOT >${psqlFile}
+cat <<'EOT' >${psqlFile}
+
+CREATE TEMPORARY TABLE temp_obj_deps AS
+SELECT 0::int AS tree_depth,
+        object_oid,
+        schema_name,
+        object_name,
+        full_object_name,
+        object_type,
+        directory_name,
+        file_name,
+        calling_signature
+    FROM util_meta.objects
+    WHERE false ;
+
+CREATE TEMPORARY TABLE temp_all_deps AS
+SELECT object_oid,
+        dep_object_oid
+    FROM util_meta.dependencies
+    WHERE false ;
+
+\x
 
 \pset pager off
 
@@ -81,7 +102,7 @@ SELECT  (pcf).functionid::regprocedure::text AS "procedure",
             (pcf).query,
             (pcf).context ) AS details
     FROM (
-        SELECT plpgsql_check_function_tb ( pg_proc.oid, coalesce ( trig.tgrelid, 0 ) ) AS pcf
+        SELECT plpgsql_check_function_tb ( pg_proc.oid, coalesce ( trig.tgrelid, 0 ), all_warnings => true ) AS pcf
             FROM pg_catalog.pg_proc
             JOIN pg_catalog.pg_namespace nsp
                 ON ( nsp.oid = pg_proc.pronamespace )
@@ -91,9 +112,11 @@ SELECT  (pcf).functionid::regprocedure::text AS "procedure",
                 ON ( lang.oid = pg_proc.prolang )
             LEFT JOIN pg_catalog.pg_trigger trig
                 ON ( trig.tgfoid = pg_proc.oid )
+            LEFT JOIN pg_catalog.pg_extension px
+                ON ( px.extnamespace = nsp.oid )            
             WHERE lang.lanname = 'plpgsql'
-                AND nsp.nspname NOT IN ( 'pg_catalog', 'public',
-                    'tap', 'ddlx', 'plprofiler', 'plprofiler_client' )
+                AND px.oid IS NULL
+                AND nsp.nspname NOT IN ( 'pg_catalog', 'public', 'plprofiler_client' )
                 -- ignore unused triggers
                 AND ( typ.typname <> 'trigger'
                     OR trig.tgfoid IS NOT NULL )
