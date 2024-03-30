@@ -51,5 +51,9 @@ COMMENT ON SCHEMA plprofiler_client IS 'Functions extracted from the plprofiler 
 \i function/save_dataset_from_local.sql
 \i function/save_dataset_from_shared.sql
 
+\i function/init_config.sql
+\i function/generate_coverage_report.sql
+\i function/generate_profiler_report.sql
+
 GRANT USAGE ON SCHEMA plprofiler_client TO session_user ;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA plprofiler_client TO session_user WITH GRANT OPTION ;
