@@ -43,34 +43,34 @@ EOT
     exit 0
 }
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 source ./set_env.sh
 
-if [ ! -z "${usage}" ]; then
+if [[ -n ${usage} ]]; then
     usage
 fi
 
 function run_quietly() {
 
-    for file in $(ls test_data/*.sql); do
+    for file in test_data/*.sql; do
 
         cmd="SET client_min_messages = warning ;
 \i ${file}
 "
-        echo ${cmd} | psql -U ${usr} -d ${db} -p ${port} -f - >/dev/null
+        echo "${cmd}" | psql -U "${usr}" -d "${db}" -p "${port}" -f - >/dev/null
 
     done
 }
 
 function run_normal() {
 
-    for file in $(ls test_data/*.sql); do
-        psql -U ${usr} -d ${db} -p ${port} -f ${file}
+    for file in test_data/*.sql; do
+        psql -U "${usr}" -d "${db}" -p "${port}" -f "${file}"
     done
 }
 
-if [ -z "${quieter}" ] || [ "${quieter}" == "0" ]; then
+if [[ -z ${quieter} ]] || [[ ${quieter} == "0" ]]; then
     run_normal
 else
     run_quietly

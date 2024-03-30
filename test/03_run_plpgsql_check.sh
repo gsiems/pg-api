@@ -37,11 +37,11 @@ EOT
     exit 0
 }
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 source ./set_env.sh
 
-if [ ! -z "${usage}" ]; then
+if [[ -n "${usage}" ]]; then
     usage
 fi
 
@@ -63,7 +63,21 @@ psqlFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
 #         query text,
 #         context text )
 
-cat <<'EOT' >${psqlFile}
+# TODO: Determine schema for plpgsql_check extension and dynamically set that
+
+
+
+extCmd="SELECT n.nspname::text AS schema_name
+    FROM pg_catalog.pg_extension px
+    JOIN pg_catalog.pg_namespace n
+        ON ( px.extnamespace = n.oid )
+    WHERE px.extname = 'plpgsql_check'"
+
+plChkSchema=$(psql -t -U "${usr}" -d "${db}" -p "${port}" -c "${extCmd}" )
+
+if [[ -n "${plChkSchema}" ]]; then
+
+    cat <<EOT >"${psqlFile}"
 
 CREATE TEMPORARY TABLE temp_obj_deps AS
 SELECT 0::int AS tree_depth,
@@ -102,21 +116,17 @@ SELECT  (pcf).functionid::regprocedure::text AS "procedure",
             (pcf).query,
             (pcf).context ) AS details
     FROM (
-        SELECT plpgsql_check_function_tb ( pg_proc.oid, coalesce ( trig.tgrelid, 0 ), all_warnings => true ) AS pcf
+        SELECT ${plChkSchema}.plpgsql_check_function_tb ( pg_proc.oid, coalesce ( trig.tgrelid, 0 ), all_warnings => true ) AS pcf
             FROM pg_catalog.pg_proc
-            JOIN pg_catalog.pg_namespace nsp
-                ON ( nsp.oid = pg_proc.pronamespace )
+            JOIN util_meta.schemas
+                ON ( schemas.schema_oid = pg_proc.pronamespace )
             JOIN pg_catalog.pg_type typ
                 ON ( typ.oid = pg_proc.prorettype )
             JOIN pg_catalog.pg_language lang
                 ON ( lang.oid = pg_proc.prolang )
             LEFT JOIN pg_catalog.pg_trigger trig
                 ON ( trig.tgfoid = pg_proc.oid )
-            LEFT JOIN pg_catalog.pg_extension px
-                ON ( px.extnamespace = nsp.oid )            
             WHERE lang.lanname = 'plpgsql'
-                AND px.oid IS NULL
-                AND nsp.nspname NOT IN ( 'pg_catalog', 'public', 'plprofiler_client' )
                 -- ignore unused triggers
                 AND ( typ.typname <> 'trigger'
                     OR trig.tgfoid IS NOT NULL )
@@ -126,6 +136,13 @@ SELECT  (pcf).functionid::regprocedure::text AS "procedure",
         (pcf).lineno ;
 EOT
 
-psql -X -U ${usr} -d ${db} -p ${port} -f ${psqlFile} | sed 's/\+[[:blank:]]*$//;s/[[:blank:]]*$//'
+    psql -X -U "${usr}" -d "${db}" -p "${port}" -f "${psqlFile}" | sed 's/\+[[:blank:]]*$//;s/[[:blank:]]*$//'
 
-rm ${psqlFile}
+    rm "${psqlFile}"
+
+else
+
+    echo "Could not run plpgsql_check. Extension not found."
+
+fi
+

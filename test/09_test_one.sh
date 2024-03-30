@@ -42,16 +42,16 @@ EOT
     exit 0
 }
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit
 
 source ./set_env.sh
 
-if [ ! -z "${usage}" ]; then
+if [[ -n "${usage}" ]]; then
     usage
 fi
 
-if [ "${truncateLogs}" == "1" ]; then
-    psql -U ${usr} -d ${db} -p ${port} -c 'truncate table util_log.dt_proc_log ;'
+if [[ "${truncateLogs}" == "1" ]]; then
+    psql -U "${usr}" -d "${db}" -p "${port}" -c 'truncate table util_log.dt_proc_log ;'
 fi
 
-psql -U ${usr} -d ${db} -p ${port} -f 09_test_one.sql
+psql -U "${usr}" -d "${db}" -p "${port}" -f 09_test_one.sql
