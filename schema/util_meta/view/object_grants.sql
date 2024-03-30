@@ -9,14 +9,14 @@ WITH rol AS (
             'public'::text
 ),
 schemas AS ( -- Schemas
-    SELECT oid AS schema_oid,
-            n.nspname::text AS schema_name,
+    SELECT schemas.schema_oid,
+            schemas.schema_name,
             n.nspowner AS owner_oid,
             'schema'::text AS object_type,
             coalesce ( n.nspacl, acldefault ( 'n'::"char", n.nspowner ) ) AS acl
         FROM pg_catalog.pg_namespace n
-        WHERE n.nspname !~ '^pg_'
-            AND n.nspname <> 'information_schema'
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = n.oid )
 ),
 classes AS ( -- Tables, views, etc.
     SELECT schemas.schema_oid,
