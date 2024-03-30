@@ -19,8 +19,6 @@ WITH columns AS (
                 END AS domain_name,
             pg_catalog.col_description ( a.attrelid, a.attnum ) AS comments
         FROM pg_catalog.pg_class c
-        JOIN pg_catalog.pg_namespace n
-            ON ( n.oid = c.relnamespace )
         JOIN pg_catalog.pg_attribute a
             ON ( c.oid = a.attrelid
                 AND a.attnum > 0
@@ -33,28 +31,24 @@ WITH columns AS (
         JOIN pg_catalog.pg_namespace nt
             ON ( t.typnamespace = nt.oid )
         JOIN util_meta.objects o
-            ON ( o.schema_name = n.nspname::text
+            ON ( o.schema_oid = c.relnamespace
                 AND o.object_name = c.relname::text )
         WHERE a.attnum > 0
             AND NOT a.attisdropped
             AND c.relkind IN ( 'f', 'm', 'p', 'r', 'v' )
-            AND n.nspname <> 'information_schema'
-            AND n.nspname !~ '^pg_'
 ),
 primary_keys AS (
-    SELECT nr.nspname::text AS schema_name,
+    SELECT schemas.schema_name,
             r.relname::text AS object_name,
             c.conname::text AS constraint_name,
             split_part ( split_part ( pg_get_constraintdef ( c.oid ), '(', 2 ), ')', 1 ) AS column_names
         FROM pg_catalog.pg_class r
-        JOIN pg_catalog.pg_namespace nr
-            ON ( nr.oid = r.relnamespace )
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = r.relnamespace )
         JOIN pg_catalog.pg_constraint c
             ON ( c.conrelid = r.oid )
         WHERE r.relkind = 'r'
             AND c.contype = 'p'
-            AND nr.nspname <> 'information_schema'
-            AND nr.nspname !~ '^pg_'
 ),
 pk_columns AS (
     SELECT schema_name,
@@ -64,21 +58,19 @@ pk_columns AS (
         FROM primary_keys
 ),
 natural_keys AS (
-    SELECT nr.nspname::text AS schema_name,
+    SELECT schemas.schema_name,
             r.relname::text AS object_name,
             c.conname::text AS constraint_name,
             split_part ( split_part ( pg_get_constraintdef ( c.oid ), '(', 2 ), ')', 1 ) AS column_names
         FROM pg_catalog.pg_class r
-        INNER JOIN pg_catalog.pg_namespace nr
-            ON ( nr.oid = r.relnamespace )
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = r.relnamespace )
         INNER JOIN pg_catalog.pg_constraint c
             ON ( c.conrelid = r.oid )
         INNER JOIN pg_catalog.pg_namespace nc
             ON ( nc.oid = c.connamespace )
         WHERE r.relkind = 'r'
             AND c.contype = 'u'
-            AND nr.nspname <> 'information_schema'
-            AND nr.nspname !~ '^pg_'
             -- ASSERTION: natural keys will have a unique constraint and the name of the
             -- primary natural key (if there are multiple) will end with "_nk"
             AND c.conname::text = r.relname::text || '_nk'
@@ -91,8 +83,8 @@ nk_columns AS (
         FROM natural_keys
 ),
 types AS (
-    SELECT n.oid AS schema_oid,
-            n.nspname::text AS schema_name,
+    SELECT schemas.schema_oid,
+            schemas.schema_name,
             t.oid AS object_oid,
             split_part ( pg_catalog.format_type ( t.oid, NULL ), '.', 2 ) AS object_name,
             CASE
@@ -102,8 +94,8 @@ types AS (
                 END AS object_type,
             t.typrelid
         FROM pg_catalog.pg_type t
-        JOIN pg_catalog.pg_namespace n
-            ON ( n.oid = t.typnamespace )
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = t.typnamespace )
         WHERE ( t.typrelid = 0
                 OR ( SELECT c.relkind = 'c'
                         FROM pg_catalog.pg_class c
@@ -113,8 +105,6 @@ types AS (
                         FROM pg_catalog.pg_type el
                         WHERE el.oid = t.typelem
                         AND el.typarray = t.oid )
-            AND n.nspname <> 'information_schema'
-            AND n.nspname !~ '^pg_'
 ),
 type_cols AS (
     SELECT types.schema_oid,
