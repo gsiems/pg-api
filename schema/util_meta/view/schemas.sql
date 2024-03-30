@@ -9,7 +9,12 @@ SELECT n.oid AS schema_oid,
     LEFT JOIN pg_catalog.pg_extension px
         ON ( px.extnamespace = n.oid )
     WHERE n.nspname !~ '^pg_'
-        AND n.nspname <> 'information_schema'
+        AND n.nspname NOT IN ( 
+            'information_schema', 
+            'plprofiler_client', 
+            'public', 
+            'sde' 
+            )
         AND px.oid IS NULL ;
 
 COMMENT ON VIEW util_meta.schemas IS 'View of the application database schemas' ;
