@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION util_meta.append_parameter (
     a_description in text default null )
 RETURNS util_meta.ut_parameters
 LANGUAGE plpgsql
-STABLE
+IMMUTABLE
 SECURITY DEFINER
 AS $$
 /**
