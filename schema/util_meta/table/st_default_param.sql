@@ -1,11 +1,11 @@
 CREATE TABLE util_meta.st_default_param (
-    id smallint NOT NULL,
-    name text,
-    description text,
-    allowed_values text,
-    default_value text,
-    CONSTRAINT st_default_param_pk PRIMARY KEY ( id ),
-    CONSTRAINT st_default_param_nk UNIQUE ( name ) ) ;
+        id smallint NOT NULL,
+        name text,
+        description text,
+        allowed_values text,
+        default_value text,
+        CONSTRAINT st_default_param_pk PRIMARY KEY ( id ),
+        CONSTRAINT st_default_param_nk UNIQUE ( name ) ) ;
 
 COMMENT ON TABLE util_meta.st_default_param IS 'Calling parameters that may have (optional) default configuration values.' ;
 
@@ -39,10 +39,7 @@ missing AS (
             ON ( o.id = n.id )
         WHERE o.id IS NULL
 )
-INSERT INTO util_meta.st_default_param (
-        id,
-        name,
-        description )
+INSERT INTO util_meta.st_default_param ( id, name, description )
     SELECT id,
             name,
             description
