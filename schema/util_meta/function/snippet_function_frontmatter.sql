@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_function_frontmatter (
-    a_ddl_schema text default null,
-    a_function_name text default null,
-    a_language text default null,
-    a_return_type text default null,
-    a_returns_set boolean default null,
-    a_calling_parameters util_meta.ut_parameters default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_function_name text DEFAULT NULL,
+    a_language text DEFAULT NULL,
+    a_return_type text DEFAULT NULL,
+    a_returns_set boolean DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_function_frontmatter generates the pl/pg-sql code snippet for the start of a function
@@ -26,7 +27,7 @@ Function snippet_function_frontmatter generates the pl/pg-sql code snippet for t
 DECLARE
 
     l_return text ;
-    l_params text [] ;
+    l_params text[] ;
     l_param_count integer ;
     l_is_stable boolean := true ;
 
@@ -44,44 +45,50 @@ BEGIN
     IF l_param_count > 0 THEN
 
         FOR l_idx IN 1..l_param_count LOOP
-            l_params := array_append ( l_params,
-                util_meta.indent (1) || concat_ws ( ' ', a_calling_parameters.names[l_idx], a_calling_parameters.directions[l_idx], a_calling_parameters.datatypes[l_idx], 'default null' ) ) ;
+            l_params := array_append (
+                l_params,
+                util_meta.indent ( 1 )
+                    || concat_ws (
+                        ' ',
+                        a_calling_parameters.names[l_idx],
+                        a_calling_parameters.directions[l_idx],
+                        a_calling_parameters.datatypes[l_idx],
+                        'default null' ) ) ;
         END LOOP ;
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             'CREATE OR REPLACE FUNCTION ' || a_ddl_schema || '.' || a_function_name || ' (',
             array_to_string ( l_params, ', ' || util_meta.new_line () ) || ' )' ) ;
 
     ELSE
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             'CREATE OR REPLACE FUNCTION ' || a_ddl_schema || '.' || a_function_name || ' ()' ) ;
 
     END IF ;
 
     IF coalesce ( a_returns_set, false ) THEN
-        l_return := concat_ws ( util_meta.new_line (),
-            l_return,
-            'RETURNS SETOF ' || a_return_type ) ;
+        l_return := concat_ws ( util_meta.new_line (), l_return, 'RETURNS SETOF ' || a_return_type ) ;
     ELSE
-        l_return := concat_ws ( util_meta.new_line (),
-            l_return,
-            'RETURNS ' || a_return_type ) ;
+        l_return := concat_ws ( util_meta.new_line (), l_return, 'RETURNS ' || a_return_type ) ;
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         l_return,
-        'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ) );
+        'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ) ) ;
 
     IF l_is_stable THEN
-        l_return := concat_ws ( util_meta.new_line (),
-            l_return,
-            'STABLE' ) ;
+        l_return := concat_ws ( util_meta.new_line (), l_return, 'STABLE' ) ;
     END IF ;
 
-    RETURN concat_ws ( util_meta.new_line (),
+    RETURN concat_ws (
+        util_meta.new_line (),
         l_return,
         'SECURITY DEFINER',
+        'SET search_path = pg_catalog, ' || a_ddl_schema,
         'AS $' || '$' ) ;
 
 END ;
