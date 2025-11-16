@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_resolve_id (
-    a_indents integer default null,
-    a_id_param text default null,
-    a_function_schema text default null,
-    a_function_name text default null,
-    a_resolve_id_params text[] default null )
+    a_indents integer DEFAULT NULL,
+    a_id_param text DEFAULT NULL,
+    a_function_schema text DEFAULT NULL,
+    a_function_name text DEFAULT NULL,
+    a_resolve_id_params text[] DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_resolve_id generates the pl/pg-sql code snippet for calling a resolve ID function
@@ -31,12 +32,29 @@ BEGIN
     l_indents := coalesce ( a_indents, 0 ) ;
 
     FOR idx IN 1..array_length ( a_resolve_id_params, 1 ) LOOP
-        l_resolve_id_params := array_append ( l_resolve_id_params, concat_ws ( ' ', a_resolve_id_params[idx], '=>', a_resolve_id_params[idx] ) ) ;
+        l_resolve_id_params := array_append (
+            l_resolve_id_params,
+            concat_ws (
+                ' ',
+                a_resolve_id_params[idx],
+                '=>',
+                a_resolve_id_params[idx] ) ) ;
     END LOOP ;
 
-    RETURN concat_ws ( util_meta.new_line (),
-        util_meta.indent (l_indents + 1) || concat_ws ( ' ', a_id_param, ':=', a_function_schema || '.' || a_function_name, '(' ),
-        util_meta.indent (l_indents + 2) || array_to_string ( l_resolve_id_params, ',' || util_meta.new_line () || util_meta.indent (l_indents + 2) ) || ' ) ;' ) ;
+    RETURN concat_ws (
+        util_meta.new_line (),
+        util_meta.indent ( l_indents + 1 )
+            || concat_ws (
+                ' ',
+                a_id_param,
+                ':=',
+                a_function_schema || '.' || a_function_name,
+                '(' ),
+        util_meta.indent ( l_indents + 2 )
+            || array_to_string (
+                l_resolve_id_params,
+                ',' || util_meta.new_line () || util_meta.indent ( l_indents + 2 ) )
+            || ' ) ;' ) ;
 
 END ;
 $$ ;

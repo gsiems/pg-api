@@ -1,9 +1,10 @@
 CREATE OR REPLACE FUNCTION util_meta.cleanup_whitespace (
-    a_text text default null )
+    a_text text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 IMMUTABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function cleanup_whitespace cleans up any excess white space from the specified text
@@ -20,10 +21,18 @@ DECLARE
 BEGIN
 
     -- remove trailing tab and/or space characters
-    l_result := regexp_replace ( a_text, E'[ \t](\n)', E'\n', 'g' ) ;
+    l_result := regexp_replace (
+        a_text,
+        E'[ \t](\n)',
+        E'\n',
+        'g' ) ;
 
     -- remove excess vertical space
-    l_result := regexp_replace ( l_result, E'\n\n\n+', E'\n\n', 'g' ) ;
+    l_result := regexp_replace (
+        l_result,
+        E'\n\n\n+',
+        E'\n\n',
+        'g' ) ;
 
     -- remove any excess closing vertical space
     l_result := regexp_replace ( l_result, E'\n\n+\$', E'\n' ) ;

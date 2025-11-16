@@ -1,15 +1,16 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_priv_update_procedure (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
-    a_insert_audit_columns text default null,
-    a_update_audit_columns text default null,
-    a_owner text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_cast_booleans_as text DEFAULT NULL,
+    a_insert_audit_columns text DEFAULT NULL,
+    a_update_audit_columns text DEFAULT NULL,
+    a_owner text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_priv_update_procedure generates a draft "private" update procedure for a table
@@ -65,10 +66,12 @@ BEGIN
     ----------------------------------------------------------------------------
     -- Check that util_log schema exists
     IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-        l_log_err_line := util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ;
+        l_log_err_line := util_meta.indent ( 2 ) || 'call util_log.log_exception ( a_err ) ;' ;
     END IF ;
 
-    l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
+    l_assertions := array_append (
+        l_assertions,
+        'User permissions have already been checked and do not require further checking' ) ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
@@ -90,8 +93,7 @@ BEGIN
         l_true_val := r.true_val ;
         l_false_val := r.false_val ;
 
-        IF coalesce ( l_true_val, '' ) = ''
-            OR coalesce ( l_false_val, '' ) = '' THEN
+        IF coalesce ( l_true_val, '' ) = '' OR coalesce ( l_false_val, '' ) = '' THEN
 
             RETURN 'ERROR: Could not resolve true/false values' ;
 
@@ -104,7 +106,7 @@ BEGIN
     -- will have a single-column primary key of an "id" variety, therefore there
     -- will also be a resolve_user_id function of some sort.
 
-    l_local_checks := array_append ( l_local_checks, util_meta.snippet_resolve_user_id ( ) ) ;
+    l_local_checks := array_append ( l_local_checks, util_meta.snippet_resolve_user_id () ) ;
 
     --------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -133,13 +135,13 @@ BEGIN
                 comments,
                 ref_param_comments
             FROM util_meta.proc_parameters (
-                a_action => 'update',
-                a_object_schema => a_object_schema,
-                a_object_name => a_object_name,
-                a_ddl_schema => l_ddl_schema,
-                a_cast_booleans_as => a_cast_booleans_as,
-                a_insert_audit_columns => a_insert_audit_columns,
-                a_update_audit_columns => a_update_audit_columns )
+                    a_action => 'update',
+                    a_object_schema => a_object_schema,
+                    a_object_name => a_object_name,
+                    a_ddl_schema => l_ddl_schema,
+                    a_cast_booleans_as => a_cast_booleans_as,
+                    a_insert_audit_columns => a_insert_audit_columns,
+                    a_update_audit_columns => a_update_audit_columns )
             ORDER BY ordinal_position ) LOOP
 
         ------------------------------------------------------------------------
@@ -181,9 +183,27 @@ BEGIN
             IF r.column_data_type = 'boolean' THEN
 
                 IF r.column_default = 'false' THEN
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_false_val || ' ) = ' || l_true_val || ' ;' ) ;
+                    l_local_checks := array_append (
+                        l_local_checks,
+                        util_meta.indent ( 1 )
+                            || r.local_param_name
+                            || ' := coalesce ( '
+                            || r.param_name || ', '
+                            || l_false_val
+                            || ' ) = '
+                            || l_true_val
+                            || ' ;' ) ;
                 ELSE
-                    l_local_checks := array_append ( l_local_checks, util_meta.indent (1) || r.local_param_name || ' := coalesce ( ' || r.param_name || ', ' || l_true_val || ' ) = ' || l_true_val || ' ;' ) ;
+                    l_local_checks := array_append (
+                        l_local_checks,
+                        util_meta.indent ( 1 )
+                            || r.local_param_name
+                            || ' := coalesce ( '
+                            || r.param_name || ', '
+                            || l_true_val
+                            || ' ) = '
+                            || l_true_val
+                            || ' ;' ) ;
                 END IF ;
 
             ELSE
@@ -192,23 +212,70 @@ BEGIN
                     -- If the column is nullable then we need to check that parameters were specified as
                     -- part of ensuring that the lookup was sucessful
 
-                    l_local_checks := array_append ( l_local_checks, concat_ws ( util_meta.new_line (),
-                            util_meta.indent (1) || concat_ws ( ' ', r.local_param_name, ':=', r.resolve_id_function, '(', concat_ws ( ', ', r.param_name, r.ref_param_name ), ')', ';' ),
-                            util_meta.indent (1) || concat_ws ( ' ', 'IF', r.local_param_name, 'IS NULL AND (', r.param_name, 'IS NOT NULL OR', r.ref_param_name, 'IS NOT NULL ) THEN' ),
-                            util_meta.indent (2) || 'a_err := ''Invalid ' || r.error_tag || ' specified'' ;',
+                    l_local_checks := array_append (
+                        l_local_checks,
+                        concat_ws (
+                            util_meta.new_line (),
+                            util_meta.indent ( 1 )
+                                || concat_ws (
+                                    ' ',
+                                    r.local_param_name,
+                                    ':=',
+                                    r.resolve_id_function,
+                                    '(',
+                                    concat_ws ( ', ', r.param_name, r.ref_param_name ),
+                                    ')',
+                                    ';' ),
+                            util_meta.indent ( 1 )
+                                || concat_ws (
+                                    ' ',
+                                    'IF',
+                                    r.local_param_name,
+                                    'IS NULL AND (',
+                                    r.param_name,
+                                    'IS NOT NULL OR',
+                                    r.ref_param_name,
+                                    'IS NOT NULL ) THEN' ),
+                            util_meta.indent ( 2 )
+                                || concat_ws (
+                                    ' ',
+                                    'a_err := ''Invalid',
+                                    r.error_tag,
+                                    'specified'' ;' ),
                             l_log_err_line,
-                            util_meta.indent (2) || 'RETURN ;',
-                            util_meta.indent (1) || 'END IF ;' ) ) ;
+                            util_meta.indent ( 2 ) || 'RETURN ;',
+                            util_meta.indent ( 1 ) || 'END IF ;' ) ) ;
 
                 ELSE
                     -- If the column is NOT nullable then we only need to check that the lookup was successful
-                    l_local_checks := array_append ( l_local_checks, concat_ws ( util_meta.new_line (),
-                            util_meta.indent (1) || concat_ws ( ' ', r.local_param_name, ':=', r.resolve_id_function, '(', concat_ws ( ', ', r.param_name, r.ref_param_name ), ')', ';' ),
-                            util_meta.indent (1) || concat_ws ( ' ', 'IF', r.local_param_name, 'IS NULL THEN' ),
-                            util_meta.indent (2) || 'a_err := ''No, or invalid, ' || r.error_tag || ' specified'' ;',
+                    l_local_checks := array_append (
+                        l_local_checks,
+                        concat_ws (
+                            util_meta.new_line (),
+                            util_meta.indent ( 1 )
+                                || concat_ws (
+                                    ' ',
+                                    r.local_param_name,
+                                    ':=',
+                                    r.resolve_id_function,
+                                    '(',
+                                    concat_ws ( ', ', r.param_name, r.ref_param_name ),
+                                    ')',
+                                    ';' ),
+                            util_meta.indent ( 1 ) || concat_ws (
+                                ' ',
+                                'IF',
+                                r.local_param_name,
+                                'IS NULL THEN' ),
+                            util_meta.indent ( 2 )
+                                || concat_ws (
+                                    ' ',
+                                    'a_err := ''No, or invalid,',
+                                    r.error_tag,
+                                    'specified'' ;' ),
                             l_log_err_line,
-                            util_meta.indent (2) || 'RETURN ;',
-                            util_meta.indent (1) || 'END IF ;' ) ) ;
+                            util_meta.indent ( 2 ) || 'RETURN ;',
+                            util_meta.indent ( 1 ) || 'END IF ;' ) ) ;
 
                 END IF ;
 
@@ -225,22 +292,46 @@ BEGIN
                 CONTINUE ;
             END IF ;
 
-            l_value_param := coalesce (  r.local_param_name, r.param_name ) ;
+            l_value_param := coalesce ( r.local_param_name, r.param_name ) ;
 
             IF r.is_pk THEN
-                l_where_cols := array_append ( l_where_cols, concat_ws ( ' ',  'o.' || r.column_name, '=', l_value_param ) ) ;
+                l_where_cols := array_append (
+                    l_where_cols,
+                    concat_ws (
+                        ' ',
+                        'o.' || r.column_name,
+                        '=',
+                        l_value_param ) ) ;
 
             ELSIF r.is_audit_col THEN
 
                 IF r.is_audit_tmsp_col THEN
-                    l_set_cols := array_append ( l_set_cols, concat_ws ( ' ',  r.column_name, '=', 'now ()' ) ) ;
+                    l_set_cols := array_append ( l_set_cols, concat_ws (
+                            ' ',
+                            r.column_name,
+                            '=',
+                            'now ()' ) ) ;
                 ELSE
-                    l_set_cols := array_append ( l_set_cols, concat_ws ( ' ',  r.column_name, '=', l_value_param ) ) ;
+                    l_set_cols := array_append ( l_set_cols, concat_ws (
+                            ' ',
+                            r.column_name,
+                            '=',
+                            l_value_param ) ) ;
                 END IF ;
 
             ELSE
-                l_set_cols := array_append ( l_set_cols, concat_ws ( ' ',  r.column_name, '=', l_value_param ) ) ;
-                l_distinct_cols := array_append ( l_distinct_cols, concat_ws ( ' ',  'o.' || r.column_name, 'IS DISTINCT FROM', l_value_param ) ) ;
+                l_set_cols := array_append ( l_set_cols, concat_ws (
+                        ' ',
+                        r.column_name,
+                        '=',
+                        l_value_param ) ) ;
+                l_distinct_cols := array_append (
+                    l_distinct_cols,
+                    concat_ws (
+                        ' ',
+                        'o.' || r.column_name,
+                        'IS DISTINCT FROM',
+                        l_value_param ) ) ;
 
             END IF ;
 
@@ -254,7 +345,8 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -264,15 +356,15 @@ BEGIN
             a_assertions => l_assertions,
             a_calling_parameters => l_calling_params,
             a_variables => l_local_vars ),
-        util_meta.snippet_log_params (
-            a_parameters => l_calling_params ) ) ;
+        util_meta.snippet_log_params ( a_parameters => l_calling_params ) ) ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
-        array_to_string ( l_local_checks, util_meta.new_line (2) ),
+        array_to_string ( l_local_checks, util_meta.new_line ( 2 ) ),
         '',
-        util_meta.indent (1) || '-- TODO review existing/add additional checks and lookups' ) ;
+        util_meta.indent ( 1 ) || '-- TODO review existing/add additional checks and lookups' ) ;
 
     /*
 
@@ -309,22 +401,27 @@ l_parent_id_param
 
     ----------------------------------------------------------------------------
     -- Add the update
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
-        util_meta.indent (1) || 'UPDATE ' || a_object_schema || '.' || a_object_name || ' o',
-        util_meta.indent (2) || 'SET ' || array_to_string ( l_set_cols, ',' || util_meta.new_line () || util_meta.indent (3) ) ,
-        util_meta.indent (2) || 'WHERE ' || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent (3) || 'AND ' ) ) ;
+        util_meta.indent ( 1 ) || 'UPDATE ' || a_object_schema || '.' || a_object_name || ' o',
+        util_meta.indent ( 2 )
+            || 'SET '
+            || array_to_string ( l_set_cols, ',' || util_meta.new_line () || util_meta.indent ( 3 ) ),
+        util_meta.indent ( 2 )
+            || 'WHERE '
+            || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent ( 3 ) || 'AND ' ) ) ;
 
     IF array_length ( l_distinct_cols, 1 ) > 0 THEN
-        l_dc := ' ( ' || array_to_string ( l_distinct_cols, util_meta.new_line () || util_meta.indent ( 4 ) || 'OR ' ) || ' )';
+        l_dc := ' ( '
+            || array_to_string ( l_distinct_cols, util_meta.new_line () || util_meta.indent ( 4 ) || 'OR ' )
+            || ' )' ;
     END IF ;
 
     IF l_dc IS NOT NULL THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
-            l_result,
-            util_meta.indent (3) || 'AND' || l_dc || ' ;' ) ;
+        l_result := concat_ws ( util_meta.new_line (), l_result, util_meta.indent ( 3 ) || 'AND' || l_dc || ' ;' ) ;
 
     ELSE
 
@@ -334,12 +431,13 @@ l_parent_id_param
 
     --------------------------------------------------------------------
     -- Wrap it up
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => null::text,
+            a_comment => 'performs an update on ' || a_object_name,
             a_owner => a_owner,
             a_calling_parameters => l_calling_params ) ) ;
 

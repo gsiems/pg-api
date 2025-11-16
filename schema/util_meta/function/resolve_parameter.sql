@@ -1,10 +1,11 @@
 CREATE OR REPLACE FUNCTION util_meta.resolve_parameter (
-    a_name text default null,
-    a_value text default null )
+    a_name text DEFAULT NULL,
+    a_value text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function resolve_parameter checks/resolves a calling parameter and returns the parameter value.
@@ -21,7 +22,7 @@ If the parameter value is not specified then the default for that parameter (as 
 */
 DECLARE
 
-    r record  ;
+    r record ;
 
 BEGIN
 
@@ -53,7 +54,7 @@ BEGIN
             RETURN r.default_value ;
         ELSIF r.allowed_values IS NULL THEN
             RETURN coalesce ( a_value, r.default_value ) ;
-        ELSIF a_value = ANY (string_to_array ( r.allowed_values, ',' ) ) THEN
+        ELSIF a_value = ANY ( string_to_array ( r.allowed_values, ',' ) ) THEN
             RETURN a_value ;
         ELSE
             RETURN r.default_value ;

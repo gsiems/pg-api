@@ -1,12 +1,13 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_resolve_user_id (
-    a_indents integer default null,
-    a_user_id_var text default null,
-    a_user_id_param text default null,
-    a_check_result boolean default null )
+    a_indents integer DEFAULT NULL,
+    a_user_id_var text DEFAULT NULL,
+    a_user_id_param text DEFAULT NULL,
+    a_check_result boolean DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_resolve_user_id    generates the pl/pg-sql code snippet for logging the calling parameters to a function or procedure
@@ -32,7 +33,7 @@ DECLARE
 BEGIN
 
     l_indents := coalesce ( a_indents, 1 ) ;
-    l_user_id_var :=  coalesce ( a_user_id_var, 'l_acting_user_id' ) ;
+    l_user_id_var := coalesce ( a_user_id_var, 'l_acting_user_id' ) ;
     l_user_id_param := coalesce ( a_user_id_param, 'a_user' ) ;
 
     ----------------------------------------------------------------------------
@@ -44,7 +45,13 @@ BEGIN
             FROM util_meta.objects
             WHERE object_name = 'resolve_user_id' ) LOOP
 
-        l_return := util_meta.indent ( l_indents ) || l_user_id_var || ' := ' || r.full_object_name || ' ( a_user => ' || l_user_id_param || ' ) ;' ;
+        l_return := util_meta.indent ( l_indents )
+            || l_user_id_var
+            || ' := '
+            || r.full_object_name
+            || ' ( a_user => '
+            || l_user_id_param
+            || ' ) ;' ;
 
         IF coalesce ( a_check_result, true ) THEN
 
@@ -54,13 +61,14 @@ BEGIN
                 l_log_err_line := util_meta.indent ( l_indents + 1 ) || 'call util_log.log_exception ( a_err ) ;' ;
             END IF ;
 
-            l_return := concat_ws ( util_meta.new_line (),
-                    l_return,
-                    util_meta.indent ( l_indents ) || 'IF ' || l_user_id_var || ' IS NULL THEN',
-                    util_meta.indent ( l_indents + 1 ) || 'a_err := ''No, or invalid, user specified'' ;',
-                    l_log_err_line,
-                    util_meta.indent ( l_indents + 1 ) || 'RETURN ;',
-                    util_meta.indent ( l_indents ) || 'END IF ;' ) ;
+            l_return := concat_ws (
+                util_meta.new_line (),
+                l_return,
+                util_meta.indent ( l_indents ) || 'IF ' || l_user_id_var || ' IS NULL THEN',
+                util_meta.indent ( l_indents + 1 ) || 'a_err := ''No, or invalid, user specified'' ;',
+                l_log_err_line,
+                util_meta.indent ( l_indents + 1 ) || 'RETURN ;',
+                util_meta.indent ( l_indents ) || 'END IF ;' ) ;
 
         END IF ;
 
@@ -68,7 +76,11 @@ BEGIN
 
     END LOOP ;
 
-    RETURN '-- TODO: (schema name?) ' || l_user_id_var || ' := resolve_user_id ( a_user => ' || l_user_id_param || ' ) ;' ;
+    RETURN '-- TODO: (schema name?) '
+        || l_user_id_var
+        || ' := resolve_user_id ( a_user => '
+        || l_user_id_param
+        || ' ) ;' ;
 
 END ;
 $$ ;

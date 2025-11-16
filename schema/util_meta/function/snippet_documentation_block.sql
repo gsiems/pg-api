@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_documentation_block (
-    a_object_name text default null,
-    a_object_type text default null,
-    a_object_purpose text default null,
-    a_calling_parameters util_meta.ut_parameters default null,
-    a_assertions text[] default null,
-    a_notes text[] default null )
+    a_object_name text DEFAULT NULL,
+    a_object_type text DEFAULT NULL,
+    a_object_purpose text DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL,
+    a_assertions text[] DEFAULT NULL,
+    a_notes text[] DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_documentation_block generates the documentation block for an object
@@ -31,50 +32,71 @@ DECLARE
 
 BEGIN
 
-    l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  'Parameter', 'In/Out', 'Datatype', 'Description' ) ) ;
-    l_doc_lines := array_append ( l_doc_lines, format ( l_doc_format,  '------------------------------', '------', '----------', '--------------------------------------------------' ) ) ;
+    l_doc_lines := array_append (
+        l_doc_lines,
+        format (
+            l_doc_format,
+            'Parameter',
+            'In/Out',
+            'Datatype',
+            'Description' ) ) ;
+    l_doc_lines := array_append (
+        l_doc_lines,
+        format (
+            l_doc_format,
+            '------------------------------',
+            '------',
+            '----------',
+            '--------------------------------------------------' ) ) ;
 
     FOR l_idx IN 1..array_length ( a_calling_parameters.names, 1 ) LOOP
 
-        l_doc_lines := array_append ( l_doc_lines,
-                format ( l_doc_format,
-                    a_calling_parameters.names[l_idx],
-                    a_calling_parameters.directions[l_idx],
-                    a_calling_parameters.datatypes[l_idx],
-                    coalesce ( a_calling_parameters.descriptions[l_idx], 'TBD' ) ) ) ;
+        l_doc_lines := array_append (
+            l_doc_lines,
+            format (
+                l_doc_format,
+                a_calling_parameters.names[l_idx],
+                a_calling_parameters.directions[l_idx],
+                a_calling_parameters.datatypes[l_idx],
+                coalesce ( a_calling_parameters.descriptions[l_idx], 'TBD' ) ) ) ;
 
     END LOOP ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         '/' || '**',
-        concat_ws ( ' ', initcap ( a_object_type ), a_object_name, a_object_purpose ),
+        concat_ws (
+            ' ',
+            initcap ( a_object_type ),
+            a_object_name,
+            a_object_purpose ),
         '',
-         array_to_string ( l_doc_lines, util_meta.new_line () ),
+        array_to_string ( l_doc_lines, util_meta.new_line () ),
         '' ) ;
 
     IF array_length ( a_notes, 1 ) > 0 THEN
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
             'NOTES',
             '',
-            ' * ' || array_to_string ( a_notes,  util_meta.new_line (2) || ' * ' ),
+            ' * ' || array_to_string ( a_notes, util_meta.new_line ( 2 ) || ' * ' ),
             '' ) ;
 
     END IF ;
 
     IF array_length ( a_assertions, 1 ) > 0 THEN
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
             'ASSERTIONS',
             '',
-            ' * ' || array_to_string ( a_assertions,  util_meta.new_line (2) || ' * ' ),
+            ' * ' || array_to_string ( a_assertions, util_meta.new_line ( 2 ) || ' * ' ),
             '' ) ;
 
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
-        l_return,
-        '*' || '/' ) ;
+    l_return := concat_ws ( util_meta.new_line (), l_return, '*' || '/' ) ;
 
     RETURN l_return ;
 

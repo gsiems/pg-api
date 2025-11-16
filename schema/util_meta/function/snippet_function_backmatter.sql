@@ -1,15 +1,16 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_function_backmatter (
-    a_ddl_schema text default null,
-    a_function_name text default null,
-    a_language text default null,
-    a_comment text default null,
-    a_owner text default null,
-    a_grantees text default null,
-    a_calling_parameters util_meta.ut_parameters default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_function_name text DEFAULT NULL,
+    a_language text DEFAULT NULL,
+    a_comment text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_function_backmatter generates the pl/pg-sql code snippet for the end of a function
@@ -33,20 +34,20 @@ BEGIN
 
     IF coalesce ( a_language, 'plpgsql' ) = 'plpgsql' THEN
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             '',
             'END ;',
             '$' || '$ ;' ) ;
 
     ELSE
 
-        l_return := concat_ws ( util_meta.new_line (),
-            '',
-            '$' || '$ ;' ) ;
+        l_return := concat_ws ( util_meta.new_line (), '', '$' || '$ ;' ) ;
 
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         l_return,
         '',
         util_meta.snippet_owners_and_grants (
@@ -63,7 +64,7 @@ BEGIN
             a_object_type => 'function',
             a_comment => a_comment,
             a_calling_parameters => a_calling_parameters ),
-            '' ) ;
+        '' ) ;
 
     RETURN l_return ;
 

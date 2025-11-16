@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_json_build_object (
-    a_indents integer default null,
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_where_columns text default null,
-    a_exclude_columns text default null )
+    a_indents integer DEFAULT NULL,
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_where_columns text DEFAULT NULL,
+    a_exclude_columns text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_json_build_object generates a json_build_object function call query for a table or view
@@ -85,7 +86,6 @@ BEGIN
 
         END IF ;
 
-
         -- Get the PK columns for the table
         IF l_table_name IS NOT NULL THEN
 
@@ -142,7 +142,9 @@ BEGIN
             IF r.column_name = r.json_alias THEN
                 l_jbo_columns := array_append ( l_jbo_columns, concat_ws ( ', ', r.json_alias, r.full_column_name ) ) ;
             ELSE
-                l_jbo_columns := array_append ( l_jbo_columns, concat_ws ( ', ', quote_literal ( r.json_alias ), r.full_column_name ) ) ;
+                l_jbo_columns := array_append (
+                    l_jbo_columns,
+                    concat_ws ( ', ', quote_literal ( r.json_alias ), r.full_column_name ) ) ;
             END IF ;
 
         END IF ;
@@ -150,7 +152,13 @@ BEGIN
         IF r.column_name = ANY ( l_filter_cols ) THEN
 
             l_select_cols := array_append ( l_select_cols, r.full_column_name ) ;
-            l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r.full_column_name, '=', 'a_' || r.column_name ) ) ;
+            l_where_cols := array_append (
+                l_where_cols,
+                concat_ws (
+                    ' ',
+                    r.full_column_name,
+                    '=',
+                    'a_' || r.column_name ) ) ;
             l_group_cols := array_append ( l_group_cols, r.full_column_name ) ;
 
         END IF ;
@@ -160,18 +168,35 @@ BEGIN
     l_indents := coalesce ( a_indents, 0 ) ;
     l_full_object_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
 
-    l_select_cols := array_append ( l_select_cols, 'json_build_object ('
-        || util_meta.new_line () || util_meta.indent (l_indents+4) ||  array_to_string ( l_jbo_columns, ',' || util_meta.new_line () || util_meta.indent (l_indents+4) ) || ' ) AS ' || l_jbo_alias ) ;
+    l_select_cols := array_append (
+        l_select_cols,
+        'json_build_object ('
+            || util_meta.new_line ()
+            || util_meta.indent ( l_indents + 4 )
+            || array_to_string ( l_jbo_columns, ',' || util_meta.new_line () || util_meta.indent ( l_indents + 4 ) )
+            || ' ) AS '
+            || l_jbo_alias ) ;
 
-    l_result := concat_ws ( util_meta.new_line (),
-        'SELECT ' || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent (l_indents+2) ),
-        util_meta.indent (l_indents+1) || concat_ws ( ' ', 'FROM', l_full_object_name, l_object_alias ) ) ;
+    l_result := concat_ws (
+        util_meta.new_line (),
+        'SELECT '
+            || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent ( l_indents + 2 ) ),
+        util_meta.indent ( l_indents + 1 ) || concat_ws (
+            ' ',
+            'FROM',
+            l_full_object_name,
+            l_object_alias ) ) ;
 
     IF array_length ( l_where_cols, 1 ) > 0 THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
-            util_meta.indent (l_indents+1) || 'WHERE ' || array_to_string ( l_group_cols, ',' || util_meta.new_line () || util_meta.indent (l_indents+3) || 'AND ' ) ) ;
+            util_meta.indent ( l_indents + 1 )
+                || 'WHERE '
+                || array_to_string (
+                    l_group_cols,
+                    ',' || util_meta.new_line () || util_meta.indent ( l_indents + 3 ) || 'AND ' ) ) ;
 
     END IF ;
 

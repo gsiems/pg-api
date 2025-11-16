@@ -1,15 +1,16 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_permissions_check (
-    a_indents integer default null,
-    a_action text default null,
-    a_ddl_schema text default null,
-    a_object_type text default null,
-    a_id_param text default null,
-    a_parent_object_type text default null,
-    a_parent_id_param text default null )
+    a_indents integer DEFAULT NULL,
+    a_action text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_object_type text DEFAULT NULL,
+    a_id_param text DEFAULT NULL,
+    a_parent_object_type text DEFAULT NULL,
+    a_parent_id_param text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_permissions_check generates the pl/pg-sql code snippet for calling a permissions check
@@ -34,7 +35,8 @@ BEGIN
 
     l_indents := coalesce ( a_indents, 0 ) ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         util_meta.snippet_get_permissions (
             a_indents => l_indents,
             a_action => a_action,
@@ -44,19 +46,21 @@ BEGIN
             a_parent_object_type => a_parent_object_type,
             a_parent_id_param => a_parent_id_param ),
         '',
-        util_meta.indent (l_indents + 1) || 'IF NOT l_has_permission THEN',
-        util_meta.indent (l_indents + 2) || 'a_err := ''No, or insufficient, privileges'' ;' ) ;
+        util_meta.indent ( l_indents + 1 ) || 'IF NOT l_has_permission THEN',
+        util_meta.indent ( l_indents + 2 ) || 'a_err := ''No, or insufficient, privileges'' ;' ) ;
 
     IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
-            util_meta.indent (l_indents + 2) || 'call util_log.log_exception ( a_err ) ;' ) ;
+            util_meta.indent ( l_indents + 2 ) || 'call util_log.log_exception ( a_err ) ;' ) ;
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         l_return,
-        util_meta.indent (l_indents + 2) || 'RETURN ;',
-        util_meta.indent (l_indents + 1) || 'END IF ;' ) ;
+        util_meta.indent ( l_indents + 2 ) || 'RETURN ;',
+        util_meta.indent ( l_indents + 1 ) || 'END IF ;' ) ;
 
     RETURN l_return ;
 

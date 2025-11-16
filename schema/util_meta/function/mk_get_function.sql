@@ -1,12 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_get_function (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
-LANGUAGE plpgsql stable
+LANGUAGE plpgsql
+STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_get_function generates a draft get item function for a table.
@@ -46,7 +48,7 @@ DECLARE
     l_table_noun text ;
     l_view_name text ;
     l_where_clause text ;
-    l_resolve_id text;
+    l_resolve_id text ;
 
     l_calling_params util_meta.ut_parameters ;
     l_local_vars util_meta.ut_parameters ;
@@ -59,8 +61,8 @@ BEGIN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
--- TODO: if there are more than one column in the primary key then this doesn't work
--- and results in some rather wrong code
+    -- TODO: if there are more than one column in the primary key then this doesn't work
+    -- and results in some rather wrong code
 
     --------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
@@ -70,10 +72,13 @@ BEGIN
     l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
     l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
 
-    l_doc_item := 'Returns the specified '
-        || replace ( l_table_noun, '_', ' ' ) || ' entry' ;
+    l_doc_item := 'Returns the specified ' || replace ( l_table_noun, '_', ' ' ) || ' entry' ;
 
-    l_resolve_id_func := concat_ws ( '_', 'resolve', l_table_noun, 'id' ) ;
+    l_resolve_id_func := concat_ws (
+        '_',
+        'resolve',
+        l_table_noun,
+        'id' ) ;
 
     --------------------------------------------------------------------
     -- Ensure that the view is valid
@@ -121,7 +126,6 @@ BEGIN
 
     END LOOP ;
 
-
     IF array_length ( l_resolve_id_params, 1 ) = 1 THEN
         -- assert that this is for the pk column
         --if there is only the pk parameter for the table then no id lookup is needed
@@ -149,7 +153,11 @@ BEGIN
 
     END IF ;
 
-    l_where_clause := concat_ws ( ' ',  l_pk_column_name, '=', l_pk_param ) ;
+    l_where_clause := concat_ws (
+        ' ',
+        l_pk_column_name,
+        '=',
+        l_pk_param ) ;
 
     ----------------------------------------------------------------------------
     l_calling_params := util_meta.append_parameter (
@@ -159,13 +167,14 @@ BEGIN
         a_description => 'The ID or username of the user doing the search' ) ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_return_type =>l_full_view_name,
+            a_return_type => l_full_view_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
@@ -173,19 +182,20 @@ BEGIN
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables (
-            a_variables => l_local_vars ),
+        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN' ) ;
 
     IF l_resolve_id IS NOT NULL THEN
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
             '',
             l_resolve_id ) ;
     END IF ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_get_permissions (
             a_action => 'select',
@@ -193,11 +203,11 @@ BEGIN
             a_object_type => l_table_noun,
             a_id_param => l_pk_param ),
         '',
-        util_meta.indent (1) || 'RETURN QUERY',
-        util_meta.indent (2) || 'SELECT *',
-        util_meta.indent (3) || 'FROM ' || l_full_view_name,
-        util_meta.indent (3) || 'WHERE l_has_permission',
-        util_meta.indent (4) || 'AND ' || l_where_clause || ' ;',
+        util_meta.indent ( 1 ) || 'RETURN QUERY',
+        util_meta.indent ( 2 ) || 'SELECT *',
+        util_meta.indent ( 3 ) || 'FROM ' || l_full_view_name,
+        util_meta.indent ( 3 ) || 'WHERE l_has_permission',
+        util_meta.indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
         util_meta.snippet_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,

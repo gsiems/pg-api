@@ -1,11 +1,12 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_can_do_function_shell (
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_can_do_function_shell generates the shell of a draft can_do function
@@ -22,19 +23,21 @@ DECLARE
 
     r record ;
 
-    l_notes text [] ;
+    l_notes text[] ;
 
     l_local_vars util_meta.ut_parameters ;
     l_calling_params util_meta.ut_parameters ;
 
 BEGIN
 
-    l_notes := array_append ( l_notes, 'To help prevent privilege escalation attacks, both the acting user and the connected user need to have sufficient permissions to perform the action' ) ;
+    l_notes := array_append (
+        l_notes,
+        'To help prevent privilege escalation attacks, both the acting user and the connected user need to have sufficient permissions to perform the action' ) ;
 
     FOR r IN (
         SELECT schema_name AS ddl_schema
             FROM util_meta.objects
-            WHERE schema_name = a_ddl_schema  ) LOOP
+            WHERE schema_name = a_ddl_schema ) LOOP
 
         l_calling_params := util_meta.append_parameter (
             a_parameters => l_calling_params,
@@ -83,7 +86,8 @@ BEGIN
             a_name => 'l_connected_user_id',
             a_datatype => 'integer' ) ;
 
-        RETURN concat_ws ( util_meta.new_line (),
+        RETURN concat_ws (
+            util_meta.new_line (),
             util_meta.snippet_function_frontmatter (
                 a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
@@ -96,27 +100,25 @@ BEGIN
                 a_object_purpose => 'determines if a user has permission to perform the specified action on the specified object (optionally for the specified ID)',
                 a_calling_parameters => l_calling_params,
                 a_notes => l_notes ),
-            util_meta.snippet_declare_variables (
-                a_variables => l_local_vars ),
+            util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
             '',
             'BEGIN',
             '',
-            util_meta.snippet_resolve_user_id (
-                a_check_result => true ),
+            util_meta.snippet_resolve_user_id ( a_check_result => true ),
             '',
             util_meta.snippet_resolve_user_id (
                 a_user_id_var => 'l_connected_user_id',
                 a_user_id_param => 'connected_user::text',
                 a_check_result => true ),
             '',
-            util_meta.indent (1) || '-- TODO: Finish this function',
+            util_meta.indent ( 1 ) || '-- TODO: Finish this function',
             '',
-            util_meta.indent (1) || 'RETURN false ;',
+            util_meta.indent ( 1 ) || 'RETURN false ;',
             util_meta.snippet_function_backmatter (
                 a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
                 a_language => 'plpgsql',
-                a_comment => null::text,
+                a_comment => NULL::text,
                 a_owner => a_owner,
                 a_grantees => a_grantees,
                 a_calling_parameters => l_calling_params ) ) ;

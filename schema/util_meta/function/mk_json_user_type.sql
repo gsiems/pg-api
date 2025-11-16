@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_json_user_type (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_json_user_type generates a user type for a table or view with lowerCamelCase column names
@@ -59,7 +60,8 @@ BEGIN
             WHERE schema_name = a_object_schema
                 AND object_name = a_object_name ) LOOP
 
-        l_comments := array_append ( l_comments,
+        l_comments := array_append (
+            l_comments,
             util_meta.snippet_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_type_name,
@@ -82,14 +84,17 @@ BEGIN
             ORDER BY ordinal_position ) LOOP
 
         IF r.json_alias = r.column_name THEN
-            l_columns := array_append ( l_columns, util_meta.indent (1) || r.column_name || ' ' || r.data_type ) ;
+            l_columns := array_append ( l_columns, util_meta.indent ( 1 ) || r.column_name || ' ' || r.data_type ) ;
         ELSE
-            l_columns := array_append ( l_columns, util_meta.indent (1) || quote_ident ( r.json_alias ) || ' ' || r.data_type ) ;
+            l_columns := array_append (
+                l_columns,
+                util_meta.indent ( 1 ) || quote_ident ( r.json_alias ) || ' ' || r.data_type ) ;
         END IF ;
 
     END LOOP ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         'CREATE TYPE ' || l_full_type_name || ' AS (',
         array_to_string ( l_columns, ',' || util_meta.new_line () ) || ' ) ;',
         '',

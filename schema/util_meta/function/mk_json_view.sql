@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_json_view (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_json_view generates a draft view of a table in JSON format
@@ -60,7 +61,7 @@ BEGIN
     END LOOP ;
 
     --------------------------------------------------------------------
-    l_ddl_schema := coalesce (  a_ddl_schema, a_object_schema || '_json' ) ;
+    l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema || '_json' ) ;
     l_view_name := regexp_replace ( a_object_name, '^([drs])[tv]_', '\1j_' ) ;
     l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
     l_full_object_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
@@ -78,20 +79,33 @@ BEGIN
         IF r.json_alias = r.column_name THEN
             l_columns := array_append ( l_columns, r.full_column_name ) ;
         ELSE
-            l_columns := array_append ( l_columns, concat_ws ( ' ', r.full_column_name, 'AS', quote_ident ( r.json_alias ) ) ) ;
+            l_columns := array_append (
+                l_columns,
+                concat_ws (
+                    ' ',
+                    r.full_column_name,
+                    'AS',
+                    quote_ident ( r.json_alias ) ) ) ;
         END IF ;
 
     END LOOP ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         'CREATE OR REPLACE VIEW ' || l_full_view_name,
         'AS',
         'WITH t AS (',
-        util_meta.indent (1) || 'SELECT ' || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent (3) ),
-        util_meta.indent (2) || concat_ws ( ' ', 'FROM', l_full_object_name, l_object_alias ),
+        util_meta.indent ( 1 )
+            || 'SELECT '
+            || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent ( 3 ) ),
+        util_meta.indent ( 2 ) || concat_ws (
+            ' ',
+            'FROM',
+            l_full_object_name,
+            l_object_alias ),
         ')',
         'SELECT json_agg ( row_to_json ( t ) ) AS json',
-        util_meta.indent (1) || 'FROM t ;',
+        util_meta.indent ( 1 ) || 'FROM t ;',
         '',
         util_meta.snippet_owners_and_grants (
             a_ddl_schema => l_ddl_schema,
@@ -104,7 +118,7 @@ BEGIN
             a_ddl_schema => l_ddl_schema,
             a_object_name => l_view_name,
             a_object_type => 'view',
-            a_comment => l_view_comments ) ,
+            a_comment => l_view_comments ),
         '' ) ;
 
     RETURN util_meta.cleanup_whitespace ( l_result ) ;

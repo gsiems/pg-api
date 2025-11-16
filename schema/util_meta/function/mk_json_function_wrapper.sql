@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_json_function_wrapper (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_json_function_wrapper generates a draft JSON wrapper around a
@@ -30,7 +31,7 @@ ASSERTIONS
 */
 DECLARE
 
-    r record;
+    r record ;
 
     l_result text ;
 
@@ -52,7 +53,7 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_ddl_schema := coalesce (  a_ddl_schema, a_object_schema || '_json' ) ;
+    l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema || '_json' ) ;
     l_func_name := a_object_name ;
     l_func_type := split_part ( a_object_name, '_', 1 ) ;
 
@@ -87,9 +88,9 @@ BEGIN
                     column_name,
                     comments
                 FROM util_meta.calling_parameters (
-                    a_object_schema => a_object_schema,
-                    a_object_name => a_object_name,
-                    a_object_type => 'function' )
+                        a_object_schema => a_object_schema,
+                        a_object_name => a_object_name,
+                        a_object_type => 'function' )
         )
         SELECT args.schema_name,
                 args.object_name,
@@ -129,13 +130,20 @@ BEGIN
         IF r.json_alias = r.column_name THEN
             l_columns := array_append ( l_columns, r.column_name ) ;
         ELSE
-            l_columns := array_append ( l_columns, concat_ws ( ' ', r.column_name, 'AS', quote_ident ( r.json_alias ) ) ) ;
+            l_columns := array_append (
+                l_columns,
+                concat_ws (
+                    ' ',
+                    r.column_name,
+                    'AS',
+                    quote_ident ( r.json_alias ) ) ) ;
         END IF ;
 
     END LOOP ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -150,31 +158,37 @@ BEGIN
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
         '',
-        util_meta.indent (1) || 'WITH t AS (',
-        util_meta.indent (2) || 'SELECT ' || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent (4) ),
-        util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
-        util_meta.indent (5) || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent (5) ),
-        util_meta.indent (4) || ')',
-        util_meta.indent (1) || ')' ) ;
+        util_meta.indent ( 1 ) || 'WITH t AS (',
+        util_meta.indent ( 2 )
+            || 'SELECT '
+            || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent ( 4 ) ),
+        util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
+        util_meta.indent ( 5 )
+            || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
+        util_meta.indent ( 4 ) || ')',
+        util_meta.indent ( 1 ) || ')' ) ;
 
     -- TODO: need a better way of determining single tuple results vs multi-tuple results
     IF l_func_type = 'get' THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
-            util_meta.indent (1) || 'SELECT row_to_json ( t ) AS json',
-            util_meta.indent (2) || 'FROM t ;' ) ;
+            util_meta.indent ( 1 ) || 'SELECT row_to_json ( t ) AS json',
+            util_meta.indent ( 2 ) || 'FROM t ;' ) ;
 
     ELSE
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
-            util_meta.indent (1) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
-            util_meta.indent (2) || 'FROM t ;' ) ;
+            util_meta.indent ( 1 ) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
+            util_meta.indent ( 2 ) || 'FROM t ;' ) ;
 
     END IF ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
         util_meta.snippet_function_backmatter (

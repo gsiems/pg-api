@@ -3,9 +3,10 @@ CREATE OR REPLACE FUNCTION util_meta.is_valid_object (
     a_object_name text,
     a_object_type text )
 RETURNS boolean
-LANGUAGE sql
+LANGUAGE SQL
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function is_valid_object checks if the specified object exists in the database
@@ -18,11 +19,11 @@ Function is_valid_object checks if the specified object exists in the database
 
 */
 
-    SELECT EXISTS (
-        SELECT 1
-            FROM util_meta.objects
-            WHERE schema_name = a_object_schema
-                AND object_name = a_object_name
-                AND object_type = a_object_type ) ;
+SELECT EXISTS (
+            SELECT 1
+                FROM util_meta.objects
+                WHERE schema_name = a_object_schema
+                    AND object_name = a_object_name
+                    AND object_type = a_object_type ) ;
 
 $$ ;

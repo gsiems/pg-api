@@ -1,10 +1,11 @@
 CREATE OR REPLACE FUNCTION util_meta.json_identifier (
-    a_identifier text default null,
-    a_json_casing text default null )
+    a_identifier text DEFAULT NULL,
+    a_json_casing text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function json_identifier takes a database identifier (table name, column name, etc. ) and
@@ -36,9 +37,11 @@ DECLARE
 
 BEGIN
 
-    l_casing := coalesce ( util_meta.resolve_parameter (
-                a_name => 'json_casing',
-                a_value =>  a_json_casing ), 'lowerCamel' ) AS chars ;
+    l_casing := coalesce (
+        util_meta.resolve_parameter (
+            a_name => 'json_casing',
+            a_value => a_json_casing ),
+        'lowerCamel' ) AS chars ;
 
     IF l_casing = 'snake' THEN
         l_separator := '_' ;
@@ -48,13 +51,17 @@ BEGIN
 
     l_tokens := '{}'::text[] ;
 
-    l_identifier := regexp_replace ( a_identifier, '[^\w]', '_', 'g' ) ;
+    l_identifier := regexp_replace (
+        a_identifier,
+        '[^\w]',
+        '_',
+        'g' ) ;
 
     -- some form of camel case
-    FOREACH l_token IN ARRAY string_to_array ( l_identifier, '_' ) LOOP
+    FOREACH l_token IN array string_to_array ( l_identifier, '_' ) LOOP
 
         IF l_token IS NULL OR l_token = '' THEN
-            null;
+            NULL ;
 
         ELSIF l_casing = 'snake' THEN
 

@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_priv_delete_procedure (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
     --a_insert_audit_columns text default null,
     --a_update_audit_columns text default null,
-    a_owner text default null )
+    a_owner text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_priv_delete_procedure generates a draft "private" delete procedure for a table
@@ -52,7 +53,9 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'priv_delete_' || l_table_noun ;
 
-    l_assertions := array_append ( l_assertions, 'User permissions have already been checked and do not require further checking' ) ;
+    l_assertions := array_append (
+        l_assertions,
+        'User permissions have already been checked and do not require further checking' ) ;
 
     ------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -69,17 +72,21 @@ BEGIN
                 param_data_type,
                 comments
             FROM util_meta.proc_parameters (
-                a_action => 'delete',
-                a_object_schema => a_object_schema,
-                a_object_name => a_object_name,
-                a_ddl_schema => l_ddl_schema )
+                    a_action => 'delete',
+                    a_object_schema => a_object_schema,
+                    a_object_name => a_object_name,
+                    a_ddl_schema => l_ddl_schema )
             WHERE is_pk
-                OR param_name in ( 'a_err', 'a_user' )
+                OR param_name IN ( 'a_err', 'a_user' )
             ORDER BY ordinal_position ) LOOP
 
         IF r.is_pk THEN
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
-            l_where_cols := array_append ( l_where_cols, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
+            l_where_cols := array_append ( l_where_cols, concat_ws (
+                    ' ',
+                    r.column_name,
+                    '=',
+                    r.param_name ) ) ;
         END IF ;
 
         l_calling_params := util_meta.append_parameter (
@@ -96,7 +103,8 @@ BEGIN
         RETURN 'ERROR: Table must have a primary key' ;
     END IF ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         util_meta.snippet_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
@@ -104,15 +112,17 @@ BEGIN
             a_language => 'plpgsql',
             a_assertions => l_assertions,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_log_params (
-            a_parameters => l_calling_params ),
+        util_meta.snippet_log_params ( a_parameters => l_calling_params ),
         '',
-        util_meta.indent (1) || 'DELETE FROM ' || a_object_schema || '.' || a_object_name,
-        util_meta.indent (2) || 'WHERE ' || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent (3) || 'AND ' ) || ' ;',
+        util_meta.indent ( 1 ) || 'DELETE FROM ' || a_object_schema || '.' || a_object_name,
+        util_meta.indent ( 2 )
+            || 'WHERE '
+            || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent ( 3 ) || 'AND ' )
+            || ' ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => null::text,
+            a_comment => NULL::text,
             a_owner => a_owner,
             a_calling_parameters => l_calling_params ) ) ;
 

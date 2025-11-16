@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_resolve_id_function (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_resolve_id_function generates a draft function for resolving reference table IDs
@@ -90,10 +91,14 @@ BEGIN
 
     -- ASSERTION: the table name is a noun that appropriately reflects the table contents
     l_table_noun := regexp_replace ( a_object_name, '^[drs]t_', '' ) ;
-    l_func_name := concat_ws ( '_', 'resolve', l_table_noun, 'id' ) ;
+    l_func_name := concat_ws (
+        '_',
+        'resolve',
+        l_table_noun,
+        'id' ) ;
 
     l_doc_item := replace ( l_table_noun, '_', ' ' ) ;
-    IF substring ( l_doc_item for 1 ) IN ( 'a', 'e', 'i', 'o', 'u' ) THEN
+    IF substring ( l_doc_item FOR 1 ) IN ( 'a', 'e', 'i', 'o', 'u' ) THEN
         l_doc_item := 'the ID of an ' || l_doc_item ;
     ELSE
         l_doc_item := 'the ID of a ' || l_doc_item ;
@@ -143,17 +148,41 @@ BEGIN
                 l_pk_param := r.param_name ;
 
                 IF r.data_type ~ 'text' OR r.data_type ~ 'char' THEN
-                     l_pk_where := concat_ws ( ' ', r.column_name, 'IS NOT DISTINCT FROM', 'trim (', r.param_name, ')' ) ;
+                    l_pk_where := concat_ws (
+                        ' ',
+                        r.column_name,
+                        'IS NOT DISTINCT FROM',
+                        'trim (',
+                        r.param_name,
+                        ')' ) ;
                 ELSE
-                     l_pk_where := concat_ws ( ' ', r.column_name, 'IS NOT DISTINCT FROM', r.param_name ) ;
+                    l_pk_where := concat_ws (
+                        ' ',
+                        r.column_name,
+                        'IS NOT DISTINCT FROM',
+                        r.param_name ) ;
                 END IF ;
 
             ELSIF r.is_nk THEN
 
                 IF r.data_type ~ 'text' OR r.data_type ~ 'char' THEN
-                     l_nk_where := array_append ( l_nk_where, concat_ws ( ' ', r.column_name, 'IS NOT DISTINCT FROM', 'trim (', r.param_name, ')' ) ) ;
+                    l_nk_where := array_append (
+                        l_nk_where,
+                        concat_ws (
+                            ' ',
+                            r.column_name,
+                            'IS NOT DISTINCT FROM',
+                            'trim (',
+                            r.param_name,
+                            ')' ) ) ;
                 ELSE
-                     l_nk_where := array_append ( l_nk_where, concat_ws ( ' ', r.column_name, 'IS NOT DISTINCT FROM', r.param_name ) ) ;
+                    l_nk_where := array_append (
+                        l_nk_where,
+                        concat_ws (
+                            ' ',
+                            r.column_name,
+                            'IS NOT DISTINCT FROM',
+                            r.param_name ) ) ;
                 END IF ;
 
                 l_nk_param := array_append ( l_nk_param, r.param_name ) ;
@@ -165,7 +194,8 @@ BEGIN
 
     END LOOP ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -174,52 +204,56 @@ BEGIN
             a_return_type => l_return_type,
             --a_returns_set => false,
             a_calling_parameters => l_calling_params ),
-         util_meta.snippet_documentation_block (
+        util_meta.snippet_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => 'resolves ' || l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables (
-            a_variables => l_local_vars ),
-         '',
-         'BEGIN' ) ;
+        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
+        '',
+        'BEGIN' ) ;
 
-    l_select_clause := util_meta.indent (2) || 'SELECT ' || l_pk_col ;
-    l_from_clause := util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name ;
+    l_select_clause := util_meta.indent ( 2 ) || 'SELECT ' || l_pk_col ;
+    l_from_clause := util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name ;
 
     ----------------------------------------------------------------------------
     -- Go for the natural key match first
     IF array_length ( l_nk_where, 1 ) > 0 THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
             '',
-            util_meta.indent (1) || '-- Search for a match on the natural key first',
-            util_meta.indent (1) || 'FOR r IN (',
+            util_meta.indent ( 1 ) || '-- Search for a match on the natural key',
+            util_meta.indent ( 1 ) || 'FOR r IN (',
             l_select_clause,
             l_from_clause,
-            util_meta.indent (3) || 'WHERE ' || array_to_string ( l_nk_where, util_meta.new_line () || util_meta.indent (4) || 'AND ' ) || ' ) LOOP',
+            util_meta.indent ( 3 )
+                || 'WHERE '
+                || array_to_string ( l_nk_where, util_meta.new_line () || util_meta.indent ( 4 ) || 'AND ' )
+                || ' ) LOOP',
             '',
-            util_meta.indent (2) || 'RETURN r.' || l_pk_col || ' ;',
+            util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
             '',
-            util_meta.indent (1) || 'END LOOP ;' ) ;
+            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
     -- Next, attempt the primary key match
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
-        util_meta.indent (1) || '-- Search for a match on the primary key second',
-        util_meta.indent (1) || 'FOR r IN (',
+        util_meta.indent ( 1 ) || '-- Search for a match on the primary key',
+        util_meta.indent ( 1 ) || 'FOR r IN (',
         l_select_clause,
         l_from_clause,
-        util_meta.indent (3) || 'WHERE ' || l_pk_where || ' ) LOOP',
+        util_meta.indent ( 3 ) || 'WHERE ' || l_pk_where || ' ) LOOP',
         '',
-        util_meta.indent (2) || 'RETURN r.' || l_pk_col || ' ;',
+        util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
         '',
-        util_meta.indent (1) || 'END LOOP ;' ) ;
+        util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
 
     ----------------------------------------------------------------------------
     -- Finally, if there is a single-column natural key then attempt the primary
@@ -238,27 +272,41 @@ BEGIN
             l_nk_cast := l_nk_param[1] ;
         END IF ;
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
             '',
-            util_meta.indent (1) || '-- Finally, search for a match on the natural key parameter matching the primary key',
-            util_meta.indent (1) || 'FOR r IN (',
+            util_meta.indent ( 1 ) || '-- Search for a match on the natural key parameter matching the primary key',
+            util_meta.indent ( 1 ) || 'FOR r IN (',
             l_select_clause,
             l_from_clause,
-            util_meta.indent (3) || concat_ws ( ' ', 'WHERE', l_pk_param, 'IS NULL' ),
-            util_meta.indent (4) || concat_ws ( ' ', 'AND', l_pk_cast, 'IS NOT DISTINCT FROM', l_nk_cast, ')', 'LOOP' ),
+            util_meta.indent ( 3 ) || concat_ws (
+                ' ',
+                'WHERE',
+                l_pk_param,
+                'IS NULL' ),
+            util_meta.indent ( 4 )
+                || concat_ws (
+                    ' ',
+                    'AND',
+                    l_pk_cast,
+                    'IS NOT DISTINCT FROM',
+                    l_nk_cast,
+                    ')',
+                    'LOOP' ),
             '',
-            util_meta.indent (2) || 'RETURN r.' || l_pk_col || ' ;',
+            util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
             '',
-            util_meta.indent (1) || 'END LOOP ;' ) ;
+            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
-        util_meta.indent (1) || 'RETURN null::' || l_return_type || ' ;',
+        util_meta.indent ( 1 ) || 'RETURN null::' || l_return_type || ' ;',
         util_meta.snippet_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,

@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_procedure_backmatter (
-    a_ddl_schema text default null,
-    a_procedure_name text default null,
-    a_comment text default null,
-    a_owner text default null,
-    a_grantees text default null,
-    a_calling_parameters util_meta.ut_parameters default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_procedure_name text DEFAULT NULL,
+    a_comment text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_procedure_backmatter generates the pl/pg-sql code snippet for the end of a procedure
@@ -31,20 +32,23 @@ DECLARE
 
 BEGIN
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         '',
         'EXCEPTION',
-        util_meta.indent (1) || 'WHEN others THEN',
-        util_meta.indent (2) || 'a_err := substr ( SQLSTATE::text || '' - '' || SQLERRM, 1, 200 ) ;' ) ;
+        util_meta.indent ( 1 ) || 'WHEN others THEN',
+        util_meta.indent ( 2 ) || 'a_err := substr ( SQLSTATE::text || '' - '' || SQLERRM, 1, 200 ) ;' ) ;
 
     -- check that util_log schema exists
     IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
-            util_meta.indent (2) || 'call util_log.log_exception ( SQLSTATE::text || '' - '' || SQLERRM ) ;' ) ;
+            util_meta.indent ( 2 ) || 'call util_log.log_exception ( SQLSTATE::text || '' - '' || SQLERRM ) ;' ) ;
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         l_return,
         'END ;',
         '$' || '$ ;',

@@ -1,10 +1,11 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_log_params (
-    a_logging_scope text default null,
-    a_parameters util_meta.ut_parameters default null )
+    a_logging_scope text DEFAULT NULL,
+    a_parameters util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_log_params generates the pl/pg-sql code snippet for logging a list of parameters (or variables)
@@ -23,7 +24,7 @@ BEGIN
 
     -- check that util_log schema exists
     IF NOT util_meta.is_valid_object ( 'util_log', 'log_begin', 'procedure' ) THEN
-        RETURN null::text ;
+        RETURN NULL::text ;
     END IF ;
 
     l_logging_scope := coalesce ( a_logging_scope, 'begin' ) ;
@@ -40,10 +41,13 @@ BEGIN
 
     END LOOP ;
 
-    RETURN concat_ws ( util_meta.new_line (),
+    RETURN concat_ws (
+        util_meta.new_line (),
         '',
-        util_meta.indent (1) || 'call util_log.log_' || l_logging_scope || ' (',
-        util_meta.indent (2) || array_to_string ( l_log_lines, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;' ) ;
+        util_meta.indent ( 1 ) || 'call util_log.log_' || l_logging_scope || ' (',
+        util_meta.indent ( 2 )
+            || array_to_string ( l_log_lines, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
+            || ' ) ;' ) ;
 
 END ;
 $$ ;

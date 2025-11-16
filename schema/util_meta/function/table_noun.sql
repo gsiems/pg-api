@@ -1,10 +1,11 @@
 CREATE OR REPLACE FUNCTION util_meta.table_noun (
-    a_object_name text default null,
-    a_ddl_schema text default null )
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL )
 RETURNS text
-LANGUAGE sql
+LANGUAGE SQL
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function table_noun guesses at the proper "noun" for a table (or view)

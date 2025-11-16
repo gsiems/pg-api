@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_find_function (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_is_row_based boolean default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_is_row_based boolean DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_find_function generates a draft "find matching entries" function for a table.
@@ -63,7 +64,7 @@ BEGIN
     l_func_name := 'find_' || l_table_noun ;
     l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
     l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
-    l_doc_item := 'Returns the list of matching ' || replace ( l_table_noun, '_', ' ' ) || ' entries';
+    l_doc_item := 'Returns the list of matching ' || replace ( l_table_noun, '_', ' ' ) || ' entries' ;
 
     --------------------------------------------------------------------
     -- Ensure that the view is valid
@@ -128,7 +129,8 @@ BEGIN
     END LOOP ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
@@ -141,49 +143,63 @@ BEGIN
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables (
-            a_variables => l_local_vars ),
+        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
-        util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
-        util_meta.indent (1) || '-- TODO: verify the columns to search on' ) ;
-
-
-    ----------------------------------------------------------------------------
-    l_found_cte := concat_ws ( util_meta.new_line (),
-        util_meta.indent (2) || 'found AS (',
-        util_meta.indent (3) || 'SELECT ' || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent (6) ),
-        util_meta.indent (4) || 'FROM base',
-        util_meta.indent (4) || 'WHERE ( ( a_search_term IS NOT NULL',
-        util_meta.indent (7) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
-        util_meta.indent (7) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
-        util_meta.indent (6) || 'OR ( trim ( coalesce ( a_search_term, ' || quote_literal ( '' ) || ' ) ) = ' || quote_literal ( '' ) || ' ) )',
-        util_meta.indent (2) || ')' ) ;
+        util_meta.indent ( 1 )
+            || '-- TODO: review this as different applications may have different permissions models.',
+        util_meta.indent ( 1 ) || '-- TODO: verify the columns to search on' ) ;
 
     ----------------------------------------------------------------------------
-    l_select := concat_ws ( util_meta.new_line (),
-        util_meta.indent (2) || 'SELECT de.*',
-        util_meta.indent (3) || 'FROM ' || l_full_view_name || ' de',
-        util_meta.indent (3) || 'JOIN found',
-        util_meta.indent (4) || 'ON ( ' || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent (5) || 'AND ' ) || ' )' ) ;
+    l_found_cte := concat_ws (
+        util_meta.new_line (),
+        util_meta.indent ( 2 ) || 'found AS (',
+        util_meta.indent ( 3 )
+            || 'SELECT '
+            || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent ( 6 ) ),
+        util_meta.indent ( 4 ) || 'FROM base',
+        util_meta.indent ( 4 ) || 'WHERE ( ( a_search_term IS NOT NULL',
+        util_meta.indent ( 7 ) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
+        util_meta.indent ( 7 ) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
+        util_meta.indent ( 6 )
+            || 'OR ( trim ( coalesce ( a_search_term, '
+            || quote_literal ( '' )
+            || ' ) ) = '
+            || quote_literal ( '' )
+            || ' ) )',
+        util_meta.indent ( 2 ) || ')' ) ;
+
+    ----------------------------------------------------------------------------
+    l_select := concat_ws (
+        util_meta.new_line (),
+        util_meta.indent ( 2 ) || 'SELECT de.*',
+        util_meta.indent ( 3 ) || 'FROM ' || l_full_view_name || ' de',
+        util_meta.indent ( 3 ) || 'JOIN found',
+        util_meta.indent ( 4 )
+            || 'ON ( '
+            || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent ( 5 ) || 'AND ' )
+            || ' )' ) ;
 
     ----------------------------------------------------------------------------
     l_is_row_based := coalesce ( a_is_row_based, false ) ;
     IF l_is_row_based THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
-            util_meta.indent (1) || '-- ASSERTION: the permissions model is row (as opposed to table) based.',
+            util_meta.indent ( 1 ) || '-- ASSERTION: the permissions model is row (as opposed to table) based.',
             '',
-            util_meta.indent (1) || 'FOR r IN (',
-            util_meta.indent (2) || 'WITH base AS (',
-            util_meta.indent (3) || 'SELECT ' || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent (5) ),
-            util_meta.indent (4) || 'FROM ' || l_full_view_name,
-            util_meta.indent (2) || '),',
+            util_meta.indent ( 1 ) || 'FOR r IN (',
+            util_meta.indent ( 2 ) || 'WITH base AS (',
+            util_meta.indent ( 3 )
+                || 'SELECT '
+                || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
+            util_meta.indent ( 4 ) || 'FROM ' || l_full_view_name,
+            util_meta.indent ( 2 ) || '),',
             l_found_cte,
             l_select,
-            util_meta.indent (2) || ') LOOP',
+            util_meta.indent ( 2 ) || ') LOOP',
             util_meta.snippet_get_permissions (
                 a_indents => 1,
                 a_ddl_schema => l_ddl_schema,
@@ -191,37 +207,41 @@ BEGIN
                 a_action => 'select',
                 a_id_param => 'r.' || l_pk_cols[1] ),
             '',
-            util_meta.indent (2) || 'IF l_has_permission THEN',
-            util_meta.indent (3) || 'RETURN NEXT r ;',
-            util_meta.indent (2) || 'END IF ;',
+            util_meta.indent ( 2 ) || 'IF l_has_permission THEN',
+            util_meta.indent ( 3 ) || 'RETURN NEXT r ;',
+            util_meta.indent ( 2 ) || 'END IF ;',
             '',
-            util_meta.indent (1) || 'END LOOP ;' ) ;
+            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
 
     ELSE
 
         -- is table based
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
-            util_meta.indent (1) || '-- ASSERTION: the permissions model is table (as opposed to row) based.',
+            util_meta.indent ( 1 ) || '-- ASSERTION: the permissions model is table (as opposed to row) based.',
             util_meta.snippet_get_permissions (
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_table_noun,
                 a_action => 'select',
                 a_id_param => 'null' ),
             '',
-            util_meta.indent (1) || 'RETURN QUERY',
-            util_meta.indent (2) || 'WITH base AS (',
-            util_meta.indent (3) || 'SELECT ' || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent (5) ),
-            util_meta.indent (4) || 'FROM ' || l_full_view_name,
-            util_meta.indent (4) || 'WHERE l_has_permission',
-            util_meta.indent (2) || '),',
+            util_meta.indent ( 1 ) || 'RETURN QUERY',
+            util_meta.indent ( 2 ) || 'WITH base AS (',
+            util_meta.indent ( 3 )
+                || 'SELECT '
+                || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
+            util_meta.indent ( 4 ) || 'FROM ' || l_full_view_name,
+            util_meta.indent ( 4 ) || 'WHERE l_has_permission',
+            util_meta.indent ( 2 ) || '),',
             l_found_cte,
-            l_select || ' ) ;' ) ;
+            l_select || ' ;' ) ;
 
     END IF ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_function_backmatter (
             a_ddl_schema => l_ddl_schema,

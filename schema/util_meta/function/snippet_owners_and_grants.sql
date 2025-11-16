@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_owners_and_grants (
-    a_ddl_schema text default null,
-    a_object_name text default null,
-    a_object_type text default null,
-    a_owner text default null,
-    a_grantees text default null,
-    a_calling_parameters util_meta.ut_parameters default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_object_type text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_owners_and_grants generates the pl/pg-sql code snippet for setting ownership and granting execute
@@ -43,7 +44,12 @@ BEGIN
 
     IF upper ( a_object_type ) IN ( 'FUNCTION', 'PROCEDURE' ) THEN
 
-        l_alter_sig := concat_ws ( ' ', l_alter_sig, '(', array_to_string ( a_calling_parameters.datatypes, ', ' ), ')' ) ;
+        l_alter_sig := concat_ws (
+            ' ',
+            l_alter_sig,
+            '(',
+            array_to_string ( a_calling_parameters.datatypes, ', ' ),
+            ')' ) ;
         l_grant_sig := l_alter_sig ;
         l_priv := 'EXECUTE' ;
 
@@ -61,20 +67,36 @@ BEGIN
 
     IF l_owner IS NOT NULL THEN
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
             '',
-            concat_ws ( ' ', 'ALTER', l_alter_sig, 'OWNER TO', l_owner, ';' ) ) ;
+            concat_ws (
+                ' ',
+                'ALTER',
+                l_alter_sig,
+                'OWNER TO',
+                l_owner,
+                ';' ) ) ;
 
     END IF ;
 
     FOR r IN (
         SELECT trim ( regexp_split_to_table ( a_grantees, ',' ) ) AS grantee ) LOOP
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
             '',
-            concat_ws ( ' ', 'GRANT', l_priv, 'ON', l_grant_sig, 'TO', r.grantee, ';' ) ) ;
+            concat_ws (
+                ' ',
+                'GRANT',
+                l_priv,
+                'ON',
+                l_grant_sig,
+                'TO',
+                r.grantee,
+                ';' ) ) ;
 
     END LOOP ;
 

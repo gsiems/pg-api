@@ -1,18 +1,19 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_list_function (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_parent_table_schema text default null,
-    a_parent_table_name text default null,
-    a_ddl_schema text default null,
-    a_exclude_binary_data boolean default null,
-    a_insert_audit_columns text default null,
-    a_update_audit_columns text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_parent_table_schema text DEFAULT NULL,
+    a_parent_table_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_exclude_binary_data boolean DEFAULT NULL,
+    a_insert_audit_columns text DEFAULT NULL,
+    a_update_audit_columns text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_list_function generates a draft "list entries that are children of the specified parent" function for a table.
@@ -84,12 +85,13 @@ BEGIN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
-
     ----------------------------------------------------------------------------
     -- check parameters/defaults
-    l_audit_columns = concat_ws ( ',',
-        util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ),
-        util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) ) ;
+    l_audit_columns
+        = concat_ws (
+            ',',
+            util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ),
+            util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) ) ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
@@ -176,12 +178,20 @@ BEGIN
         l_local_parent_param := 'l_' || r.column_names ;
         l_parent_param := 'a_' || r.ref_column_names ;
 
-        l_parent_noun := regexp_replace ( regexp_replace ( l_parent_table, '^d[tv]_', '' ), '^' || l_ddl_schema || '_', '' ) ;
+        l_parent_noun := regexp_replace (
+            regexp_replace ( l_parent_table, '^d[tv]_', '' ),
+            '^' || l_ddl_schema || '_',
+            '' ) ;
 
-        l_resolve_id_func := l_ddl_schema ||'.' || concat_ws ( '_', 'resolve', l_parent_noun, 'id' ) ;
+        l_resolve_id_func := l_ddl_schema || '.' || concat_ws (
+            '_',
+            'resolve',
+            l_parent_noun,
+            'id' ) ;
 
         l_doc_item := 'Returns the list of '
-            || replace ( l_table_noun, '_', ' ' ) || ' entries for the specified '
+            || replace ( l_table_noun, '_', ' ' )
+            || ' entries for the specified '
             || replace ( l_parent_noun, '_', ' ' ) ;
 
     END LOOP ;
@@ -232,7 +242,8 @@ BEGIN
         a_description => 'The ID or username of the user requesting the list' ) ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -246,18 +257,20 @@ BEGIN
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables (
-            a_variables => l_local_vars ),
+        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
-        util_meta.indent (1) || '-- TODO: review this as different applications may have different permissions models.',
-        util_meta.indent (1) || '-- As written, this asserts that the permissions model is table (as opposed to row) based.' ) ;
+        util_meta.indent ( 1 )
+            || '-- TODO: review this as different applications may have different permissions models.',
+        util_meta.indent ( 1 )
+            || '-- As written, this asserts that the permissions model is table (as opposed to row) based.' ) ;
 
     ----------------------------------------------------------------------------
     IF array_length ( l_resolve_id_params, 1 ) = 1 THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
             util_meta.snippet_get_permissions (
                 a_action => 'select',
@@ -265,11 +278,16 @@ BEGIN
                 a_object_type => l_parent_noun,
                 a_id_param => l_parent_param ) ) ;
 
-        l_where_clause := concat_ws ( ' ',  l_child_column, '=', l_parent_param ) ;
+        l_where_clause := concat_ws (
+            ' ',
+            l_child_column,
+            '=',
+            l_parent_param ) ;
 
     ELSIF array_length ( l_resolve_id_params, 1 ) > 1 THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
+        l_result := concat_ws (
+            util_meta.new_line (),
             l_result,
             '',
             util_meta.snippet_resolve_id (
@@ -283,7 +301,11 @@ BEGIN
                 a_object_type => l_parent_noun,
                 a_id_param => l_local_parent_param ) ) ;
 
-        l_where_clause := concat_ws ( ' ',  l_child_column, '=', l_local_parent_param ) ;
+        l_where_clause := concat_ws (
+            ' ',
+            l_child_column,
+            '=',
+            l_local_parent_param ) ;
 
     END IF ;
 
@@ -311,23 +333,26 @@ BEGIN
 
         END LOOP ;
 
-        l_select := util_meta.indent (2) || 'SELECT ' || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent (4) ) ;
+        l_select := util_meta.indent ( 2 )
+            || 'SELECT '
+            || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent ( 4 ) ) ;
 
     ELSE
 
-        l_select := util_meta.indent (2) || 'SELECT *' ;
+        l_select := util_meta.indent ( 2 ) || 'SELECT *' ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         '',
-        util_meta.indent (1) || 'RETURN QUERY',
+        util_meta.indent ( 1 ) || 'RETURN QUERY',
         l_select,
-        util_meta.indent (3) || 'FROM ' || l_full_view_name,
-        util_meta.indent (3) || 'WHERE l_has_permission',
-        util_meta.indent (4) || 'AND ' || l_where_clause || ' ;',
+        util_meta.indent ( 3 ) || 'FROM ' || l_full_view_name,
+        util_meta.indent ( 3 ) || 'WHERE l_has_permission',
+        util_meta.indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
         util_meta.snippet_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
