@@ -1,15 +1,16 @@
 CREATE OR REPLACE FUNCTION util_meta.snippet_procedure_frontmatter (
-    a_ddl_schema text default null,
-    a_procedure_name text default null,
-    a_procedure_purpose text default null,
-    a_language text default null,
-    a_assertions text[] default null,
-    a_calling_parameters util_meta.ut_parameters default null,
-    a_variables util_meta.ut_parameters default null )
+    a_ddl_schema text DEFAULT NULL,
+    a_procedure_name text DEFAULT NULL,
+    a_procedure_purpose text DEFAULT NULL,
+    a_language text DEFAULT NULL,
+    a_assertions text[] DEFAULT NULL,
+    a_calling_parameters util_meta.ut_parameters DEFAULT NULL,
+    a_variables util_meta.ut_parameters DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function snippet_procedure_frontmatter generates the pl/pg-sql code snippet for the start of a procedure
@@ -33,31 +34,41 @@ DECLARE
 
 BEGIN
 
-
     l_param_count := array_length ( a_calling_parameters.names, 1 ) ;
 
     IF l_param_count > 0 THEN
 
         FOR l_idx IN 1..l_param_count LOOP
-            l_params := array_append ( l_params,
-                util_meta.indent (1) || concat_ws ( ' ', a_calling_parameters.names[l_idx], a_calling_parameters.directions[l_idx], a_calling_parameters.datatypes[l_idx], 'default null' ) ) ;
+            l_params := array_append (
+                l_params,
+                util_meta.indent ( 1 )
+                    || concat_ws (
+                        ' ',
+                        a_calling_parameters.names[l_idx],
+                        a_calling_parameters.directions[l_idx],
+                        a_calling_parameters.datatypes[l_idx],
+                        'default null' ) ) ;
         END LOOP ;
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             'CREATE OR REPLACE PROCEDURE ' || a_ddl_schema || '.' || a_procedure_name || ' (',
             array_to_string ( l_params, ', ' || util_meta.new_line () ) || ' )' ) ;
 
     ELSE
 
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             'CREATE OR REPLACE PROCEDURE ' || a_ddl_schema || '.' || a_procedure_name || ' ()' ) ;
 
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
+    l_return := concat_ws (
+        util_meta.new_line (),
         l_return,
         'LANGUAGE ' || lower ( coalesce ( a_language, 'plpgsql' ) ),
         'SECURITY DEFINER',
+        'SET search_path = pg_catalog, ' || a_ddl_schema,
         'AS $' || '$',
         util_meta.snippet_documentation_block (
             a_object_name => a_procedure_name,
@@ -67,17 +78,15 @@ BEGIN
             a_assertions => a_assertions ) ) ;
 
     IF array_length ( a_variables.names, 1 ) > 0 THEN
-        l_return := concat_ws ( util_meta.new_line (),
+        l_return := concat_ws (
+            util_meta.new_line (),
             l_return,
-            util_meta.snippet_declare_variables (
-                a_variables => a_variables ),
-                '' ) ;
+            util_meta.snippet_declare_variables ( a_variables => a_variables ),
+            '' ) ;
 
     END IF ;
 
-    l_return := concat_ws ( util_meta.new_line (),
-        l_return,
-        'BEGIN' ) ;
+    l_return := concat_ws ( util_meta.new_line (), l_return, 'BEGIN' ) ;
 
     RETURN l_return ;
 
