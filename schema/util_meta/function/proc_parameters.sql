@@ -1,11 +1,11 @@
 CREATE OR REPLACE FUNCTION util_meta.proc_parameters (
-    a_action text default null,
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
-    a_insert_audit_columns text default null,
-    a_update_audit_columns text default null )
+    a_action text DEFAULT NULL,
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_cast_booleans_as text DEFAULT NULL,
+    a_insert_audit_columns text DEFAULT NULL,
+    a_update_audit_columns text DEFAULT NULL )
 RETURNS TABLE (
     schema_name text,
     object_name text,
@@ -29,11 +29,11 @@ RETURNS TABLE (
     resolve_id_function text,
     error_tag text,
     comments text,
-    ref_param_comments text
-)
-LANGUAGE sql
+    ref_param_comments text )
+LANGUAGE SQL
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function proc_parameters returns the data needed for specifying the parameter list for insert, update, and/or upsert procedures
@@ -64,13 +64,16 @@ WITH args AS (
             a_object_name AS table_name,
             a_ddl_schema AS target_schema,
             util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, a_cast_booleans_as ) AS cast_booleans_as,
-            util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ) AS insert_audit_columns,
+            util_meta.resolve_parameter (
+                'a_insert_audit_columns'::text,
+                a_insert_audit_columns ) AS insert_audit_columns,
             util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) AS update_audit_columns
 ),
 bools AS (
     SELECT CASE
                 WHEN args.cast_booleans_as IS NULL THEN 'boolean'
-                WHEN util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, args.cast_booleans_as ) = '1,0' THEN 'integer'
+                WHEN util_meta.resolve_parameter ( 'a_cast_booleans_as'::text, args.cast_booleans_as ) = '1,0'
+                    THEN 'integer'
                 ELSE 'text'
                 END AS boolean_type
         FROM args
@@ -106,16 +109,15 @@ cbase AS (
             ac.column_name IS NOT NULL AS is_audit_col,
             ac.audit_action,
             CASE
-                WHEN ac.column_name IS NOT NULL
-                    AND ( col.data_type ~ 'time'
-                        OR col.data_type ~ 'date' ) THEN true
+                WHEN ac.column_name IS NOT NULL AND ( col.data_type ~ 'time' OR col.data_type ~ 'date' ) THEN true
                 ELSE false
                 END AS is_audit_tmsp_col,
             CASE
                 WHEN ac.column_name IS NOT NULL
                     AND ( col.data_type ~ 'text'
                         OR col.data_type ~ 'char'
-                        OR col.data_type ~ 'int' ) THEN true
+                        OR col.data_type ~ 'int' )
+                    THEN true
                 ELSE false
                 END AS is_audit_user_col
         FROM util_meta.columns col
@@ -134,11 +136,15 @@ base AS (
                 WHEN col.is_audit_tmsp_col AND col.data_type = 'date' THEN 'current_date'
                 WHEN col.is_audit_tmsp_col AND col.data_type = 'time' THEN 'current_time'
                 WHEN col.is_audit_tmsp_col THEN 'now ()'
-                WHEN col.column_default IS NULL THEN null::text
-                WHEN col.column_default ~ '^nextval' AND args.action IN ( 'insert', 'upsert' ) AND col.column_default ~ '\.'
+                WHEN col.column_default IS NULL THEN NULL::text
+                WHEN col.column_default ~ '^nextval'
+                    AND args.action IN ( 'insert', 'upsert' )
+                    AND col.column_default ~ '\.'
                     THEN 'nextval ( ' || quote_literal ( split_part ( col.column_default, '''', 2 ) ) || ' )'
                 WHEN col.column_default ~ '^nextval' AND args.action IN ( 'insert', 'upsert' )
-                    THEN 'nextval ( ' || quote_literal ( col.schema_name || '.' || split_part ( col.column_default, '''', 2 ) ) || ' )'
+                    THEN 'nextval ( '
+                        || quote_literal ( col.schema_name || '.' || split_part ( col.column_default, '''', 2 ) )
+                        || ' )'
                 ELSE col.column_default
                 END AS column_default,
             --CASE
@@ -157,35 +163,34 @@ base AS (
             col.audit_action,
             col.is_audit_tmsp_col,
             col.is_audit_user_col,
+            CASE WHEN col.is_audit_col THEN NULL::text ELSE 'a_' || col.column_name END AS param_name,
             CASE
-                WHEN col.is_audit_col THEN null::text
-                ELSE 'a_' || col.column_name
-                END AS param_name,
-            CASE
-                WHEN col.is_audit_col THEN null::text
+                WHEN col.is_audit_col THEN NULL::text
                 WHEN NOT args.action IN ( 'insert', 'upsert' ) THEN 'in'
                 WHEN NOT col.is_pk THEN 'in'
                 -- column is pk and action is in ( 'insert', 'upsert' )
                 WHEN col.column_name = 'id' THEN 'inout'
-                WHEN ( SELECT COUNT (*) FROM cbase WHERE is_pk) = 1
-                    AND ( SELECT COUNT (*) FROM util_meta.foreign_keys fk
-                            WHERE fk.schema_name = col.schema_name
-                                AND fk.table_name = col.object_name
-                                AND fk.column_names = col.column_name ) = 0 THEN 'inout'
+                WHEN (
+                    SELECT count (*)
+                        FROM cbase
+                        WHERE is_pk ) = 1 AND (
+                    SELECT count (*)
+                        FROM util_meta.foreign_keys fk
+                        WHERE fk.schema_name = col.schema_name
+                            AND fk.table_name = col.object_name
+                            AND fk.column_names = col.column_name ) = 0 THEN 'inout'
                 --WHEN col.is_pk AND col.column_name = 'id' AND args.action IN ( 'insert', 'upsert' ) THEN 'inout' -- TODO: does it have to be 'id' ???
                 ELSE 'in'
                 END AS param_direction,
             CASE
-                WHEN col.is_audit_col THEN null::text
+                WHEN col.is_audit_col THEN NULL::text
                 WHEN col.data_type = 'boolean' THEN coalesce ( bools.boolean_type, 'boolean' )
                 ELSE col.data_type
                 END AS param_data_type,
             CASE
                 WHEN ref_data.ref_column_names IS NOT NULL THEN 'a_' || regexp_replace ( col.column_name, '_id$', '' )
                 END AS ref_param_name,
-            CASE
-                WHEN ref_data.ref_column_names IS NOT NULL THEN 'text'
-                END AS ref_data_type,
+            CASE WHEN ref_data.ref_column_names IS NOT NULL THEN 'text' END AS ref_data_type,
             CASE
                 WHEN col.is_audit_user_col THEN 'l_acting_user_id'
                 WHEN col.data_type = 'boolean' AND col.column_default IS NOT NULL THEN 'l_' || col.column_name
@@ -193,10 +198,15 @@ base AS (
                 WHEN ref_data.ref_column_names IS NOT NULL THEN 'l_' || col.column_name
                 END AS local_param_name,
             CASE
-                WHEN ref_data.ref_column_names IS NOT NULL THEN args.target_schema || '.resolve_' || regexp_replace ( ref_data.ref_table_name, '^[rs]t_', '' ) || '_id'
+                WHEN ref_data.ref_column_names IS NOT NULL
+                    THEN args.target_schema
+                        || '.resolve_'
+                        || regexp_replace ( ref_data.ref_table_name, '^[rs]t_', '' )
+                        || '_id'
                 END AS resolve_id_function,
             CASE
-                WHEN ref_data.ref_column_names IS NOT NULL THEN replace ( regexp_replace ( ref_data.ref_table_name, '^[rs]t_', '' ), '_', ' ' )
+                WHEN ref_data.ref_column_names IS NOT NULL
+                    THEN replace ( regexp_replace ( ref_data.ref_table_name, '^[rs]t_', '' ), '_', ' ' )
                 END AS error_tag,
             trim ( col.comments ) AS comments
         FROM cbase col
@@ -235,60 +245,66 @@ params AS (
             base.comments,
             CASE
                 WHEN base.ref_param_name IS NOT NULL
-                    THEN 'The text associated with ' || base.param_name || ' (as an alternative to providing ' || base.param_name || ')'
+                    THEN 'The text associated with '
+                        || base.param_name
+                        || ' (as an alternative to providing '
+                        || base.param_name
+                        || ')'
                 END AS ref_param_comments
         FROM base
     UNION
     SELECT base.schema_name,
             base.object_name,
-            null::text AS column_name,
-            null::text AS column_data_type,
-            null::text AS column_default,
+            NULL::text AS column_name,
+            NULL::text AS column_data_type,
+            NULL::text AS column_default,
             max ( base.ordinal_position ) + 1 AS ordinal_position,
             false AS is_pk,
             false AS is_nk,
             false AS is_nullable,
             false AS is_audit_col,
-            null::text AS audit_action,
+            NULL::text AS audit_action,
             false AS is_audit_tmsp_col,
             false AS is_audit_user_col,
             'a_user' AS param_name,
             'in' AS param_direction,
             'text'::text AS param_data_type,
-            null::text AS ref_param_name,
-            null::text AS ref_data_type,
-            null::text AS local_param_name,
-            null::text AS resolve_id_function,
-            null::text AS error_tag,
-            'The ID or username of the user performing the ' || ( SELECT action FROM args ) AS comments,
-            null::text AS ref_param_comments
+            NULL::text AS ref_param_name,
+            NULL::text AS ref_data_type,
+            NULL::text AS local_param_name,
+            NULL::text AS resolve_id_function,
+            NULL::text AS error_tag,
+            'The ID or username of the user performing the ' || (
+                SELECT action
+                    FROM args ) AS comments,
+            NULL::text AS ref_param_comments
         FROM base
         GROUP BY base.schema_name,
             base.object_name
     UNION
     SELECT base.schema_name,
             base.object_name,
-            null::text AS column_name,
-            null::text AS column_data_type,
-            null::text AS column_default,
+            NULL::text AS column_name,
+            NULL::text AS column_data_type,
+            NULL::text AS column_default,
             max ( ordinal_position ) + 2 AS ordinal_position,
             false AS is_pk,
             false AS is_nk,
             true AS is_nullable,
             false AS is_audit_col,
-            null::text AS audit_action,
+            NULL::text AS audit_action,
             false AS is_audit_tmsp_col,
             false AS is_audit_user_col,
             'a_err' AS param_name,
             'inout' AS param_direction,
             'text'::text AS param_data_type,
-            null::text AS ref_param_name,
-            null::text AS ref_data_type,
-            null::text AS local_param_name,
-            null::text AS resolve_id_function,
-            null::text AS error_tag,
+            NULL::text AS ref_param_name,
+            NULL::text AS ref_data_type,
+            NULL::text AS local_param_name,
+            NULL::text AS resolve_id_function,
+            NULL::text AS error_tag,
             'The (business or database) error that was generated, if any' AS comments,
-            null::text AS ref_param_comments
+            NULL::text AS ref_param_comments
         FROM base
         GROUP BY base.schema_name,
             base.object_name
