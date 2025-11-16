@@ -38,7 +38,7 @@ classes AS ( -- Tables, views, etc.
 ),
 cols AS ( -- Columns
     SELECT c.object_schema,
-            null::integer AS oid,
+            NULL::integer AS oid,
             c.object_name || '.' || a.attname::text AS object_name,
             'column' AS object_type,
             c.owner_oid,
@@ -78,7 +78,8 @@ udts AS ( -- User defined types
         LEFT JOIN util_meta.typtypes
             ON ( typtypes.typtype = t.typtype::text )
         WHERE ( t.typrelid = 0
-                OR ( SELECT c.relkind = 'c'
+                OR (
+                    SELECT c.relkind = 'c'
                         FROM pg_catalog.pg_class c
                         WHERE c.oid = t.typrelid ) )
             AND NOT EXISTS (
@@ -86,13 +87,13 @@ udts AS ( -- User defined types
                     FROM pg_catalog.pg_type el
                     WHERE el.oid = t.typelem
                         AND el.typarray = t.oid )
-        --AND t.typtype NOT IN ( 'p' )
-        --AND NOT ( t.typtype = 'c'
-        --    AND n.nspname = 'pg_catalog' )
+            --AND t.typtype NOT IN ( 'p' )
+            --AND NOT ( t.typtype = 'c'
+            --    AND n.nspname = 'pg_catalog' )
 ),
 fdws AS ( -- Foreign data wrappers
-    SELECT null::oid AS schema_oid,
-            null::text AS object_schema,
+    SELECT NULL::oid AS schema_oid,
+            NULL::text AS object_schema,
             p.oid,
             p.fdwname::text AS object_name,
             p.fdwowner AS owner_oid,
@@ -101,8 +102,8 @@ fdws AS ( -- Foreign data wrappers
         FROM pg_catalog.pg_foreign_data_wrapper p
 ),
 fsrvs AS ( -- Foreign servers
-    SELECT null::oid AS schema_oid,
-            null::text AS object_schema,
+    SELECT NULL::oid AS schema_oid,
+            NULL::text AS object_schema,
             p.oid,
             p.srvname::text AS object_name,
             p.srvowner AS owner_oid,
@@ -114,7 +115,7 @@ all_objects AS (
     SELECT schema_name AS object_schema,
             object_type,
             schema_name AS object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM schemas
@@ -122,7 +123,7 @@ all_objects AS (
     SELECT object_schema,
             object_type,
             object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM classes
@@ -130,7 +131,7 @@ all_objects AS (
     SELECT object_schema,
             object_type,
             object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM cols
@@ -146,7 +147,7 @@ all_objects AS (
     SELECT object_schema,
             object_type,
             object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM udts
@@ -154,7 +155,7 @@ all_objects AS (
     SELECT object_schema,
             object_type,
             object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM fdws
@@ -162,7 +163,7 @@ all_objects AS (
     SELECT object_schema,
             object_type,
             object_name,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             owner_oid,
             acl
         FROM fsrvs
@@ -183,6 +184,15 @@ SELECT acl_base.object_schema,
         acl_base.object_type,
         acl_base.object_name,
         acl_base.calling_arguments,
+        regexp_replace (
+            regexp_replace (
+                acl_base.calling_arguments,
+                ' DEFAULT [^,]+',
+                '',
+                'g' ),
+            '(IN|OUT|INOUT) ',
+            '',
+            'g' ) AS calling_signature,
         owner.role_name AS object_owner,
         grantor.role_name AS grantor,
         grantee.role_name AS grantee,
