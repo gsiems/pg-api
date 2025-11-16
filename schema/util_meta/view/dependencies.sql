@@ -12,7 +12,7 @@ dep_map AS (
         WHERE dependent_oid NOT LIKE '%QUERY'
             AND ev_class <> dependent_oid::oid
 ),
-rels AS materialized (
+rels AS MATERIALIZED (
     SELECT schemas.schema_oid,
             schemas.schema_name,
             c.oid AS object_oid,
@@ -25,7 +25,7 @@ rels AS materialized (
         LEFT JOIN util_meta.relkinds AS obj_type
             ON ( obj_type.relkind = c.relkind::text )
 ),
-procs AS materialized (
+procs AS MATERIALIZED (
     SELECT n.oid AS schema_oid,
             n.nspname::text AS schema_name,
             p.oid AS object_oid,

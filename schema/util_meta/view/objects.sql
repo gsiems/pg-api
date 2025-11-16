@@ -9,7 +9,7 @@ WITH objs AS (
             ( pg_catalog.pg_get_userbyid ( p.proowner ) )::text AS object_owner,
             concat_ws ( '.', schemas.schema_name, p.proname::text ) AS full_object_name,
             coalesce ( pt.label, 'function' ) AS object_type,
-            null::bigint AS row_count,
+            NULL::bigint AS row_count,
             l.lanname::text AS procedure_language,
             ( pg_catalog.pg_get_function_result ( p.oid ) )::text AS result_data_type,
             pg_catalog.pg_get_function_arguments ( p.oid ) AS calling_arguments,
@@ -28,13 +28,16 @@ WITH objs AS (
             t.oid AS object_oid,
             t.tgname::text AS object_name,
             ( pg_catalog.pg_get_userbyid ( c.relowner ) )::text AS object_owner,
-            concat_ws ( ' on ', t.tgname::text, concat_ws ( '.', schemas.schema_name, c.relname::text ) ) AS full_object_name,
+            concat_ws (
+                ' on ',
+                t.tgname::text,
+                concat_ws ( '.', schemas.schema_name, c.relname::text ) ) AS full_object_name,
             'trigger' AS object_type,
-            null::bigint AS row_count,
-            null::text AS procedure_language,
-            null::text AS result_data_type,
+            NULL::bigint AS row_count,
+            NULL::text AS procedure_language,
+            NULL::text AS result_data_type,
             --pg_catalog.pg_get_function_arguments ( t.tgfoid ) AS calling_arguments,
-            null::text AS calling_arguments,
+            NULL::text AS calling_arguments,
             pg_catalog.obj_description ( t.oid, 'pg_trigger' ) AS comments
         FROM pg_catalog.pg_trigger t
         JOIN pg_catalog.pg_class c
@@ -55,9 +58,9 @@ WITH objs AS (
                 ELSE coalesce ( rt.label, c.relkind::text )
                 END AS object_type,
             c.reltuples::bigint AS row_count,
-            null::text AS procedure_language,
-            null::text AS result_data_type,
-            null::text AS calling_arguments,
+            NULL::text AS procedure_language,
+            NULL::text AS result_data_type,
+            NULL::text AS calling_arguments,
             pg_catalog.obj_description ( c.oid, 'pg_class' ) AS comments
         FROM pg_catalog.pg_class c
         JOIN util_meta.schemas
@@ -70,14 +73,26 @@ WITH objs AS (
 dirs AS (
     SELECT object_oid,
             CASE
-                WHEN object_type IN ( 'foreign table', 'function', 'materialized view', 'procedure', 'table', 'trigger', 'type', 'view' )
-                    THEN concat_ws ( '/', 'schema', schema_name, replace ( object_type, ' ', '_' ) )
-                WHEN object_type = 'partitioned table'
-                    THEN concat_ws ( '/', 'schema', schema_name, 'table' )
+                WHEN object_type IN ( 'foreign table', 'function', 'materialized view', 'procedure', 'table', 'trigger',
+                    'type', 'view' )
+                    THEN concat_ws (
+                        '/',
+                        'schema',
+                        schema_name,
+                        replace ( object_type, ' ', '_' ) )
+                WHEN object_type = 'partitioned table' THEN concat_ws (
+                    '/',
+                    'schema',
+                    schema_name,
+                    'table' )
                 -- NB Pg default ID seq names are: table_name || '_id_seq'
                 -- ASSERTION: User defined sequences do not end with '_id_seq'.
                 WHEN object_type = 'sequence' AND object_name !~ '_id_seq$'
-                    THEN concat_ws ( '/', 'schema', schema_name, 'sequence' )
+                    THEN concat_ws (
+                        '/',
+                        'schema',
+                        schema_name,
+                        'sequence' )
                 END AS directory_name
         FROM objs
 )
@@ -90,15 +105,19 @@ SELECT objs.schema_oid,
         objs.full_object_name,
         objs.row_count,
         dirs.directory_name,
-        CASE
-            WHEN dirs.directory_name IS NOT NULL THEN object_name || '.sql'
-            END AS file_name,
+        CASE WHEN dirs.directory_name IS NOT NULL THEN object_name || '.sql' END AS file_name,
         objs.procedure_language,
         objs.result_data_type,
         objs.calling_arguments,
         regexp_replace (
-            regexp_replace ( objs.calling_arguments, ' DEFAULT [^,]+', '', 'g' ),
-                 '(IN|OUT|INOUT) ', '', 'g' ) AS calling_signature,
+            regexp_replace (
+                objs.calling_arguments,
+                ' DEFAULT [^,]+',
+                '',
+                'g' ),
+            '(IN|OUT|INOUT) ',
+            '',
+            'g' ) AS calling_signature,
         objs.comments
     FROM objs
     LEFT JOIN dirs

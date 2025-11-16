@@ -9,14 +9,9 @@ WITH columns AS (
             a.attname AS column_name,
             a.attnum::integer AS ordinal_position,
             pg_catalog.format_type ( a.atttypid, a.atttypmod ) AS data_type,
-            CASE
-                WHEN a.attnotnull THEN false
-                ELSE true
-                END AS is_nullable,
+            CASE WHEN a.attnotnull THEN false ELSE true END AS is_nullable,
             pg_catalog.pg_get_expr ( ad.adbin, ad.adrelid ) AS column_default,
-            CASE
-                WHEN t.typtype = 'd' THEN t.typname
-                END AS domain_name,
+            CASE WHEN t.typtype = 'd' THEN t.typname END AS domain_name,
             pg_catalog.col_description ( a.attrelid, a.attnum ) AS comments
         FROM pg_catalog.pg_class c
         JOIN pg_catalog.pg_attribute a
@@ -88,22 +83,23 @@ types AS (
             t.oid AS object_oid,
             split_part ( pg_catalog.format_type ( t.oid, NULL ), '.', 2 ) AS object_name,
             CASE
-                WHEN t.typrelid != 0 THEN CAST ( 'tuple' AS pg_catalog.text )
-                WHEN t.typlen < 0 THEN CAST ( 'var' AS pg_catalog.text )
-                ELSE CAST ( t.typlen AS pg_catalog.text )
+                WHEN t.typrelid != 0 THEN cast ( 'tuple' AS pg_catalog.text )
+                WHEN t.typlen < 0 THEN cast ( 'var' AS pg_catalog.text )
+                ELSE cast ( t.typlen AS pg_catalog.text )
                 END AS object_type,
             t.typrelid
         FROM pg_catalog.pg_type t
         JOIN util_meta.schemas
             ON ( schemas.schema_oid = t.typnamespace )
         WHERE ( t.typrelid = 0
-                OR ( SELECT c.relkind = 'c'
+                OR (
+                    SELECT c.relkind = 'c'
                         FROM pg_catalog.pg_class c
                         WHERE c.oid = t.typrelid ) )
             AND NOT EXISTS (
-                    SELECT 1
-                        FROM pg_catalog.pg_type el
-                        WHERE el.oid = t.typelem
+                SELECT 1
+                    FROM pg_catalog.pg_type el
+                    WHERE el.oid = t.typelem
                         AND el.typarray = t.oid )
 ),
 type_cols AS (
@@ -115,11 +111,11 @@ type_cols AS (
             a.attname::text AS column_name,
             a.attnum AS ordinal_position,
             pg_catalog.format_type ( a.atttypid, a.atttypmod ) AS data_type,
-            null::boolean AS is_nullable,
-            null::boolean AS is_pk,
-            null::boolean AS is_nk,
+            NULL::boolean AS is_nullable,
+            NULL::boolean AS is_pk,
+            NULL::boolean AS is_nk,
             pg_catalog.pg_get_expr ( ad.adbin, ad.adrelid ) AS column_default,
-            null::text AS domain_name,
+            NULL::text AS domain_name,
             pg_catalog.col_description ( a.attrelid, a.attnum ) AS comments
         FROM types
         JOIN pg_catalog.pg_attribute a
@@ -164,14 +160,13 @@ SELECT tc.schema_oid,
         tc.column_name,
         tc.ordinal_position,
         tc.data_type,
-        null::boolean AS is_nullable,
-        null::boolean AS is_pk,
-        null::boolean AS is_nk,
+        NULL::boolean AS is_nullable,
+        NULL::boolean AS is_pk,
+        NULL::boolean AS is_nk,
         tc.column_default,
-        null::text AS domain_name,
+        NULL::text AS domain_name,
         tc.comments
-    FROM type_cols tc
-;
+    FROM type_cols tc ;
 
 COMMENT ON VIEW util_meta.columns IS 'Metadata for the application database columns' ;
 
