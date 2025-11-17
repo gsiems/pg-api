@@ -1,13 +1,14 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_delete_procedure (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_delete_procedure generates a draft "public" delete procedure for a table
@@ -28,10 +29,10 @@ DECLARE
     r record ;
 
     l_ddl_schema text ;
+    l_priv_ddl_schema text ;
     l_chk text ;
     l_chk_where text[] ;
     l_pk_params text[] ;
-    --l_pk_cols text[] ;
     l_proc_name text ;
     l_result text ;
     l_table_noun text ;
@@ -63,6 +64,23 @@ BEGIN
         a_datatype => 'boolean' ) ;
 
     ------------------------------------------------------------------------
+    -- Determine the schema for the private procedure.
+    FOR r IN (
+        SELECT schema_name
+            FROM util_meta.objects
+            WHERE object_type = 'procedure'
+                AND object_name = 'priv_' || l_proc_name
+                AND schema_name ~ l_ddl_schema ) LOOP
+
+        l_priv_ddl_schema := r.schema_name ;
+
+    END LOOP ;
+
+    IF l_priv_ddl_schema IS NULL THEN
+        l_priv_ddl_schema := l_ddl_schema ;
+    END IF ;
+
+    ------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
     FOR r IN (
         SELECT schema_name,
@@ -77,16 +95,20 @@ BEGIN
                 param_data_type,
                 comments
             FROM util_meta.proc_parameters (
-                a_action => 'delete',
-                a_object_schema => a_object_schema,
-                a_object_name => a_object_name,
-                a_ddl_schema => l_ddl_schema )
+                    a_action => 'delete',
+                    a_object_schema => a_object_schema,
+                    a_object_name => a_object_name,
+                    a_ddl_schema => l_ddl_schema )
             WHERE is_pk
-                OR param_name in ( 'a_err', 'a_user' )
+                OR param_name IN ( 'a_err', 'a_user' )
             ORDER BY ordinal_position ) LOOP
 
         IF r.is_pk THEN
-            l_chk_where := array_append ( l_chk_where, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
+            l_chk_where := array_append ( l_chk_where, concat_ws (
+                    ' ',
+                    r.column_name,
+                    '=',
+                    r.param_name ) ) ;
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
         END IF ;
 
@@ -107,37 +129,47 @@ BEGIN
     ----------------------------------------------------------------------------
     -- Create the permissions check for the delete.
     -- ASSERT: the table being deleted from has a single, integer, primary key column
-    l_chk := concat_ws ( util_meta.new_line (),
-        util_meta.indent (1) || 'FOR r IN (',
-        util_meta.indent (2) || 'SELECT ' || quote_literal ( l_pk_params[1] ) || ' AS param',
-        util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name,
-        util_meta.indent (3) || 'WHERE ' || array_to_string ( l_chk_where, util_meta.new_line () || util_meta.indent (4) || 'AND ' ) || ' ) LOOP',
+    l_chk := concat_ws (
+        util_meta.new_line (),
+        util_meta.indent ( 1 ) || 'FOR r IN (',
+        util_meta.indent ( 2 ) || 'SELECT ' || l_pk_params[1] || ' AS param',
+        util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name,
+        util_meta.indent ( 3 )
+            || 'WHERE '
+            || array_to_string ( l_chk_where, util_meta.new_line () || util_meta.indent ( 4 ) || 'AND ' )
+            || ' ) LOOP',
         '',
         util_meta.snippet_get_permissions (
-            a_indents => 2,
+            a_indents => 1,
             a_action => 'delete',
             a_ddl_schema => a_ddl_schema,
             a_object_type => l_table_noun,
             a_id_param => 'r.param' ),
         '',
-        util_meta.indent (1) || 'END LOOP ;',
+        util_meta.indent ( 1 ) || 'END LOOP ;',
         '',
-        util_meta.indent (1) || 'IF NOT l_has_permission THEN',
-        util_meta.indent (2) || 'a_err := ''Insufficient privileges or the ''' || l_table_noun || ' does not exist or has already been deleted'' ;' ) ;
+        util_meta.indent ( 1 ) || 'IF NOT coalesce ( l_has_permission, false ) THEN',
+        util_meta.indent ( 2 )
+            || 'a_err := ''Insufficient privileges or the '
+            || l_table_noun
+            || ' does not exist or has already been deleted'' ;' ) ;
 
-        IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-            l_chk := concat_ws ( util_meta.new_line (),
-                l_chk,
-                util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ) ;
-        END IF ;
-
-        l_chk := concat_ws ( util_meta.new_line (),
+    IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+        l_chk := concat_ws (
+            util_meta.new_line (),
             l_chk,
-            util_meta.indent (2) || 'RETURN ;',
-            util_meta.indent (1) || 'END IF ;' ) ;
+            util_meta.indent ( 2 ) || 'call util_log.log_exception ( a_err ) ;' ) ;
+    END IF ;
+
+    l_chk := concat_ws (
+        util_meta.new_line (),
+        l_chk,
+        util_meta.indent ( 2 ) || 'RETURN ;',
+        util_meta.indent ( 1 ) || 'END IF ;' ) ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         util_meta.snippet_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
@@ -145,17 +177,18 @@ BEGIN
             a_language => 'plpgsql',
             a_calling_parameters => l_calling_params,
             a_variables => l_local_vars ),
-        util_meta.snippet_log_params (
-            a_parameters => l_calling_params ),
+        util_meta.snippet_log_params ( a_parameters => l_calling_params ),
         '',
         l_chk,
         '',
-        util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
-        util_meta.indent (2) || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
+        util_meta.indent ( 1 ) || 'call ' || l_priv_ddl_schema || '.priv_' || l_proc_name || ' (',
+        util_meta.indent ( 2 )
+            || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
+            || ' ) ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => null::text,
+            a_comment => 'performs a delete on ' || a_object_name,
             a_owner => a_owner,
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
