@@ -44,6 +44,7 @@ $$;
 
 -- Types -----------------------------------------------------------------------
 \i util_meta/type/ut_parameters.sql
+\i util_meta/type/ut_proc.sql
 
 -- Tables ----------------------------------------------------------------------
 \i util_meta/table/st_default_param.sql
@@ -62,6 +63,7 @@ $$;
 \i util_meta/view/foreign_keys.sql
 \i util_meta/view/object_grants.sql
 \i util_meta/view/dependencies.sql
+\i util_meta/view/extensions.sql
 
 -- Functions -------------------------------------------------------------------
 
@@ -78,6 +80,7 @@ $$;
 \i util_meta/function/proc_parameters.sql
 \i util_meta/function/calling_parameters.sql
 \i util_meta/function/boolean_casting.sql
+\i util_meta/function/guess_private_proc.sql
 
 -- Snippet functions
 \i util_meta/function/snippet_declare_variables.sql
@@ -113,10 +116,12 @@ $$;
 \i util_meta/function/mk_priv_delete_procedure.sql
 \i util_meta/function/mk_priv_insert_procedure.sql
 \i util_meta/function/mk_priv_update_procedure.sql
+\i util_meta/function/mk_priv_upsert_procedure.sql
 
 \i util_meta/function/mk_delete_procedure.sql
 \i util_meta/function/mk_insert_procedure.sql
 \i util_meta/function/mk_update_procedure.sql
+\i util_meta/function/mk_upsert_procedure.sql
 
 --------------------------------------------------------------------------------
 -- JSON utility functions
