@@ -29,7 +29,6 @@ DECLARE
     r record ;
 
     l_ddl_schema text ;
-    l_priv_ddl_schema text ;
     l_chk text ;
     l_chk_where text[] ;
     l_pk_params text[] ;
@@ -39,6 +38,7 @@ DECLARE
 
     l_local_vars util_meta.ut_parameters ;
     l_calling_params util_meta.ut_parameters ;
+    l_private_proc util_meta.ut_proc ;
 
 BEGIN
 
@@ -64,21 +64,11 @@ BEGIN
         a_datatype => 'boolean' ) ;
 
     ------------------------------------------------------------------------
-    -- Determine the schema for the private procedure.
-    FOR r IN (
-        SELECT schema_name
-            FROM util_meta.objects
-            WHERE object_type = 'procedure'
-                AND object_name = 'priv_' || l_proc_name
-                AND schema_name ~ l_ddl_schema ) LOOP
-
-        l_priv_ddl_schema := r.schema_name ;
-
-    END LOOP ;
-
-    IF l_priv_ddl_schema IS NULL THEN
-        l_priv_ddl_schema := l_ddl_schema ;
-    END IF ;
+    -- Determine the private procedure to call.
+    l_private_proc := util_meta.guess_private_proc (
+        a_proc_schema => l_ddl_schema,
+        a_proc_object => a_object_name,
+        a_proc_action => 'delete' ) ;
 
     ------------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -181,7 +171,7 @@ BEGIN
         '',
         l_chk,
         '',
-        util_meta.indent ( 1 ) || 'call ' || l_priv_ddl_schema || '.priv_' || l_proc_name || ' (',
+        util_meta.indent ( 1 ) || 'call ' || l_private_proc.full_name || ' (',
         util_meta.indent ( 2 )
             || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
             || ' ) ;',

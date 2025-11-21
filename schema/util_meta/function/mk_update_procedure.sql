@@ -1,16 +1,17 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_update_procedure (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
-    a_insert_audit_columns text default null,
-    a_update_audit_columns text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_cast_booleans_as text DEFAULT NULL,
+    a_insert_audit_columns text DEFAULT NULL,
+    a_update_audit_columns text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_update_procedure generates a draft "public" update procedure for a table
@@ -44,6 +45,7 @@ DECLARE
 
     l_local_vars util_meta.ut_parameters ;
     l_calling_params util_meta.ut_parameters ;
+    l_private_proc util_meta.ut_proc ;
 
 BEGIN
 
@@ -67,6 +69,13 @@ BEGIN
         a_parameters => l_local_vars,
         a_name => 'l_has_permission',
         a_datatype => 'boolean' ) ;
+
+    ------------------------------------------------------------------------
+    -- Determine the private procedure to call.
+    l_private_proc := util_meta.guess_private_proc (
+        a_proc_schema => l_ddl_schema,
+        a_proc_object => a_object_name,
+        a_proc_action => 'update' ) ;
 
     --------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -95,23 +104,33 @@ BEGIN
                 comments,
                 ref_param_comments
             FROM util_meta.proc_parameters (
-                a_action => 'update',
-                a_object_schema => a_object_schema,
-                a_object_name => a_object_name,
-                a_ddl_schema => l_ddl_schema,
-                a_cast_booleans_as => a_cast_booleans_as,
-                a_insert_audit_columns => a_insert_audit_columns,
-                a_update_audit_columns => a_update_audit_columns )
+                    a_action => 'update',
+                    a_object_schema => a_object_schema,
+                    a_object_name => a_object_name,
+                    a_ddl_schema => l_ddl_schema,
+                    a_cast_booleans_as => a_cast_booleans_as,
+                    a_insert_audit_columns => a_insert_audit_columns,
+                    a_update_audit_columns => a_update_audit_columns )
             ORDER BY ordinal_position ) LOOP
 
         ------------------------------------------------------------------------
         -- Calling arguments and parameters related
         IF r.is_pk THEN
-            l_chk_where := array_append ( l_chk_where, concat_ws ( ' ', r.column_name, '=', r.param_name ) ) ;
+            l_chk_where := array_append ( l_chk_where, concat_ws (
+                    ' ',
+                    r.column_name,
+                    '=',
+                    r.param_name ) ) ;
             l_pk_params := array_append ( l_pk_params, r.param_name ) ;
         END IF ;
 
         IF r.param_name IS NOT NULL THEN
+
+            l_proc_args := array_append ( l_proc_args, concat_ws (
+                    ' ',
+                    r.param_name,
+                    '=>',
+                    r.param_name ) ) ;
 
             l_calling_params := util_meta.append_parameter (
                 a_parameters => l_calling_params,
@@ -124,6 +143,12 @@ BEGIN
 
         IF r.ref_param_name IS NOT NULL AND NOT r.is_audit_col THEN
 
+            l_proc_args := array_append ( l_proc_args, concat_ws (
+                    ' ',
+                    r.ref_param_name,
+                    '=>',
+                    r.ref_param_name ) ) ;
+
             l_calling_params := util_meta.append_parameter (
                 a_parameters => l_calling_params,
                 a_name => r.ref_param_name,
@@ -133,43 +158,53 @@ BEGIN
 
         END IF ;
 
-
     END LOOP ;
 
     ----------------------------------------------------------------------------
     -- Create the permissions check for the update.
     -- ASSERT: the table being updated has a single, integer, primary key column
-    l_chk := concat_ws ( util_meta.new_line (),
-        util_meta.indent (1) || 'FOR r IN (',
-        util_meta.indent (2) || 'SELECT ' || quote_literal ( l_pk_params[1] ) || ' AS param',
-        util_meta.indent (3) || 'FROM ' || a_object_schema || '.' || a_object_name,
-        util_meta.indent (3) || 'WHERE ' || array_to_string ( l_chk_where, util_meta.new_line () || util_meta.indent (4) || 'AND ' ) || ' ) LOOP',
+    l_chk := concat_ws (
+        util_meta.new_line (),
+        '',
+        util_meta.indent ( 1 ) || 'FOR r IN (',
+        util_meta.indent ( 2 ) || 'SELECT ' || l_pk_params[1] || ' AS param',
+        util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name,
+        util_meta.indent ( 3 )
+            || 'WHERE '
+            || array_to_string ( l_chk_where, util_meta.new_line () || util_meta.indent ( 4 ) || 'AND ' )
+            || ' ) LOOP',
         '',
         util_meta.snippet_get_permissions (
-            a_indents => 2,
+            a_indents => 1,
             a_action => 'update',
             a_ddl_schema => a_ddl_schema,
             a_object_type => l_table_noun,
             a_id_param => 'r.param' ),
         '',
-        util_meta.indent (1) || 'END LOOP ;',
+        util_meta.indent ( 1 ) || 'END LOOP ;',
         '',
-        util_meta.indent (1) || 'IF NOT l_has_permission THEN',
-        util_meta.indent (2) || 'a_err := ''Insufficient privileges or the ''' || l_table_noun || ' does not exist'' ;' ) ;
+        util_meta.indent ( 1 ) || 'IF NOT l_has_permission THEN',
+        util_meta.indent ( 2 )
+            || 'a_err := ''Insufficient privileges or the '
+            || l_table_noun
+            || ' does not exist'' ;' ) ;
 
-        IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
-            l_chk := concat_ws ( util_meta.new_line (),
-                l_chk,
-                util_meta.indent (2) || 'call util_log.log_exception ( a_err ) ;' ) ;
-        END IF ;
-
-        l_chk := concat_ws ( util_meta.new_line (),
+    IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+        l_chk := concat_ws (
+            util_meta.new_line (),
             l_chk,
-            util_meta.indent (2) || 'RETURN ;',
-            util_meta.indent (1) || 'END IF ;' ) ;
+            util_meta.indent ( 2 ) || 'call util_log.log_exception ( a_err ) ;' ) ;
+    END IF ;
+
+    l_chk := concat_ws (
+        util_meta.new_line (),
+        l_chk,
+        util_meta.indent ( 2 ) || 'RETURN ;',
+        util_meta.indent ( 1 ) || 'END IF ;' ) ;
 
     ----------------------------------------------------------------------------
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         util_meta.snippet_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
@@ -178,16 +213,17 @@ BEGIN
             a_language => 'plpgsql',
             a_calling_parameters => l_calling_params,
             a_variables => l_local_vars ),
-        util_meta.snippet_log_params (
-            a_parameters => l_calling_params ),
+        util_meta.snippet_log_params ( a_parameters => l_calling_params ),
         l_chk,
         '',
-        util_meta.indent (1) || 'call ' || l_ddl_schema || '.priv_' || l_proc_name || ' (',
-        util_meta.indent (2) || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent (2) ) || ' ) ;',
+        util_meta.indent ( 1 ) || 'call ' || l_private_proc.full_name || ' (',
+        util_meta.indent ( 2 )
+            || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
+            || ' ) ;',
         util_meta.snippet_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => null::text,
+            a_comment => 'performs an update on ' || a_object_name,
             a_owner => a_owner,
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
