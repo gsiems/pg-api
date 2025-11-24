@@ -129,7 +129,6 @@ all_objects AS (
             acl
         FROM db
     UNION
-
     SELECT schema_name AS object_schema,
             object_type,
             schema_name AS object_name,
