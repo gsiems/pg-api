@@ -8,6 +8,15 @@ WITH rol AS (
     SELECT 0::oid AS oid,
             'public'::text
 ),
+db AS ( -- Database
+    SELECT d.oid AS database_oid,
+            d.datname::text AS database_name,
+            d.datdba AS owner_oid,
+            'database'::text AS object_type,
+            coalesce ( d.datacl, acldefault ( 'd'::"char", d.datdba ) ) AS acl
+        FROM pg_catalog.pg_database d
+        WHERE d.datname = current_database ()
+),
 schemas AS ( -- Schemas
     SELECT schemas.schema_oid,
             schemas.schema_name,
@@ -112,6 +121,15 @@ fsrvs AS ( -- Foreign servers
         FROM pg_catalog.pg_foreign_server p
 ),
 all_objects AS (
+    SELECT NULL::text AS object_schema,
+            object_type,
+            database_name AS object_name,
+            NULL::text AS calling_arguments,
+            owner_oid,
+            acl
+        FROM db
+    UNION
+
     SELECT schema_name AS object_schema,
             object_type,
             schema_name AS object_name,
