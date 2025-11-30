@@ -36,7 +36,7 @@ BEGIN
 
     FOR r IN (
         SELECT schema_name AS ddl_schema
-            FROM util_meta.objects
+            FROM util_meta.schemas
             WHERE schema_name = a_ddl_schema ) LOOP
 
         l_calling_params := util_meta.append_parameter (
