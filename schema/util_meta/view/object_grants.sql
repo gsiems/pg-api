@@ -29,7 +29,7 @@ schemas AS ( -- Schemas
 ),
 classes AS ( -- Tables, views, etc.
     SELECT schemas.schema_oid,
-            schemas.schema_name AS object_schema,
+            schemas.schema_name,
             c.oid,
             c.relname::text AS object_name,
             c.relowner AS owner_oid,
@@ -46,7 +46,7 @@ classes AS ( -- Tables, views, etc.
         WHERE c.relkind IN ( 'r', 'v', 'm', 'S', 'f', 'p' )
 ),
 cols AS ( -- Columns
-    SELECT c.object_schema,
+    SELECT c.schema_name,
             NULL::integer AS oid,
             c.object_name || '.' || a.attname::text AS object_name,
             'column' AS object_type,
@@ -60,7 +60,7 @@ cols AS ( -- Columns
 ),
 procs AS ( -- Procedures and functions
     SELECT schemas.schema_oid,
-            schemas.schema_name AS object_schema,
+            schemas.schema_name,
             p.oid,
             p.proname::text AS object_name,
             p.proowner AS owner_oid,
@@ -75,7 +75,7 @@ procs AS ( -- Procedures and functions
 ),
 udts AS ( -- User defined types
     SELECT schemas.schema_oid,
-            schemas.schema_name AS object_schema,
+            schemas.schema_name,
             t.oid,
             t.typname::text AS object_name,
             t.typowner AS owner_oid,
@@ -102,7 +102,7 @@ udts AS ( -- User defined types
 ),
 fdws AS ( -- Foreign data wrappers
     SELECT NULL::oid AS schema_oid,
-            NULL::text AS object_schema,
+            NULL::text AS schema_name,
             p.oid,
             p.fdwname::text AS object_name,
             p.fdwowner AS owner_oid,
@@ -112,7 +112,7 @@ fdws AS ( -- Foreign data wrappers
 ),
 fsrvs AS ( -- Foreign servers
     SELECT NULL::oid AS schema_oid,
-            NULL::text AS object_schema,
+            NULL::text AS schema_name,
             p.oid,
             p.srvname::text AS object_name,
             p.srvowner AS owner_oid,
@@ -121,7 +121,7 @@ fsrvs AS ( -- Foreign servers
         FROM pg_catalog.pg_foreign_server p
 ),
 all_objects AS (
-    SELECT NULL::text AS object_schema,
+    SELECT NULL::text AS schema_name,
             object_type,
             database_name AS object_name,
             NULL::text AS calling_arguments,
@@ -129,7 +129,7 @@ all_objects AS (
             acl
         FROM db
     UNION
-    SELECT schema_name AS object_schema,
+    SELECT schema_name,
             object_type,
             schema_name AS object_name,
             NULL::text AS calling_arguments,
@@ -137,7 +137,7 @@ all_objects AS (
             acl
         FROM schemas
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             NULL::text AS calling_arguments,
@@ -145,7 +145,7 @@ all_objects AS (
             acl
         FROM classes
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             NULL::text AS calling_arguments,
@@ -153,7 +153,7 @@ all_objects AS (
             acl
         FROM cols
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             calling_arguments,
@@ -161,7 +161,7 @@ all_objects AS (
             acl
         FROM procs
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             NULL::text AS calling_arguments,
@@ -169,7 +169,7 @@ all_objects AS (
             acl
         FROM udts
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             NULL::text AS calling_arguments,
@@ -177,7 +177,7 @@ all_objects AS (
             acl
         FROM fdws
     UNION
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             NULL::text AS calling_arguments,
@@ -186,7 +186,7 @@ all_objects AS (
         FROM fsrvs
 ),
 acl_base AS (
-    SELECT object_schema,
+    SELECT schema_name,
             object_type,
             object_name,
             calling_arguments,
@@ -197,7 +197,14 @@ acl_base AS (
             ( aclexplode ( acl ) ).is_grantable AS is_grantable
         FROM all_objects
 )
-SELECT acl_base.object_schema,
+SELECT acl_base.schema_name,
+        CASE
+            WHEN acl_base.object_type IN ( 'base type', 'composite type', 'domain', 'enum type', 'pseudo-type',
+                'range type', 'multirange' )
+                THEN 'type'
+            WHEN acl_base.object_type IN ( 'partitioned table', 'table partition' ) THEN 'table'
+            ELSE acl_base.object_type
+            END AS base_object_type,
         acl_base.object_type,
         acl_base.object_name,
         acl_base.calling_arguments,
@@ -226,7 +233,7 @@ SELECT acl_base.object_schema,
 
 COMMENT ON VIEW util_meta.object_grants IS 'Privilege grants for application database objects' ;
 
-COMMENT ON COLUMN util_meta.object_grants.object_schema IS 'The name of the schema that contains the object.' ;
+COMMENT ON COLUMN util_meta.object_grants.schema_name IS 'The name of the schema that contains the object.' ;
 COMMENT ON COLUMN util_meta.object_grants.object_name IS 'The name of the database object.' ;
 COMMENT ON COLUMN util_meta.object_grants.object_type IS 'The type of the database object.' ;
 COMMENT ON COLUMN util_meta.object_grants.calling_arguments IS '(function and procedure only) The list of calling arguments to the function or procedure.' ;
