@@ -12,7 +12,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_function_backmatter generates the pl/pg-sql code snippet for the end of a function
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

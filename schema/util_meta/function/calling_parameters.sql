@@ -19,7 +19,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function calling_parameters returns the calling parameter data for the specified function/procedure
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

@@ -9,7 +9,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function boolean_casting
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

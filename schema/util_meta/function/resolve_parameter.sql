@@ -7,7 +7,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function resolve_parameter checks/resolves a calling parameter and returns the parameter value.
 
 If the parameter value is specified then it is checked (as applicable) to determine if it is valid.

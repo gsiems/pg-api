@@ -10,7 +10,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_json_agg_build_object generates a json_agg wrapped json_build_object function call query for a table or view
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

@@ -8,7 +8,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function is_valid_object checks if the specified object exists in the database
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

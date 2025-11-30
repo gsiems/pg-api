@@ -10,7 +10,7 @@ IMMUTABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function append_parameter appends a parameter definition to the list of parameters and returns the updated list
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

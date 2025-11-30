@@ -6,7 +6,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function indent returns the specified amount of indentation for start of a line
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

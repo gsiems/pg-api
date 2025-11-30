@@ -6,7 +6,7 @@ IMMUTABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function cleanup_whitespace cleans up any excess white space from the specified text
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

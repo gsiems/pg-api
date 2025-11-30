@@ -10,7 +10,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_object_comment generates a COMMENT ON ... snippet
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

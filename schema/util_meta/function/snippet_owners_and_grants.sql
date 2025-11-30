@@ -11,7 +11,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_owners_and_grants generates the pl/pg-sql code snippet for setting ownership and granting execute
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

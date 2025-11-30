@@ -12,7 +12,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_permissions_check generates the pl/pg-sql code snippet for calling a permissions check
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

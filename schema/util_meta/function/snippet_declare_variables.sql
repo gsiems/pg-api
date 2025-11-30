@@ -6,7 +6,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_declare_variables generates the pl/pg-sql code snippet for declaring the local variables for a function or procedure
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

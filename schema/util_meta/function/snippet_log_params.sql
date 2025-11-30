@@ -7,7 +7,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_log_params generates the pl/pg-sql code snippet for logging a list of parameters (or variables)
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

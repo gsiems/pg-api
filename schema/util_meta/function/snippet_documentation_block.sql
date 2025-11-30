@@ -11,7 +11,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function snippet_documentation_block generates the documentation block for an object
 
 | Parameter                      | In/Out | Datatype   | Description                                        |

@@ -7,7 +7,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function json_identifier takes a database identifier (table name, column name, etc. ) and
     returns the json identifier for the identifier
 
