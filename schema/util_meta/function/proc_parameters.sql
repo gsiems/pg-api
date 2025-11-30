@@ -35,7 +35,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function proc_parameters returns the data needed for specifying the parameter list for insert, update, and/or upsert procedures
 
 | Parameter                      | In/Out | Datatype   | Description                                        |
@@ -268,7 +268,7 @@ params AS (
             false AS is_audit_user_col,
             'a_user' AS param_name,
             'in' AS param_direction,
-            'text'::text AS param_data_type,
+            'text' AS param_data_type,
             NULL::text AS ref_param_name,
             NULL::text AS ref_data_type,
             NULL::text AS local_param_name,
@@ -297,7 +297,7 @@ params AS (
             false AS is_audit_user_col,
             'a_err' AS param_name,
             'inout' AS param_direction,
-            'text'::text AS param_data_type,
+            'text' AS param_data_type,
             NULL::text AS ref_param_name,
             NULL::text AS ref_data_type,
             NULL::text AS local_param_name,
