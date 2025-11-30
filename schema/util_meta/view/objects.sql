@@ -101,6 +101,13 @@ SELECT objs.schema_oid,
         objs.object_oid,
         objs.object_name,
         objs.object_owner,
+        CASE
+            WHEN objs.object_type IN ( 'base type', 'composite type', 'domain', 'enum type', 'pseudo-type',
+                'range type', 'multirange' )
+                THEN 'type'
+            WHEN objs.object_type IN ( 'partitioned table', 'table partition' ) THEN 'table'
+            ELSE objs.object_type
+            END AS base_object_type,
         objs.object_type,
         objs.full_object_name,
         objs.row_count,
@@ -130,7 +137,8 @@ COMMENT ON COLUMN util_meta.objects.schema_name IS 'The name of the schema that 
 COMMENT ON COLUMN util_meta.objects.object_oid IS 'The OID of the database object.' ;
 COMMENT ON COLUMN util_meta.objects.object_name IS 'The name of the database object.' ;
 COMMENT ON COLUMN util_meta.objects.object_owner IS 'The owner of the database object.' ;
-COMMENT ON COLUMN util_meta.objects.object_type IS 'The type of the database object.' ;
+COMMENT ON COLUMN util_meta.objects.base_object_type IS 'The basic type of the database object.' ;
+COMMENT ON COLUMN util_meta.objects.object_type IS 'The specific type of the database object.' ;
 COMMENT ON COLUMN util_meta.objects.full_object_name IS 'The full name (schema name plus object name ) of the database object.' ;
 COMMENT ON COLUMN util_meta.objects.row_count IS 'The estimated number (based on db stats) of rows (for tables).' ;
 COMMENT ON COLUMN util_meta.objects.directory_name IS 'The sub-directory in the git repository that contains the object DDL file.' ;
