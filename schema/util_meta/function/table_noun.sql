@@ -7,7 +7,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
-/**
+/* *
 Function table_noun guesses at the proper "noun" for a table (or view)
 
 | Parameter                      | In/Out | Datatype   | Description                                        |
@@ -18,7 +18,10 @@ Function table_noun guesses at the proper "noun" for a table (or view)
 */
 
 WITH x AS (
-    SELECT replace ( a_ddl_schema, '_json', '' ) AS ddl_schema
+    SELECT replace (
+                replace ( replace ( replace ( a_ddl_schema, '_json', '' ), '_priv$', '' ), '^priv_', '' ),
+                '^_',
+                '' ) AS ddl_schema
 )
 SELECT regexp_replace ( regexp_replace ( a_object_name, '^[drs][tv]_', '' ), '^' || ddl_schema || '_', '' )
     FROM x ;
