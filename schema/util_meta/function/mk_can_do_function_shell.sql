@@ -86,7 +86,7 @@ BEGIN
             a_name => 'l_connected_user_id',
             a_datatype => 'integer' ) ;
 
-        RETURN concat_ws (
+        RETURN util_meta.cleanup_whitespace ( concat_ws (
             util_meta.new_line (),
             util_meta.snippet_function_frontmatter (
                 a_ddl_schema => r.ddl_schema,
@@ -121,7 +121,7 @@ BEGIN
                 a_comment => NULL::text,
                 a_owner => a_owner,
                 a_grantees => a_grantees,
-                a_calling_parameters => l_calling_params ) ) ;
+                a_calling_parameters => l_calling_params ) ) ) ;
 
     END LOOP ;
 
