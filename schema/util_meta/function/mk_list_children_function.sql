@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION util_meta.mk_list_function (
+CREATE OR REPLACE FUNCTION util_meta.mk_list_children_function (
     a_object_schema text DEFAULT NULL,
     a_object_name text DEFAULT NULL,
     a_parent_table_schema text DEFAULT NULL,
@@ -16,7 +16,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
 /**
-Function mk_list_function generates a draft "list entries that are children of the specified parent" function for a table.
+Function mk_list_children_function generates a draft "list entries that are children of the specified parent" function for a table.
 
 | Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
@@ -56,7 +56,6 @@ DECLARE
     l_ddl_schema text ;
     l_doc_item text ;
     l_exclude_binary_data boolean ;
-    l_full_view_name text ;
     l_func_name text ;
     l_local_parent_param text ;
     l_parent_column text ;
@@ -71,11 +70,11 @@ DECLARE
     l_select_cols text[] ;
     l_select text ;
     l_table_noun text ;
-    l_view_name text ;
     l_where_clause text ;
 
     l_local_vars util_meta.ut_parameters ;
     l_calling_params util_meta.ut_parameters ;
+    l_base_view util_meta.ut_object ;
 
 BEGIN
 
@@ -98,13 +97,16 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
 
     l_func_name := 'list_' || l_table_noun || 's' ;
-    l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
-    l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
+
+    l_base_view := util_meta.find_view (
+        a_proc_schema => a_ddl_schema,
+        a_table_schema => a_object_schema,
+        a_table_name => a_object_name ) ;
 
     --------------------------------------------------------------------
     -- Ensure that the view is valid
-    IF NOT util_meta.is_valid_object ( l_ddl_schema, l_view_name, 'view' ) THEN
-        RETURN 'ERROR: required view (' || l_full_view_name || ') does not exist' ;
+    IF l_base_view.object_name IS NULL THEN
+        RETURN 'ERROR: required view for (' || a_object_name || ') not found' ;
     END IF ;
 
     ----------------------------------------------------------------------------
@@ -249,7 +251,7 @@ BEGIN
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_return_type => l_full_view_name,
+            a_return_type => l_base_view.full_object_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
@@ -322,7 +324,7 @@ BEGIN
                     is_nk
                 FROM util_meta.columns
                 WHERE schema_name = l_ddl_schema
-                    AND object_name = l_view_name
+                    AND object_name = l_base_view.object_name
                 ORDER BY ordinal_position ) LOOP
 
             IF l_exclude_binary_data AND r.data_type IN ( 'bytea', 'jsonb' ) THEN
@@ -350,7 +352,7 @@ BEGIN
         '',
         util_meta.indent ( 1 ) || 'RETURN QUERY',
         l_select,
-        util_meta.indent ( 3 ) || 'FROM ' || l_full_view_name,
+        util_meta.indent ( 3 ) || 'FROM ' || l_base_view.full_object_name,
         util_meta.indent ( 3 ) || 'WHERE l_has_permission',
         util_meta.indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
         util_meta.snippet_function_backmatter (
