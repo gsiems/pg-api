@@ -35,7 +35,6 @@ DECLARE
     l_ddl_schema text ;
     l_doc_item text ;
     l_found_cte text ;
-    l_full_view_name text ;
     l_func_name text ;
     l_is_row_based boolean ;
     l_join_clause text[] ;
@@ -44,10 +43,10 @@ DECLARE
     l_search_cols text[] ;
     l_select text ;
     l_table_noun text ;
-    l_view_name text ;
 
     l_calling_params util_meta.ut_parameters ;
     l_local_vars util_meta.ut_parameters ;
+    l_base_view util_meta.ut_object ;
 
 BEGIN
 
@@ -62,14 +61,17 @@ BEGIN
     l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
 
     l_func_name := 'find_' || l_table_noun ;
-    l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
-    l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
+    l_base_view := util_meta.find_view (
+        a_proc_schema => a_ddl_schema,
+        a_table_schema => a_object_schema,
+        a_table_name => a_object_name ) ;
+
     l_doc_item := 'Returns the list of matching ' || replace ( l_table_noun, '_', ' ' ) || ' entries' ;
 
     --------------------------------------------------------------------
     -- Ensure that the view is valid
-    IF NOT util_meta.is_valid_object ( l_ddl_schema, l_view_name, 'view' ) THEN
-        RETURN 'ERROR: required view (' || l_full_view_name || ') does not exist' ;
+    IF l_base_view.object_name IS NULL THEN
+        RETURN 'ERROR: required view for (' || a_object_name || ') not found' ;
     END IF ;
 
     l_is_row_based := coalesce ( a_is_row_based, false ) ;
@@ -135,7 +137,7 @@ BEGIN
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_return_type => l_full_view_name,
+            a_return_type => l_base_view.full_object_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
         util_meta.snippet_documentation_block (
@@ -174,7 +176,7 @@ BEGIN
     l_select := concat_ws (
         util_meta.new_line (),
         util_meta.indent ( 2 ) || 'SELECT de.*',
-        util_meta.indent ( 3 ) || 'FROM ' || l_full_view_name || ' de',
+        util_meta.indent ( 3 ) || 'FROM ' || l_base_view.full_object_name || ' de',
         util_meta.indent ( 3 ) || 'JOIN found',
         util_meta.indent ( 4 )
             || 'ON ( '
@@ -195,7 +197,7 @@ BEGIN
             util_meta.indent ( 3 )
                 || 'SELECT '
                 || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
-            util_meta.indent ( 4 ) || 'FROM ' || l_full_view_name,
+            util_meta.indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
             util_meta.indent ( 2 ) || '),',
             l_found_cte,
             l_select,
@@ -232,7 +234,7 @@ BEGIN
             util_meta.indent ( 3 )
                 || 'SELECT '
                 || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
-            util_meta.indent ( 4 ) || 'FROM ' || l_full_view_name,
+            util_meta.indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
             util_meta.indent ( 4 ) || 'WHERE l_has_permission',
             util_meta.indent ( 2 ) || '),',
             l_found_cte,
