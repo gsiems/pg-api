@@ -1,14 +1,15 @@
 CREATE OR REPLACE FUNCTION util_meta.mk_view (
-    a_object_schema text default null,
-    a_object_name text default null,
-    a_ddl_schema text default null,
-    a_cast_booleans_as text default null,
-    a_owner text default null,
-    a_grantees text default null )
+    a_object_schema text DEFAULT NULL,
+    a_object_name text DEFAULT NULL,
+    a_ddl_schema text DEFAULT NULL,
+    a_cast_booleans_as text DEFAULT NULL,
+    a_owner text DEFAULT NULL,
+    a_grantees text DEFAULT NULL )
 RETURNS text
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = pg_catalog, util_meta
 AS $$
 /**
 Function mk_view generates a draft view of a table
@@ -22,13 +23,16 @@ Function mk_view generates a draft view of a table
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the view  |
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted select on the view |
 
-The goal is to combine the table columns of the specifed table with the natural key columns of any referenced tables to create a draft view.
+The goal is to combine the table columns of the specified table with the
+natural key columns of any referenced tables to create a draft view.
 
-This does not (currently) attempt to recurse beyond the parent tables for the specified table (parents of parents).
+This does not (currently) attempt to recurse beyond the parent tables for the
+specified table (parents of parents).
 
 Aspirational goal: to recurse parent reference tables.
 
-Aspirational goal: to recognize self-referential tables and add the recursive CTE for all parent records.
+Aspirational goal: to recognize self-referential tables and add the recursive
+CTE for all parent records.
 
 Note that this should work for all table types (dt, rt, st)
 
@@ -60,7 +64,8 @@ DECLARE
     l_false_val text ;
     l_boolean_transform text ;
 
-    l_fnk_count integer ;
+    l_fnk_count bigint ;
+    l_fk_tab text ;
 
 BEGIN
 
@@ -72,7 +77,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_view_name := regexp_replace ( a_object_name, '^([drs])t_', '\1v_' ) ;
+    l_view_name := util_meta.view_name ( a_object_name ) ;
     l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
     l_full_table_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
 
@@ -87,7 +92,8 @@ BEGIN
                 AND object_name = a_object_name
                 AND object_type = 'table' ) LOOP
 
-        l_comments := array_append ( l_comments,
+        l_comments := array_append (
+            l_comments,
             util_meta.snippet_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_view_name,
@@ -107,8 +113,7 @@ BEGIN
         l_true_val := r.true_val ;
         l_false_val := r.false_val ;
 
-        IF coalesce ( l_true_val, '' ) = ''
-            OR coalesce ( l_false_val, '' ) = '' THEN
+        IF coalesce ( l_true_val, '' ) = '' OR coalesce ( l_false_val, '' ) = '' THEN
 
             RETURN 'ERROR: Could not resolve true/false values' ;
 
@@ -123,10 +128,7 @@ BEGIN
                 concat_ws ( '.', l_full_view_name, column_name ) AS full_column_name,
                 data_type,
                 ordinal_position,
-                CASE
-                    WHEN is_nullable THEN 'LEFT JOIN'
-                    ELSE 'JOIN'
-                    END AS join_type,
+                CASE WHEN is_nullable THEN 'LEFT JOIN' ELSE 'JOIN' END AS join_type,
                 't' || lpad ( ordinal_position::text, 3, '0' ) AS join_alias,
                 comments
             FROM util_meta.columns
@@ -136,9 +138,15 @@ BEGIN
 
         IF col.data_type = 'boolean' AND l_boolean_type <> 'boolean' THEN
 
-            l_boolean_transform := concat_ws ( util_meta.new_line () || util_meta.indent (3),
+            l_boolean_transform := concat_ws (
+                util_meta.new_line () || util_meta.indent ( 3 ),
                 'CASE',
-                concat_ws ( ' ', 'WHEN', col.table_column, 'THEN', l_true_val ),
+                concat_ws (
+                    ' ',
+                    'WHEN',
+                    col.table_column,
+                    'THEN',
+                    l_true_val ),
                 concat_ws ( ' ', 'ELSE', l_false_val ),
                 concat_ws ( ' ', 'END AS', col.column_name ) ) ;
 
@@ -150,7 +158,8 @@ BEGIN
 
         END IF ;
 
-        l_comments := array_append ( l_comments,
+        l_comments := array_append (
+            l_comments,
             util_meta.snippet_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_view_name || '.' || col.column_name,
@@ -170,6 +179,10 @@ BEGIN
 
             has_join := false ;
 
+            l_fk_tab := util_meta.table_noun (
+                a_object_name => fk.ref_table_name,
+                a_ddl_schema => fk.ref_schema_name ) ;
+
             -- Determine if the parent table has a multi-column natural key or not
             SELECT count (*)
                 INTO l_fnk_count
@@ -181,10 +194,6 @@ BEGIN
             FOR fk_col IN (
                 SELECT column_name,
                         col.join_alias || '.' || column_name AS full_column_name,
-                        --CASE
-                        --    WHEN l_fnk_count = 1 THEN col.join_alias || '.' || column_name
-                        --    ELSE col.join_alias || '.' || regexp_replace ( col.column_name, '_' || column_name ||'$' ) || '_' || column_name
-                        --    END AS full_column_name,
                         comments
                     FROM util_meta.columns
                     WHERE schema_name = fk.ref_schema_name
@@ -194,24 +203,66 @@ BEGIN
 
                 has_join := true ;
 
-                IF col.column_name ~ '_id$' THEN
-                    l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
-                ELSIF col.column_name ~ '_id_' THEN
-                    l_column_alias := regexp_replace ( col.column_name, '_id_', '_' ) ;
-                ELSE
-                    -- no clue, let the user/developer figure it out for now...
-                    l_column_alias := col.column_name || '_' || lpad ( col.ordinal_position::text, 4, '0' ) ;
-                END IF ;
-
                 IF l_fnk_count > 1 THEN
-                    l_column_alias := l_column_alias || '_' || fk_col.column_name ;
+
+                    IF fk_col.column_name = 'name' THEN
+
+                        IF col.column_name ~ '_id$' THEN
+                            l_column_alias := regexp_replace ( col.column_name, '_id$', '_' || l_fk_tab ) ;
+                        ELSIF col.column_name ~ '_id_' THEN
+                            l_column_alias := regexp_replace ( col.column_name, '_id_', '_' || l_fk_tab || '_' ) ;
+                        ELSE
+                            l_column_alias := col.column_name || '_' || l_fk_tab ;
+                        END IF ;
+                    ELSE
+
+                        IF col.column_name ~ '_id$' THEN
+                            l_column_alias := regexp_replace ( col.column_name, '_id$', '_' )
+                                || '_'
+                                || fk_col.column_name ;
+                        ELSIF col.column_name ~ '_id_' THEN
+                            l_column_alias := regexp_replace (
+                                col.column_name || '_' || fk_col.column_name,
+                                '_id_',
+                                '_' ) ;
+                            --                        l_column_alias := regexp_replace ( col.column_name, '_id_', '_' || l_fk_tab || '_' ) ;
+                        ELSE
+                            l_column_alias := col.column_name || '_' || l_fk_tab ;
+                        END IF ;
+
+                    END IF ;
+
+                ELSE
+
+                    IF col.column_name ~ '_id$' THEN
+                        l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
+                    ELSIF col.column_name ~ '_id_' THEN
+                        l_column_alias := regexp_replace ( col.column_name, '_id_', '_' ) ;
+                        --                    ELSIF fk_col.column_name = 'name' THEN
+                        --                        l_column_alias := col.column_name || '_' || l_fk_tab ;
+                    ELSE
+                        l_column_alias := col.column_name || '_' || l_fk_tab ;
+                    END IF ;
+
                 END IF ;
 
-                l_columns := array_append ( l_columns, concat_ws ( ' ', fk_col.full_column_name, 'AS', l_column_alias ) ) ;
+                l_columns := array_append (
+                    l_columns,
+                    concat_ws (
+                        ' ',
+                        fk_col.full_column_name,
+                        'AS',
+                        l_column_alias ) ) ;
 
-                l_column_comment := concat_ws ( ' ', 'The', replace ( fk_col.column_name, '_', ' ' ), 'for the', replace ( l_column_alias, '_', ' ' ) ) ;
+                l_column_comment := concat_ws (
+                    ' ',
+                    'The',
+                    replace ( fk_col.column_name, '_', ' ' ),
+                    'for the',
+                    replace ( l_column_alias, '_', ' ' ) ) ;
 
-                l_comments := array_append ( l_comments,
+                l_comments := array_append (
+                    l_comments,
                     util_meta.snippet_object_comment (
                         a_ddl_schema => l_ddl_schema,
                         a_object_name => l_view_name || '.' || l_column_alias,
@@ -221,33 +272,55 @@ BEGIN
             END LOOP ;
 
             IF has_join THEN
-                l_joins := array_append ( l_joins,
-                    util_meta.indent (1) ||  concat_ws ( ' ', col.join_type, fk.ref_full_table_name, col.join_alias ) ) ;
+                l_joins := array_append (
+                    l_joins,
+                    util_meta.indent ( 1 )
+                        || concat_ws (
+                            ' ',
+                            col.join_type,
+                            fk.ref_full_table_name,
+                            col.join_alias ) ) ;
 
-                l_joins := array_append ( l_joins,
-                    util_meta.indent (2) || concat_ws ( ' ', 'ON', '(', fk.join_column_name, '=', col.table_column, ')' ) ) ;
+                l_joins := array_append (
+                    l_joins,
+                    util_meta.indent ( 2 )
+                        || concat_ws (
+                            ' ',
+                            'ON',
+                            '(',
+                            fk.join_column_name,
+                            '=',
+                            col.table_column,
+                            ')' ) ) ;
             END IF ;
 
         END LOOP ;
 
     END LOOP ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result,
         'CREATE OR REPLACE VIEW ' || l_full_view_name,
         'AS',
-        concat_ws ( ' ', 'SELECT', array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent (2) ) ),
-        util_meta.indent (1) || concat_ws ( ' ', 'FROM', l_full_table_name, l_table_alias ) ) ;
+        concat_ws (
+            ' ',
+            'SELECT',
+            array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent ( 2 ) ) ),
+        util_meta.indent ( 1 ) || concat_ws (
+            ' ',
+            'FROM',
+            l_full_table_name,
+            l_table_alias ) ) ;
 
     IF array_length ( l_joins, 1 ) > 0 THEN
 
-        l_result := concat_ws ( util_meta.new_line (),
-            l_result,
-            array_to_string ( l_joins, util_meta.new_line () ) ) ;
+        l_result := concat_ws ( util_meta.new_line (), l_result, array_to_string ( l_joins, util_meta.new_line () ) ) ;
 
     END IF ;
 
-    l_result := concat_ws ( util_meta.new_line (),
+    l_result := concat_ws (
+        util_meta.new_line (),
         l_result || ' ;',
         '',
         util_meta.snippet_owners_and_grants (
