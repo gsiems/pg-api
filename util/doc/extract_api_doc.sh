@@ -17,7 +17,7 @@ DESCRIPTION
     files (as markdoown files).
 
     Blocks to extract consist of a separate comment start line that has two or
-    more asteriscs and end with a separate end line '*/'.
+    more asterisks and end with a separate end line '*/'.
 
     /**
     Comments to extract
