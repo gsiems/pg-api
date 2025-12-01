@@ -59,10 +59,11 @@ while getopts 'hH:d:p:t:u:' arg; do
         p) port=${OPTARG} ;;
         t) targetDir=${OPTARG} ;;
         u) usr=${OPTARG} ;;
+        *) usage=1 ;;
     esac
 done
 
-if [ ! -z "${usage}" ]; then
+if [ -n "${usage}" ]; then
     usage
 fi
 
@@ -70,22 +71,22 @@ if [ -z "${hostName}" ]; then
     hostName=localhost
 fi
 if [ -z "${usr}" ]; then
-    if [ ! -z "${PGUSER}" ]; then
-        usr=${PGUSER}
+    if [ -n "${PGUSER}" ]; then
+        usr="${PGUSER}"
     else
-        usr=${USER}
+        usr="${USER}"
     fi
 fi
 if [ -z "${db}" ]; then
-    if [ ! -z "${PGDATABASE}" ]; then
-        db=${PGDATABASE}
+    if [ -n "${PGDATABASE}" ]; then
+        db="${PGDATABASE}"
     else
-        db=${USER}
+        db="${USER}"
     fi
 fi
 if [ -z "${port}" ]; then
-    if [ ! -z "${PGPORT}" ]; then
-        port=${PGPORT}
+    if [ -n "${PGPORT}" ]; then
+        port="${PGPORT}"
     else
         port=5432
     fi
@@ -97,10 +98,13 @@ fi
 ######################################################
 function ensure_ddlx() {
 
-    local psqlFile=$(mktemp -p . XXXXXXXXXX.sql.1.tmp)
-    local cmdFile=$(mktemp -p . XXXXXXXXXX.sql.2.tmp)
+    local psqlFile
+    local cmdFile
 
-    cat <<EOT >${psqlFile}
+    psqlFile=$(mktemp -p . XXXXXXXXXX.sql.1.tmp)
+    cmdFile=$(mktemp -p . XXXXXXXXXX.sql.2.tmp)
+
+    cat <<EOT >"${psqlFile}"
 SELECT 'CREATE SCHEMA IF NOT EXISTS ddlx ;
 COMMENT ON SCHEMA ddlx IS ''Schema for ddlx objects'' ;'
     WHERE NOT EXISTS (
@@ -126,33 +130,36 @@ COMMENT ON SCHEMA util_meta IS ''Schema for metadata objects'' ;'
 EOT
 
     if [ "${hostName}" == "localhost" ]; then
-        psql -U ${usr} -d ${db} -p ${port} -t -A -f ${psqlFile} >${cmdFile}
-        if [ -s ${cmdFile} ]; then
-            psql -U ${usr} -d ${db} -p ${port} -t -A -f ${cmdFile}
+        psql -U "${usr}" -d "${db}" -p "${port}" -t -A -f "${psqlFile}" >"${cmdFile}"
+        if [ -s "${cmdFile}" ]; then
+            psql -U "${usr}" -d "${db}" -p "${port}" -t -A -f "${cmdFile}"
         fi
 
     else
-        psql -U ${usr} -d ${db} -h ${hostName} -p ${port} -t -A -f ${psqlFile} >${cmdFile}
-        if [ -s ${cmdFile} ]; then
-            psql -U ${usr} -d ${db} -h ${hostName} -p ${port} -t -A -f ${cmdFile}
+        psql -U "${usr}" -d "${db}" -h "${hostName}" -p "${port}" -t -A -f "${psqlFile}" >"${cmdFile}"
+        if [ -s "${cmdFile}" ]; then
+            psql -U "${usr}" -d "${db}" -h "${hostName}" -p "${port}" -t -A -f "${cmdFile}"
         fi
 
     fi
 
-    rm ${psqlFile}
-    rm ${cmdFile}
+    rm "${psqlFile}"
+    rm "${cmdFile}"
 }
 
 function prep_directories() {
 
-    if [ -d ${targetDir} ]; then
-        rm -rf ${targetDir}
+    if [ -d "${targetDir}" ]; then
+        rm -rf "${targetDir}"
     fi
 
-    local psqlFile=$(mktemp -p . XXXXXXXXXX.sql.3.tmp)
-    local cmdFile=$(mktemp -p . XXXXXXXXXX.sh.4.tmp)
+    local psqlFile
+    local cmdFile
 
-    cat <<EOT >${psqlFile}
+    psqlFile=$(mktemp -p . XXXXXXXXXX.sql.3.tmp)
+    cmdFile=$(mktemp -p . XXXXXXXXXX.sh.4.tmp)
+
+    cat <<EOT >"${psqlFile}"
 SELECT DISTINCT 'mkdir -p ' || concat_ws ( '/', '${targetDir}', mdo.directory_name )
     FROM util_meta.objects mdo
     JOIN util_meta.schemas sdo
@@ -164,24 +171,29 @@ SELECT DISTINCT 'mkdir -p ' || concat_ws ( '/', '${targetDir}', mdo.directory_na
 EOT
 
     if [ "${hostName}" == "localhost" ]; then
-        psql -U ${usr} -d ${db} -p ${port} -t -A -f ${psqlFile} >${cmdFile}
+        psql -U "${usr}" -d "${db}" -p "${port}" -t -A -f "${psqlFile}" >"${cmdFile}"
     else
-        psql -U ${usr} -d ${db} -h ${hostName} -p ${port} -t -A -f ${psqlFile} >${cmdFile}
+        psql -U "${usr}" -d "${db}" -h "${hostName}" -p "${port}" -t -A -f "${psqlFile}" >"${cmdFile}"
     fi
 
-    sh ${cmdFile}
-    rm ${cmdFile}
-    rm ${psqlFile}
+    sh "${cmdFile}"
+    rm "${cmdFile}"
+    rm "${psqlFile}"
 }
 
 function extract_ddl() {
 
-    local psqlFile1=$(mktemp -p . XXXXXXXXXX.sql.5.tmp)
-    local psqlFile2=$(mktemp -p . XXXXXXXXXX.sql.6.tmp)
-    local psqlFile3=$(mktemp -p . XXXXXXXXXX.sql.7.tmp)
-    local psqlFile4=$(mktemp -p . XXXXXXXXXX.sql.8.tmp)
+    local psqlFile1
+    local psqlFile2
+    local psqlFile3
+    local psqlFile4
 
-    cat <<EOT >${psqlFile2}
+    psqlFile1=$(mktemp -p . XXXXXXXXXX.sql.5.tmp)
+    psqlFile2=$(mktemp -p . XXXXXXXXXX.sql.6.tmp)
+    psqlFile3=$(mktemp -p . XXXXXXXXXX.sql.7.tmp)
+    psqlFile4=$(mktemp -p . XXXXXXXXXX.sql.8.tmp)
+
+    cat <<EOT >"${psqlFile2}"
 CREATE TEMPORARY TABLE temp_object_ddl (
     obj_oid oid,
     file_name text,
@@ -248,7 +260,7 @@ UPDATE temp_object_ddl o
 
 EOT
 
-    cat <<EOT >${psqlFile3}
+    cat <<EOT >"${psqlFile3}"
 SELECT concat_ws ( E'\n\n',
             '\o ' || quote_literal ( file_name ),
             concat_ws ( E'\n    ',
@@ -261,7 +273,7 @@ SELECT concat_ws ( E'\n\n',
     GROUP BY file_name ;
 EOT
 
-    cat <<EOT >${psqlFile4}
+    cat <<EOT >"${psqlFile4}"
 
 SET statement_timeout = 0 ;
 SET client_encoding = 'UTF8' ;
@@ -281,15 +293,15 @@ SET search_path = ddlx, pg_catalog, public ;
 EOT
 
     if [ "${hostName}" == "localhost" ]; then
-        psql -U ${usr} -d ${db} -p ${port} -t -A -f ${psqlFile4} &>/dev/null
+        psql -U "${usr}" -d "${db}" -p "${port}" -t -A -f "${psqlFile4}" &>/dev/null
     else
-        psql -U ${usr} -d ${db} -h ${hostName} -p ${port} -t -A -f ${psqlFile4} &>/dev/null
+        psql -U "${usr}" -d "${db}" -h "${hostName}" -p "${port}" -t -A -f "${psqlFile4}" &>/dev/null
     fi
 
-    rm ${psqlFile1}
-    rm ${psqlFile2}
-    rm ${psqlFile3}
-    rm ${psqlFile4}
+    rm "${psqlFile1}"
+    rm "${psqlFile2}"
+    rm "${psqlFile3}"
+    rm "${psqlFile4}"
 }
 
 # echo "hostName: ${hostName}"
@@ -297,7 +309,7 @@ EOT
 # echo "usr: ${usr}"
 # echo "targetDir: ${targetDir}"
 
-if [ ! -z "${hostName}" ] && [ ! -z "${db}" ] && [ ! -z "${usr}" ] && [ ! -z "${targetDir}" ]; then
+if [ -n "${hostName}" ] && [ -n "${db}" ] && [ -n "${usr}" ] && [ -n "${targetDir}" ]; then
 
     echo "Exporting ${db} from ${hostName} to ${targetDir}"
 
