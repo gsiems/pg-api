@@ -27,7 +27,12 @@ Function mk_update_procedure generates a draft "public" update procedure for a t
 | a_owner                        | in     | text       | The (optional) role that is to be the owner of the procedure |
 | a_grantees                     | in     | text       | The (optional) csv list of roles that should be granted execute on the function |
 
-Note that this should work for dt and rt table types
+Notes:
+
+* This should work for dt and rt table types
+
+* The "private" procedure used for the actual update should already have been
+created.
 
 */
 DECLARE
@@ -45,7 +50,7 @@ DECLARE
 
     l_local_vars util_meta.ut_parameters ;
     l_calling_params util_meta.ut_parameters ;
-    l_private_proc util_meta.ut_proc ;
+    l_private_proc util_meta.ut_object ;
 
 BEGIN
 
@@ -72,10 +77,9 @@ BEGIN
 
     ------------------------------------------------------------------------
     -- Determine the private procedure to call.
-    l_private_proc := util_meta.guess_private_proc (
+    l_private_proc := util_meta.find_private_proc (
         a_proc_schema => l_ddl_schema,
-        a_proc_object => a_object_name,
-        a_proc_action => 'update' ) ;
+        a_proc_name => l_proc_name ) ;
 
     --------------------------------------------------------------------
     -- Determine the calling parameters block, signature, etc.
@@ -216,7 +220,7 @@ BEGIN
         util_meta.snippet_log_params ( a_parameters => l_calling_params ),
         l_chk,
         '',
-        util_meta.indent ( 1 ) || 'call ' || l_private_proc.full_name || ' (',
+        util_meta.indent ( 1 ) || 'call ' || l_private_proc.full_object_name || ' (',
         util_meta.indent ( 2 )
             || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
             || ' ) ;',
