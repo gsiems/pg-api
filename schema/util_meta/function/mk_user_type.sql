@@ -38,8 +38,8 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'view' ) THEN
-        IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'view' ) THEN
+        IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
             RETURN 'ERROR: invalid object' ;
         END IF ;
     END IF ;
@@ -62,7 +62,7 @@ BEGIN
 
         l_comments := array_append (
             l_comments,
-            util_meta.snippet_object_comment (
+            util_meta._snip_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_type_name,
                 a_object_type => 'type',
@@ -82,26 +82,26 @@ BEGIN
                 AND object_name = a_object_name
             ORDER BY ordinal_position ) LOOP
 
-        l_columns := array_append ( l_columns, util_meta.indent ( 1 ) || r.column_name || ' ' || r.data_type ) ;
+        l_columns := array_append ( l_columns, util_meta._indent ( 1 ) || r.column_name || ' ' || r.data_type ) ;
 
     END LOOP ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         'CREATE TYPE ' || l_full_type_name || ' AS (',
-        array_to_string ( l_columns, ',' || util_meta.new_line () ) || ' ) ;',
+        array_to_string ( l_columns, ',' || util_meta._new_line () ) || ' ) ;',
         '',
-        util_meta.snippet_owners_and_grants (
+        util_meta._snip_owners_and_grants (
             a_ddl_schema => a_ddl_schema,
             a_object_name => l_type_name,
             a_object_type => 'type',
             a_owner => a_owner,
             a_grantees => a_grantees ),
         '',
-        array_to_string ( l_comments, util_meta.new_line () ),
+        array_to_string ( l_comments, util_meta._new_line () ),
         '' ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

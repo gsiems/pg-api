@@ -49,44 +49,44 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- Functions -------------------------------------------------------------------
 
 -- Common utility functions
-\i util_meta/function/base_name.sql
-\i util_meta/function/base_order.sql
+\i util_meta/function/_base_name.sql
+\i util_meta/function/_base_order.sql
 
-\i util_meta/function/resolve_parameter.sql
+\i util_meta/function/_resolve_parameter.sql
 
-\i util_meta/function/append_parameter.sql
+\i util_meta/function/_append_parameter.sql
 
-\i util_meta/function/cleanup_whitespace.sql
-\i util_meta/function/indent.sql
-\i util_meta/function/is_valid_object.sql
-\i util_meta/function/new_line.sql
-\i util_meta/function/table_noun.sql
-\i util_meta/function/proc_parameters.sql
-\i util_meta/function/calling_parameters.sql
-\i util_meta/function/boolean_casting.sql
-\i util_meta/function/find_private_proc.sql
-\i util_meta/function/view_name.sql
-\i util_meta/function/find_view.sql
+\i util_meta/function/_cleanup_whitespace.sql
+\i util_meta/function/_indent.sql
+\i util_meta/function/_is_valid_object.sql
+\i util_meta/function/_new_line.sql
+\i util_meta/function/_table_noun.sql
+\i util_meta/function/_proc_parameters.sql
+\i util_meta/function/_calling_parameters.sql
+\i util_meta/function/_boolean_casting.sql
+\i util_meta/function/_find_private_proc.sql
+\i util_meta/function/_view_name.sql
+\i util_meta/function/_find_view.sql
 
-\i util_meta/function/get_dt_parent.sql
+\i util_meta/function/_find_dt_parent.sql
 
 -- Snippet functions
-\i util_meta/function/snippet_declare_variables.sql
-\i util_meta/function/snippet_documentation_block.sql
+\i util_meta/function/_snip_declare_variables.sql
+\i util_meta/function/_snip_documentation_block.sql
 
-\i util_meta/function/snippet_log_params.sql
-\i util_meta/function/snippet_object_comment.sql
-\i util_meta/function/snippet_owners_and_grants.sql
-\i util_meta/function/snippet_resolve_id.sql
-\i util_meta/function/snippet_resolve_user_id.sql
+\i util_meta/function/_snip_log_params.sql
+\i util_meta/function/_snip_object_comment.sql
+\i util_meta/function/_snip_owners_and_grants.sql
+\i util_meta/function/_snip_resolve_id.sql
+\i util_meta/function/_snip_resolve_user_id.sql
 
-\i util_meta/function/snippet_function_backmatter.sql
-\i util_meta/function/snippet_function_frontmatter.sql
-\i util_meta/function/snippet_procedure_backmatter.sql
-\i util_meta/function/snippet_procedure_frontmatter.sql
+\i util_meta/function/_snip_function_backmatter.sql
+\i util_meta/function/_snip_function_frontmatter.sql
+\i util_meta/function/_snip_procedure_backmatter.sql
+\i util_meta/function/_snip_procedure_frontmatter.sql
 
-\i util_meta/function/snippet_get_permissions.sql
-\i util_meta/function/snippet_permissions_check.sql
+\i util_meta/function/_snip_get_permissions.sql
+\i util_meta/function/_snip_permissions_check.sql
 
 --------------------------------------------------------------------------------
 -- "Final" DDL generating functions for "regular API" objects
@@ -111,11 +111,11 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 
 --------------------------------------------------------------------------------
 -- JSON utility functions
-\i util_meta/function/json_identifier.sql
+\i util_meta/function/_json_identifier.sql
 
 -- JSON snippet functions
-\i util_meta/function/snippet_json_agg_build_object.sql
-\i util_meta/function/snippet_json_build_object.sql
+\i util_meta/function/_snip_json_agg_build_object.sql
+\i util_meta/function/_snip_json_build_object.sql
 
 -- "Final" DDL generating functions for "JSON API" objects
 \i util_meta/function/mk_json_view.sql

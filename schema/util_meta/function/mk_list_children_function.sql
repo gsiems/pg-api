@@ -35,11 +35,13 @@ If the parent table is not specified then the function will attempt to determine
 
 ASSERTIONS
 
- * In the schema that the list function will be created in there will be:
+ * There is a view for the table (mk_view) being selected from, either in the
+ DDL schema or in a corresponding "private" schema.
 
-   1. a view for the table (mk_view)
+ * In the schema that the get function will be created in there will be a
+ function for resolving the ID of the parent table (mk_resolve_id_function)
 
-   2. a function for resolving the ID of the parent table (mk_resolve_id_function)
+ * If the parent table is not specified then there is only one parent data table
 
 TODO
 
@@ -80,7 +82,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
@@ -89,16 +91,16 @@ BEGIN
     l_audit_columns
         = concat_ws (
             ',',
-            util_meta.resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ),
-            util_meta.resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) ) ;
+            util_meta._resolve_parameter ( 'a_insert_audit_columns'::text, a_insert_audit_columns ),
+            util_meta._resolve_parameter ( 'a_update_audit_columns'::text, a_update_audit_columns ) ) ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
+    l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
 
     l_func_name := 'list_' || l_table_noun || 's' ;
 
-    l_base_view := util_meta.find_view (
+    l_base_view := util_meta._find_view (
         a_proc_schema => a_ddl_schema,
         a_table_schema => a_object_schema,
         a_table_name => a_object_name ) ;
@@ -112,7 +114,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_exclude_binary_data := coalesce ( a_exclude_binary_data, false ) ;
 
-    l_local_vars := util_meta.append_parameter (
+    l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
         a_name => 'l_has_permission',
         a_datatype => 'boolean' ) ;
@@ -181,7 +183,7 @@ BEGIN
         l_parent_param := 'a_' || r.ref_column_names ;
 
         l_parent_noun := regexp_replace (
-            regexp_replace ( l_parent_table, '^d[tv]_', '' ),
+            regexp_replace ( l_parent_table, '^d[mtv]_', '' ),
             '^' || l_ddl_schema || '_',
             '' ) ;
 
@@ -217,7 +219,7 @@ BEGIN
                     OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
-        l_calling_params := util_meta.append_parameter (
+        l_calling_params := util_meta._append_parameter (
             a_parameters => l_calling_params,
             a_name => r.param_name,
             a_datatype => r.data_type,
@@ -230,14 +232,14 @@ BEGIN
     IF array_length ( l_resolve_id_params, 1 ) = 0 THEN
         RETURN 'ERROR: could not resolve PK parameter' ;
     ELSIF array_length ( l_resolve_id_params, 1 ) > 1 THEN
-        l_local_vars := util_meta.append_parameter (
+        l_local_vars := util_meta._append_parameter (
             a_parameters => l_local_vars,
             a_name => l_local_parent_param,
             a_datatype => l_parent_data_type ) ;
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_calling_params := util_meta.append_parameter (
+    l_calling_params := util_meta._append_parameter (
         a_parameters => l_calling_params,
         a_name => 'a_user',
         a_datatype => 'text',
@@ -245,36 +247,36 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_frontmatter (
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type => l_base_view.full_object_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_documentation_block (
+        util_meta._snip_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
+        util_meta._snip_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
-        util_meta.indent ( 1 )
+        util_meta._indent ( 1 )
             || '-- TODO: review this as different applications may have different permissions models.',
-        util_meta.indent ( 1 )
+        util_meta._indent ( 1 )
             || '-- As written, this asserts that the permissions model is table (as opposed to row) based.' ) ;
 
     ----------------------------------------------------------------------------
     IF array_length ( l_resolve_id_params, 1 ) = 1 THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.snippet_get_permissions (
+            util_meta._snip_get_permissions (
                 a_action => 'select',
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_parent_noun,
@@ -289,15 +291,15 @@ BEGIN
     ELSIF array_length ( l_resolve_id_params, 1 ) > 1 THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
             '',
-            util_meta.snippet_resolve_id (
+            util_meta._snip_resolve_id (
                 a_id_param => l_local_parent_param,
                 a_function_schema => l_ddl_schema,
                 a_function_name => l_resolve_id_func,
                 a_resolve_id_params => l_resolve_id_params ),
-            util_meta.snippet_get_permissions (
+            util_meta._snip_get_permissions (
                 a_action => 'select',
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_parent_noun,
@@ -335,27 +337,27 @@ BEGIN
 
         END LOOP ;
 
-        l_select := util_meta.indent ( 2 )
+        l_select := util_meta._indent ( 2 )
             || 'SELECT '
-            || array_to_string ( l_select_cols, ',' || util_meta.new_line () || util_meta.indent ( 4 ) ) ;
+            || array_to_string ( l_select_cols, ',' || util_meta._new_line () || util_meta._indent ( 4 ) ) ;
 
     ELSE
 
-        l_select := util_meta.indent ( 2 ) || 'SELECT *' ;
+        l_select := util_meta._indent ( 2 ) || 'SELECT *' ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
         '',
-        util_meta.indent ( 1 ) || 'RETURN QUERY',
+        util_meta._indent ( 1 ) || 'RETURN QUERY',
         l_select,
-        util_meta.indent ( 3 ) || 'FROM ' || l_base_view.full_object_name,
-        util_meta.indent ( 3 ) || 'WHERE l_has_permission',
-        util_meta.indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
-        util_meta.snippet_function_backmatter (
+        util_meta._indent ( 3 ) || 'FROM ' || l_base_view.full_object_name,
+        util_meta._indent ( 3 ) || 'WHERE l_has_permission',
+        util_meta._indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
+        util_meta._snip_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
@@ -364,7 +366,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

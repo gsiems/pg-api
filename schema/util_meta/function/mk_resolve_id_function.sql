@@ -65,7 +65,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified table exists
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
@@ -105,7 +105,7 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_vars := util_meta.append_parameter (
+    l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
         a_name => 'r',
         a_datatype => 'record' ) ;
@@ -134,7 +134,7 @@ BEGIN
         -- Calling parameters related
         IF r.param_name IS NOT NULL THEN
 
-            l_calling_params := util_meta.append_parameter (
+            l_calling_params := util_meta._append_parameter (
                 a_parameters => l_calling_params,
                 a_name => r.param_name,
                 a_direction => r.direction,
@@ -195,65 +195,65 @@ BEGIN
     END LOOP ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_frontmatter (
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type => l_return_type,
             --a_returns_set => false,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_documentation_block (
+        util_meta._snip_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => 'resolves ' || l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
+        util_meta._snip_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN' ) ;
 
-    l_select_clause := util_meta.indent ( 2 ) || 'SELECT ' || l_pk_col ;
-    l_from_clause := util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name ;
+    l_select_clause := util_meta._indent ( 2 ) || 'SELECT ' || l_pk_col ;
+    l_from_clause := util_meta._indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name ;
 
     ----------------------------------------------------------------------------
     -- Go for the natural key match first
     IF array_length ( l_nk_where, 1 ) > 0 THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
             '',
-            util_meta.indent ( 1 ) || '-- Search for a match on the natural key',
-            util_meta.indent ( 1 ) || 'FOR r IN (',
+            util_meta._indent ( 1 ) || '-- Search for a match on the natural key',
+            util_meta._indent ( 1 ) || 'FOR r IN (',
             l_select_clause,
             l_from_clause,
-            util_meta.indent ( 3 )
+            util_meta._indent ( 3 )
                 || 'WHERE '
-                || array_to_string ( l_nk_where, util_meta.new_line () || util_meta.indent ( 4 ) || 'AND ' )
+                || array_to_string ( l_nk_where, util_meta._new_line () || util_meta._indent ( 4 ) || 'AND ' )
                 || ' ) LOOP',
             '',
-            util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
+            util_meta._indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
             '',
-            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
+            util_meta._indent ( 1 ) || 'END LOOP ;' ) ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
     -- Next, attempt the primary key match
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
         '',
-        util_meta.indent ( 1 ) || '-- Search for a match on the primary key',
-        util_meta.indent ( 1 ) || 'FOR r IN (',
+        util_meta._indent ( 1 ) || '-- Search for a match on the primary key',
+        util_meta._indent ( 1 ) || 'FOR r IN (',
         l_select_clause,
         l_from_clause,
-        util_meta.indent ( 3 ) || 'WHERE ' || l_pk_where || ' ) LOOP',
+        util_meta._indent ( 3 ) || 'WHERE ' || l_pk_where || ' ) LOOP',
         '',
-        util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
+        util_meta._indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
         '',
-        util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
+        util_meta._indent ( 1 ) || 'END LOOP ;' ) ;
 
     ----------------------------------------------------------------------------
     -- Finally, if there is a single-column natural key then attempt the primary
@@ -273,19 +273,19 @@ BEGIN
         END IF ;
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
             '',
-            util_meta.indent ( 1 ) || '-- Search for a match on the natural key parameter matching the primary key',
-            util_meta.indent ( 1 ) || 'FOR r IN (',
+            util_meta._indent ( 1 ) || '-- Search for a match on the natural key parameter matching the primary key',
+            util_meta._indent ( 1 ) || 'FOR r IN (',
             l_select_clause,
             l_from_clause,
-            util_meta.indent ( 3 ) || concat_ws (
+            util_meta._indent ( 3 ) || concat_ws (
                 ' ',
                 'WHERE',
                 l_pk_param,
                 'IS NULL' ),
-            util_meta.indent ( 4 )
+            util_meta._indent ( 4 )
                 || concat_ws (
                     ' ',
                     'AND',
@@ -295,19 +295,19 @@ BEGIN
                     ')',
                     'LOOP' ),
             '',
-            util_meta.indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
+            util_meta._indent ( 2 ) || 'RETURN r.' || l_pk_col || ' ;',
             '',
-            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
+            util_meta._indent ( 1 ) || 'END LOOP ;' ) ;
 
     END IF ;
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
         '',
-        util_meta.indent ( 1 ) || 'RETURN null::' || l_return_type || ' ;',
-        util_meta.snippet_function_backmatter (
+        util_meta._indent ( 1 ) || 'RETURN null::' || l_return_type || ' ;',
+        util_meta._snip_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
@@ -316,7 +316,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

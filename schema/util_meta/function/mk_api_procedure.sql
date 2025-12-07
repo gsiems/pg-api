@@ -72,13 +72,13 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object specified' ;
     END IF ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
+    l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := concat_ws ( '_', a_action, l_table_noun ) ;
     l_full_table_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
 
@@ -86,19 +86,19 @@ BEGIN
 
     ------------------------------------------------------------------------
     -- Determine the private procedure to call.
-    l_private_proc := util_meta.find_private_proc (
+    l_private_proc := util_meta._find_private_proc (
         a_proc_schema => l_ddl_schema,
         a_proc_name => l_proc_name ) ;
 
     ----------------------------------------------------------------------------
     IF a_action IN ( 'update', 'upsert', 'delete' ) THEN
-        l_local_vars := util_meta.append_parameter (
+        l_local_vars := util_meta._append_parameter (
             a_parameters => l_local_vars,
             a_name => 'r',
             a_datatype => 'record' ) ;
     END IF ;
 
-    l_local_vars := util_meta.append_parameter (
+    l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
         a_name => 'l_has_permission',
         a_datatype => 'boolean' ) ;
@@ -129,7 +129,7 @@ BEGIN
                 error_tag,
                 comments,
                 ref_param_comments
-            FROM util_meta.proc_parameters (
+            FROM util_meta._proc_parameters (
                     a_action => a_action,
                     a_object_schema => a_object_schema,
                     a_object_name => a_object_name,
@@ -154,7 +154,7 @@ BEGIN
                         '=>',
                         r.param_name ) ) ;
 
-                l_calling_params := util_meta.append_parameter (
+                l_calling_params := util_meta._append_parameter (
                     a_parameters => l_calling_params,
                     a_name => r.param_name,
                     a_direction => r.param_direction,
@@ -173,7 +173,7 @@ BEGIN
                         '=>',
                         r.param_name ) ) ;
 
-                l_calling_params := util_meta.append_parameter (
+                l_calling_params := util_meta._append_parameter (
                     a_parameters => l_calling_params,
                     a_name => r.param_name,
                     a_direction => r.param_direction,
@@ -192,7 +192,7 @@ BEGIN
                         '=>',
                         r.ref_param_name ) ) ;
 
-                l_calling_params := util_meta.append_parameter (
+                l_calling_params := util_meta._append_parameter (
                     a_parameters => l_calling_params,
                     a_name => r.ref_param_name,
                     a_direction => r.param_direction,
@@ -211,7 +211,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     IF a_action IN ( 'insert', 'upsert' ) THEN
-        l_parent := util_meta.get_dt_parent (
+        l_parent := util_meta._find_dt_parent (
             a_object_schema => a_object_schema,
             a_object_name => a_object_name,
             a_ddl_schema => l_ddl_schema ) ;
@@ -226,34 +226,34 @@ BEGIN
         l_err_line := 'a_err := ''No, or insufficient, privileges, or the parent ('
             || l_parent.parent_noun
             || ') was not found'' ;' ;
-        IF util_meta.is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+        IF util_meta._is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
             l_log_line := 'call util_log.log_exception ( a_err ) ;' ;
         END IF ;
 
         l_perm_chk := concat_ws (
-            util_meta.new_line (),
-            util_meta.indent ( 1 ) || repeat ( '-', 76 ),
-            util_meta.indent ( 1 ) || '-- Verify that the parent record exists',
-            util_meta.indent ( 1 ) || 'FOR r IN (',
-            util_meta.indent ( 2 ) || 'SELECT ' || l_parent.column_names || ' AS param',
-            util_meta.indent ( 3 ) || 'FROM ' || l_parent.parent_full_name,
-            util_meta.indent ( 3 )
+            util_meta._new_line (),
+            util_meta._indent ( 1 ) || repeat ( '-', 76 ),
+            util_meta._indent ( 1 ) || '-- Verify that the parent record exists',
+            util_meta._indent ( 1 ) || 'FOR r IN (',
+            util_meta._indent ( 2 ) || 'SELECT ' || l_parent.column_names || ' AS param',
+            util_meta._indent ( 3 ) || 'FROM ' || l_parent.parent_full_name,
+            util_meta._indent ( 3 )
                 || 'WHERE '
                 || l_parent.parent_column_names
                 || ' = a_'
                 || l_parent.column_names
                 || ' ) LOOP',
             '',
-            util_meta.indent ( 2 ) || 'l_parent_id_param := ''l_'' || r.param ;',
+            util_meta._indent ( 2 ) || 'l_parent_id_param := ''l_'' || r.param ;',
             '',
-            util_meta.indent ( 1 ) || 'END LOOP ;',
+            util_meta._indent ( 1 ) || 'END LOOP ;',
             '',
-            util_meta.indent ( 1 ) || 'IF l_parent_id_param IS NULL THEN',
-            util_meta.indent ( 2 ) || l_err_line,
-            util_meta.indent ( 2 ) || l_log_line,
-            util_meta.indent ( 1 ) || 'END IF ;',
+            util_meta._indent ( 1 ) || 'IF l_parent_id_param IS NULL THEN',
+            util_meta._indent ( 2 ) || l_err_line,
+            util_meta._indent ( 2 ) || l_log_line,
+            util_meta._indent ( 1 ) || 'END IF ;',
             '',
-            util_meta.snippet_permissions_check (
+            util_meta._snip_permissions_check (
                 a_indents => 1,
                 a_action => a_action,
                 a_object_schema => a_object_schema,
@@ -267,9 +267,9 @@ BEGIN
     ELSE
 
         l_perm_chk := concat_ws (
-            util_meta.new_line (),
-            util_meta.indent ( 1 ) || repeat ( '-', 76 ),
-            util_meta.snippet_permissions_check (
+            util_meta._new_line (),
+            util_meta._indent ( 1 ) || repeat ( '-', 76 ),
+            util_meta._snip_permissions_check (
                 a_indents => 0,
                 a_action => a_action,
                 a_object_schema => a_object_schema,
@@ -282,24 +282,24 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_procedure_frontmatter (
+        util_meta._snip_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_procedure_purpose => l_purpose,
             a_language => 'plpgsql'::text,
             a_calling_parameters => l_calling_params,
             a_variables => l_local_vars ),
-        util_meta.snippet_log_params ( a_parameters => l_calling_params ),
+        util_meta._snip_log_params ( a_parameters => l_calling_params ),
         '',
         l_perm_chk,
         '',
-        util_meta.indent ( 1 ) || 'call ' || l_private_proc.full_object_name || ' (',
-        util_meta.indent ( 2 )
-            || array_to_string ( l_proc_args, ',' || util_meta.new_line () || util_meta.indent ( 2 ) )
+        util_meta._indent ( 1 ) || 'call ' || l_private_proc.full_object_name || ' (',
+        util_meta._indent ( 2 )
+            || array_to_string ( l_proc_args, ',' || util_meta._new_line () || util_meta._indent ( 2 ) )
             || ' ) ;',
-        util_meta.snippet_procedure_backmatter (
+        util_meta._snip_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_comment => l_purpose,
@@ -307,7 +307,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

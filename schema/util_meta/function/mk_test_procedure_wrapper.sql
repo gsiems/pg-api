@@ -47,12 +47,12 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified procedure exists
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'procedure' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'procedure' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
     -- check that util_log schema exists
-    IF NOT util_meta.is_valid_object ( 'util_log', 'log_begin', 'procedure' ) THEN
+    IF NOT util_meta._is_valid_object ( 'util_log', 'log_begin', 'procedure' ) THEN
         l_uses_logging := true ;
     END IF ;
 
@@ -71,7 +71,7 @@ BEGIN
     ----------------------------------------------------------------------------
     IF l_proc_type IN ( 'insert', 'update', 'upsert' ) THEN
 
-        l_local_params := util_meta.append_parameter (
+        l_local_params := util_meta._append_parameter (
             a_parameters => l_local_params,
             a_name => 'r',
             a_datatype => 'record' ) ;
@@ -88,7 +88,7 @@ BEGIN
                     ( 'l_label' )
                 ) AS dat ( var_name ) ) LOOP
 
-        l_local_params := util_meta.append_parameter (
+        l_local_params := util_meta._append_parameter (
             a_parameters => l_local_params,
             a_name => r.var_name,
             a_datatype => 'text' ) ;
@@ -108,7 +108,7 @@ BEGIN
                 local_var_name,
                 column_name,
                 comments
-            FROM util_meta.calling_parameters (
+            FROM util_meta._calling_parameters (
                     a_object_schema => a_object_schema,
                     a_object_name => a_object_name,
                     a_object_type => 'procedure' ) ) LOOP
@@ -117,7 +117,7 @@ BEGIN
 
         IF r.param_direction IN ( 'inout', 'out' ) THEN
 
-            l_local_params := util_meta.append_parameter (
+            l_local_params := util_meta._append_parameter (
                 a_parameters => l_local_params,
                 a_name => r.local_var_name,
                 a_datatype => r.data_type ) ;
@@ -127,7 +127,7 @@ BEGIN
             IF r.param_name <> 'a_err' THEN
                 l_shadow_init := array_append (
                     l_shadow_init,
-                    util_meta.indent ( 1 ) || concat_ws (
+                    util_meta._indent ( 1 ) || concat_ws (
                         ' ',
                         r.local_var_name,
                         ':=',
@@ -137,7 +137,7 @@ BEGIN
 
             l_proc_params := array_append (
                 l_proc_params,
-                util_meta.indent ( 2 ) || concat_ws (
+                util_meta._indent ( 2 ) || concat_ws (
                     ' ',
                     r.param_name,
                     '=>',
@@ -147,7 +147,7 @@ BEGIN
 
             l_proc_params := array_append (
                 l_proc_params,
-                util_meta.indent ( 2 ) || concat_ws (
+                util_meta._indent ( 2 ) || concat_ws (
                     ' ',
                     r.param_name,
                     '=>',
@@ -157,7 +157,7 @@ BEGIN
 
         IF r.param_direction <> 'out' THEN
 
-            l_func_params := util_meta.append_parameter (
+            l_func_params := util_meta._append_parameter (
                 a_parameters => l_func_params,
                 a_name => r.param_name,
                 a_direction => 'in',
@@ -168,13 +168,13 @@ BEGIN
 
     END LOOP ;
 
-    l_func_params := util_meta.append_parameter (
+    l_func_params := util_meta._append_parameter (
         a_parameters => l_func_params,
         a_name => 'a_label',
         a_direction => 'in',
         a_datatype => 'text' ) ;
 
-    l_func_params := util_meta.append_parameter (
+    l_func_params := util_meta._append_parameter (
         a_parameters => l_func_params,
         a_name => 'a_should_pass',
         a_direction => 'in',
@@ -182,38 +182,38 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_frontmatter (
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => a_test_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type => 'boolean',
             a_returns_set => false,
             a_calling_parameters => l_func_params ),
-        util_meta.snippet_declare_variables ( a_variables => l_local_params ),
+        util_meta._snip_declare_variables ( a_variables => l_local_params ),
         '',
         'BEGIN',
         '',
-        util_meta.indent ( 1 ) || 'l_label := concat_ws ( '' '', ''pgTap test'', quote_ident ( a_label ) ) ;',
+        util_meta._indent ( 1 ) || 'l_label := concat_ws ( '' '', ''pgTap test'', quote_ident ( a_label ) ) ;',
         '' ) ;
 
     IF l_uses_logging THEN
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || 'IF coalesce ( a_should_pass, true ) THEN',
-            util_meta.indent ( 2 ) || 'call util_log.log_begin ( concat_ws ( '' '', l_label, ''should pass'' ) ) ;',
-            util_meta.indent ( 1 ) || 'ELSE',
-            util_meta.indent ( 2 ) || 'call util_log.log_begin ( concat_ws ( '' '', l_label, ''should fail'' ) ) ;',
-            util_meta.indent ( 1 ) || 'END IF ;',
+            util_meta._indent ( 1 ) || 'IF coalesce ( a_should_pass, true ) THEN',
+            util_meta._indent ( 2 ) || 'call util_log.log_begin ( concat_ws ( '' '', l_label, ''should pass'' ) ) ;',
+            util_meta._indent ( 1 ) || 'ELSE',
+            util_meta._indent ( 2 ) || 'call util_log.log_begin ( concat_ws ( '' '', l_label, ''should fail'' ) ) ;',
+            util_meta._indent ( 1 ) || 'END IF ;',
             '' ) ;
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        array_to_string ( l_shadow_init, util_meta.new_line () ),
+        array_to_string ( l_shadow_init, util_meta._new_line () ),
         '' ) ;
 
     ----------------------------------------------------------------------------
@@ -221,15 +221,15 @@ BEGIN
     IF l_proc_type IN ( 'insert', 'update', 'upsert', 'delete' ) THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
             '',
-            util_meta.indent ( 1 ) || concat_ws (
+            util_meta._indent ( 1 ) || concat_ws (
                 ' ',
                 'call',
                 a_object_schema || '.' || a_object_name,
                 '(' ),
-            array_to_string ( l_proc_params, ',' || util_meta.new_line () ) || ' ) ;' ) ;
+            array_to_string ( l_proc_params, ',' || util_meta._new_line () ) || ' ) ;' ) ;
 
     END IF ;
 
@@ -240,25 +240,25 @@ BEGIN
         IF l_shadow_names[idx] = 'l_err' THEN
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
                 '',
-                util_meta.indent ( 1 ) || 'IF ' || l_shadow_names[idx] || ' IS NOT NULL THEN',
-                util_meta.indent ( 2 ) || '--RAISE NOTICE E''%'', ' || l_shadow_names[idx] || ' ;' ) ;
+                util_meta._indent ( 1 ) || 'IF ' || l_shadow_names[idx] || ' IS NOT NULL THEN',
+                util_meta._indent ( 2 ) || '--RAISE NOTICE E''%'', ' || l_shadow_names[idx] || ' ;' ) ;
 
             IF l_uses_logging THEN
                 l_result := concat_ws (
-                    util_meta.new_line (),
+                    util_meta._new_line (),
                     l_result,
-                    util_meta.indent ( 2 )
+                    util_meta._indent ( 2 )
                         || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''failed'' ) ) ;' ) ;
             END IF ;
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
-                util_meta.indent ( 2 ) || 'RETURN false ;',
-                util_meta.indent ( 1 ) || 'END IF ;' ) ;
+                util_meta._indent ( 2 ) || 'RETURN false ;',
+                util_meta._indent ( 1 ) || 'END IF ;' ) ;
 
         END IF ;
 
@@ -269,25 +269,25 @@ BEGIN
         IF l_shadow_names[idx] NOT IN ( 'r', 'l_err', 'l_pg_cx', 'l_pg_ed', 'l_pg_ec', 'l_label' ) THEN
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
                 '',
-                util_meta.indent ( 1 ) || 'IF ' || l_shadow_names[idx] || ' IS NULL THEN',
-                util_meta.indent ( 2 ) || '--RAISE NOTICE ''' || l_shadow_names[idx] || ' is null'' ;' ) ;
+                util_meta._indent ( 1 ) || 'IF ' || l_shadow_names[idx] || ' IS NULL THEN',
+                util_meta._indent ( 2 ) || '--RAISE NOTICE ''' || l_shadow_names[idx] || ' is null'' ;' ) ;
 
             IF l_uses_logging THEN
                 l_result := concat_ws (
-                    util_meta.new_line (),
+                    util_meta._new_line (),
                     l_result,
-                    util_meta.indent ( 2 )
+                    util_meta._indent ( 2 )
                         || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''failed'' ) ) ;' ) ;
             END IF ;
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
-                util_meta.indent ( 2 ) || 'RETURN false ;',
-                util_meta.indent ( 1 ) || 'END IF ;' ) ;
+                util_meta._indent ( 2 ) || 'RETURN false ;',
+                util_meta._indent ( 1 ) || 'END IF ;' ) ;
 
         END IF ;
 
@@ -305,14 +305,12 @@ BEGIN
 
 /*
 
-util_meta.find_view (
+util_meta._find_view (
     a_proc_schema text DEFAULT NULL,
     a_table_schema text DEFAULT NULL,
     a_table_name text DEFAULT NULL )
 
 */
-
-
 
         FOR r IN (
             WITH pfx AS (
@@ -439,28 +437,28 @@ util_meta.find_view (
             -- NB: We select against the view based on the assertion that, if there are any transformations to the data,
             -- the view data/datatypes will better match the calling parameters data/datatypes
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
                 '',
-                util_meta.indent ( 1 ) || 'FOR r IN (',
-                util_meta.indent ( 2 )
+                util_meta._indent ( 1 ) || 'FOR r IN (',
+                util_meta._indent ( 2 )
                     || 'SELECT '
-                    || array_to_string ( l_column_names, ',' || util_meta.new_line () || util_meta.indent ( 4 ) ),
-                util_meta.indent ( 3 ) || 'FROM ' || l_view_schema || '.' || l_view_name,
-                util_meta.indent ( 3 )
+                    || array_to_string ( l_column_names, ',' || util_meta._new_line () || util_meta._indent ( 4 ) ),
+                util_meta._indent ( 3 ) || 'FROM ' || l_view_schema || '.' || l_view_name,
+                util_meta._indent ( 3 )
                     || 'WHERE '
                     || array_to_string (
                         l_where_cols,
-                        ',' || util_meta.new_line () || util_meta.indent ( 5 ) || 'AND ' )
+                        ',' || util_meta._new_line () || util_meta._indent ( 5 ) || 'AND ' )
                     || ' ) LOOP' ) ;
 
             FOREACH l_column_name IN array l_column_names LOOP
 
                 l_result := concat_ws (
-                    util_meta.new_line (),
+                    util_meta._new_line (),
                     l_result,
                     '',
-                    util_meta.indent ( 2 )
+                    util_meta._indent ( 2 )
                         || 'IF a_'
                         || l_column_name
                         || ' IS NOT NULL AND a_'
@@ -468,7 +466,7 @@ util_meta.find_view (
                         || ' IS DISTINCT FROM r.'
                         || l_column_name
                         || ' THEN',
-                    util_meta.indent ( 3 )
+                    util_meta._indent ( 3 )
                         || 'RAISE NOTICE E'''
                         || l_column_name
                         || ' did not update. expected %, got %'', a_'
@@ -479,30 +477,30 @@ util_meta.find_view (
 
                 IF l_uses_logging THEN
                     l_result := concat_ws (
-                        util_meta.new_line (),
+                        util_meta._new_line (),
                         l_result,
-                        util_meta.indent ( 3 )
+                        util_meta._indent ( 3 )
                             || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''failed'' ) ) ;' ) ;
                 END IF ;
 
                 l_result := concat_ws (
-                    util_meta.new_line (),
+                    util_meta._new_line (),
                     l_result,
-                    util_meta.indent ( 3 ) || 'RETURN false ;',
-                    util_meta.indent ( 2 ) || 'END IF ;' ) ;
+                    util_meta._indent ( 3 ) || 'RETURN false ;',
+                    util_meta._indent ( 2 ) || 'END IF ;' ) ;
 
             END LOOP ;
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
                 '',
-                util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
+                util_meta._indent ( 1 ) || 'END LOOP ;' ) ;
 
         ELSE
 
             l_result := concat_ws (
-                util_meta.new_line (),
+                util_meta._new_line (),
                 l_result,
                 '',
                 '-- TODO: could not resolve the table/view meta-data for reviewing data changes',
@@ -516,45 +514,45 @@ util_meta.find_view (
 
     --------------------------------------------------------------------
     -- end-matter
-    l_result := concat_ws ( util_meta.new_line (), l_result, '' ) ;
+    l_result := concat_ws ( util_meta._new_line (), l_result, '' ) ;
 
     IF l_uses_logging THEN
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''passed'' ) ) ;' ) ;
+            util_meta._indent ( 1 ) || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''passed'' ) ) ;' ) ;
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.indent ( 1 ) || 'RETURN true ;',
+        util_meta._indent ( 1 ) || 'RETURN true ;',
         '',
         'EXCEPTION',
-        util_meta.indent ( 1 ) || 'WHEN others THEN',
-        util_meta.indent ( 2 ) || 'GET STACKED DIAGNOSTICS l_pg_cx = PG_CONTEXT,',
-        util_meta.indent ( 8 ) || 'l_pg_ed = PG_EXCEPTION_DETAIL,',
-        util_meta.indent ( 8 ) || 'l_pg_ec = PG_EXCEPTION_CONTEXT ;',
-        util_meta.indent ( 2 )
+        util_meta._indent ( 1 ) || 'WHEN others THEN',
+        util_meta._indent ( 2 ) || 'GET STACKED DIAGNOSTICS l_pg_cx = PG_CONTEXT,',
+        util_meta._indent ( 8 ) || 'l_pg_ed = PG_EXCEPTION_DETAIL,',
+        util_meta._indent ( 8 ) || 'l_pg_ec = PG_EXCEPTION_CONTEXT ;',
+        util_meta._indent ( 2 )
             || 'l_err := format ( ''%s - %s:\n    %s\n     %s\n   %s'', SQLSTATE, SQLERRM, l_pg_cx, l_pg_ed, l_pg_ec ) ;',
-        util_meta.indent ( 2 ) || 'call util_log.log_exception ( l_err ) ;',
-        util_meta.indent ( 2 ) || 'RAISE NOTICE E''EXCEPTION: %'', l_err ;' ) ;
+        util_meta._indent ( 2 ) || 'call util_log.log_exception ( l_err ) ;',
+        util_meta._indent ( 2 ) || 'RAISE NOTICE E''EXCEPTION: %'', l_err ;' ) ;
 
     IF l_uses_logging THEN
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 2 ) || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''failed'' ) ) ;' ) ;
+            util_meta._indent ( 2 ) || 'call util_log.log_info ( concat_ws ( '' '', l_label, ''failed'' ) ) ;' ) ;
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.indent ( 2 ) || 'RETURN false ;',
+        util_meta._indent ( 2 ) || 'RETURN false ;',
         'END ;',
         '$' || '$ ;' ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

@@ -44,13 +44,13 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
+    l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
     l_proc_name := 'priv_delete_' || l_table_noun ;
 
     l_assertions := array_append (
@@ -71,7 +71,7 @@ BEGIN
                 param_direction,
                 param_data_type,
                 comments
-            FROM util_meta.proc_parameters (
+            FROM util_meta._proc_parameters (
                     a_action => 'delete',
                     a_object_schema => a_object_schema,
                     a_object_name => a_object_name,
@@ -89,7 +89,7 @@ BEGIN
                     r.param_name ) ) ;
         END IF ;
 
-        l_calling_params := util_meta.append_parameter (
+        l_calling_params := util_meta._append_parameter (
             a_parameters => l_calling_params,
             a_name => r.param_name,
             a_direction => r.param_direction,
@@ -104,29 +104,29 @@ BEGIN
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
-        util_meta.snippet_procedure_frontmatter (
+        util_meta._new_line (),
+        util_meta._snip_procedure_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_procedure_purpose => 'performs a delete on ' || a_object_name,
             a_language => 'plpgsql',
             a_assertions => l_assertions,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_log_params ( a_parameters => l_calling_params ),
+        util_meta._snip_log_params ( a_parameters => l_calling_params ),
         '',
-        util_meta.indent ( 1 ) || 'DELETE FROM ' || a_object_schema || '.' || a_object_name,
-        util_meta.indent ( 2 )
+        util_meta._indent ( 1 ) || 'DELETE FROM ' || a_object_schema || '.' || a_object_name,
+        util_meta._indent ( 2 )
             || 'WHERE '
-            || array_to_string ( l_where_cols, util_meta.new_line () || util_meta.indent ( 3 ) || 'AND ' )
+            || array_to_string ( l_where_cols, util_meta._new_line () || util_meta._indent ( 3 ) || 'AND ' )
             || ' ;',
-        util_meta.snippet_procedure_backmatter (
+        util_meta._snip_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
             a_comment => NULL::text,
             a_owner => a_owner,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

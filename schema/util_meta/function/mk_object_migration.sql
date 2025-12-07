@@ -39,7 +39,7 @@ DECLARE
 
 BEGIN
 
-    l_new_line := util_meta.new_line () ;
+    l_new_line := util_meta._new_line () ;
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
@@ -92,7 +92,7 @@ BEGIN
 
         ------------------------------------------------------------------------
         -- Ensure that a backup table does not exist
-        IF util_meta.is_valid_object ( 'bak_' || a_object_schema, a_object_name, 'table' ) THEN
+        IF util_meta._is_valid_object ( 'bak_' || a_object_schema, a_object_name, 'table' ) THEN
             RETURN 'ERROR: a backup table already exists' ;
         END IF ;
 
@@ -159,20 +159,20 @@ BEGIN
                 l_seq_stmt := concat_ws (
                     l_new_line,
                     'WITH cv AS (',
-                    util_meta.indent ( 1 ) || 'SELECT 1 AS rn,',
-                    util_meta.indent ( 3 ) || 'last_value',
-                    util_meta.indent ( 2 ) || 'FROM ' || l_full_seq_name,
+                    util_meta._indent ( 1 ) || 'SELECT 1 AS rn,',
+                    util_meta._indent ( 3 ) || 'last_value',
+                    util_meta._indent ( 2 ) || 'FROM ' || l_full_seq_name,
                     '),',
                     'mv AS (',
-                    util_meta.indent ( 1 ) || 'SELECT 1 AS rn,',
-                    util_meta.indent ( 3 ) || 'max ( ' || r.column_name || ' ) AS max_value',
-                    util_meta.indent ( 2 ) || 'FROM ' || l_full_object_name,
+                    util_meta._indent ( 1 ) || 'SELECT 1 AS rn,',
+                    util_meta._indent ( 3 ) || 'max ( ' || r.column_name || ' ) AS max_value',
+                    util_meta._indent ( 2 ) || 'FROM ' || l_full_object_name,
                     ')',
                     'SELECT pg_catalog.setval ( ' || quote_literal ( l_full_seq_name ) || ', mv.max_value, true )',
-                    util_meta.indent ( 1 ) || 'FROM mv',
-                    util_meta.indent ( 1 ) || 'JOIN cv',
-                    util_meta.indent ( 2 ) || 'ON ( cv.rn = mv.rn )',
-                    util_meta.indent ( 1 ) || 'WHERE mv.max_value > cv.last_value ;' ) ;
+                    util_meta._indent ( 1 ) || 'FROM mv',
+                    util_meta._indent ( 1 ) || 'JOIN cv',
+                    util_meta._indent ( 2 ) || 'ON ( cv.rn = mv.rn )',
+                    util_meta._indent ( 1 ) || 'WHERE mv.max_value > cv.last_value ;' ) ;
 
                 l_set_sequences := array_append ( l_set_sequences, l_seq_stmt ) ;
 
@@ -189,17 +189,17 @@ BEGIN
             l_result,
             '',
             'INSERT INTO ' || l_full_object_name || ' (',
-            util_meta.indent ( 3 )
-                || array_to_string ( l_columns, ',' || l_new_line || util_meta.indent ( 3 ) )
+            util_meta._indent ( 3 )
+                || array_to_string ( l_columns, ',' || l_new_line || util_meta._indent ( 3 ) )
                 || ' )',
-            util_meta.indent ( 1 )
+            util_meta._indent ( 1 )
                 || 'SELECT '
-                || array_to_string ( l_columns, ',' || l_new_line || util_meta.indent ( 3 ) ),
-            util_meta.indent ( 2 ) || 'FROM bak_' || a_object_schema || '.' || a_object_name,
-            util_meta.indent ( 2 )
+                || array_to_string ( l_columns, ',' || l_new_line || util_meta._indent ( 3 ) ),
+            util_meta._indent ( 2 ) || 'FROM bak_' || a_object_schema || '.' || a_object_name,
+            util_meta._indent ( 2 )
                 || concat_ws (
                     ' ',
-                    'ORDER BY ' || array_to_string ( l_pk_cols, ',' || l_new_line || util_meta.indent ( 3 ) ),
+                    'ORDER BY ' || array_to_string ( l_pk_cols, ',' || l_new_line || util_meta._indent ( 3 ) ),
                     ';' ) ) ;
 
         ------------------------------------------------------------------------
@@ -481,17 +481,17 @@ BEGIN
             WITH base AS (
                 SELECT privilege_type,
                         CASE
-                            WHEN object_type NOT IN ( 'table', 'view', 'materialized view', 'foreign table' )
-                                THEN upper ( object_type )
+                            WHEN base_object_type NOT IN ( 'table', 'view', 'materialized view', 'foreign table' )
+                                THEN upper ( base_object_type )
                             END AS obj_type,
                         CASE
                             WHEN object_type IN ( 'schema', 'database' ) THEN object_name
-                            ELSE object_schema || '.' || object_name
+                            ELSE schema_name || '.' || object_name
                             END AS obj_name,
                         grantee,
                         CASE WHEN is_grantable THEN 'WITH GRANT OPTION' END AS with_grant
                     FROM util_meta.object_grants
-                    WHERE object_schema = r.schema_name
+                    WHERE schema_name = r.schema_name
                         AND object_name = r.object_name
                     ORDER BY privilege_type,
                         grantee
@@ -530,12 +530,12 @@ BEGIN
                         END AS obj_type,
                     CASE
                         WHEN object_type IN ( 'schema', 'database' ) THEN object_name
-                        ELSE object_schema || '.' || object_name
+                        ELSE schema_name || '.' || object_name
                         END AS obj_name,
                     grantee,
                     CASE WHEN is_grantable THEN 'WITH GRANT OPTION' END AS with_grant
                 FROM util_meta.object_grants
-                WHERE object_schema = a_object_schema
+                WHERE schema_name = a_object_schema
                     AND object_name = a_object_name
                 ORDER BY privilege_type,
                     grantee

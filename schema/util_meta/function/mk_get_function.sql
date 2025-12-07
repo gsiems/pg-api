@@ -23,11 +23,11 @@ Function mk_get_function generates a draft get item function for a table.
 
 ASSERTIONS
 
- * In the schema that the get function will be created in there will be:
+ * There is a view for the table (mk_view) being selected from, either in the
+ DDL schema or in a corresponding "private" schema.
 
-   1. a view for the table (mk_view)
-
-   2. a function for resolving the ID of the table (mk_resolve_id_function)
+ * In the schema that the get function will be created in there will be a
+ function for resolving the ID of the table (mk_resolve_id_function)
 
 */
 
@@ -56,7 +56,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
@@ -65,15 +65,17 @@ BEGIN
 
     --------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
+    l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
     l_func_name := 'get_' || l_table_noun ;
 
-    l_base_view := util_meta.find_view (
+    l_base_view := util_meta._find_view (
         a_proc_schema => a_ddl_schema,
         a_table_schema => a_object_schema,
         a_table_name => a_object_name ) ;
 
     l_doc_item := 'Returns the specified ' || replace ( l_table_noun, '_', ' ' ) || ' entry' ;
+
+    -- TODO need to add search for resolve_id_func
 
     l_resolve_id_func := concat_ws (
         '_',
@@ -88,7 +90,7 @@ BEGIN
     END IF ;
 
     ----------------------------------------------------------------------------
-    l_local_vars := util_meta.append_parameter (
+    l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
         a_name => 'l_has_permission',
         a_datatype => 'boolean' ) ;
@@ -112,7 +114,7 @@ BEGIN
                     OR is_nk )
             ORDER BY ordinal_position ) LOOP
 
-        l_calling_params := util_meta.append_parameter (
+        l_calling_params := util_meta._append_parameter (
             a_parameters => l_calling_params,
             a_name => r.param_name,
             a_datatype => r.data_type,
@@ -137,13 +139,13 @@ BEGIN
 
         l_pk_param := 'l_' || l_pk_column_name ;
 
-        l_local_vars := util_meta.append_parameter (
+        l_local_vars := util_meta._append_parameter (
             a_parameters => l_local_vars,
             a_name => l_pk_param,
             a_datatype => l_pk_data_type ) ;
 
         ------------------------------------------------------------------------
-        l_resolve_id := util_meta.snippet_resolve_id (
+        l_resolve_id := util_meta._snip_resolve_id (
             a_id_param => l_pk_param,
             a_function_schema => l_ddl_schema,
             a_function_name => l_resolve_id_func,
@@ -161,7 +163,7 @@ BEGIN
         l_pk_param ) ;
 
     ----------------------------------------------------------------------------
-    l_calling_params := util_meta.append_parameter (
+    l_calling_params := util_meta._append_parameter (
         a_parameters => l_calling_params,
         a_name => 'a_user',
         a_datatype => 'text',
@@ -169,47 +171,47 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_frontmatter (
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type => l_base_view.full_object_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_documentation_block (
+        util_meta._snip_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
+        util_meta._snip_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN' ) ;
 
     IF l_resolve_id IS NOT NULL THEN
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
             '',
             l_resolve_id ) ;
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_get_permissions (
+        util_meta._snip_get_permissions (
             a_action => 'select',
             a_ddl_schema => l_ddl_schema,
             a_object_type => l_table_noun,
             a_id_param => l_pk_param ),
         '',
-        util_meta.indent ( 1 ) || 'RETURN QUERY',
-        util_meta.indent ( 2 ) || 'SELECT *',
-        util_meta.indent ( 3 ) || 'FROM ' || l_base_view.full_object_name,
-        util_meta.indent ( 3 ) || 'WHERE l_has_permission',
-        util_meta.indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
-        util_meta.snippet_function_backmatter (
+        util_meta._indent ( 1 ) || 'RETURN QUERY',
+        util_meta._indent ( 2 ) || 'SELECT *',
+        util_meta._indent ( 3 ) || 'FROM ' || l_base_view.full_object_name,
+        util_meta._indent ( 3 ) || 'WHERE l_has_permission',
+        util_meta._indent ( 4 ) || 'AND ' || l_where_clause || ' ;',
+        util_meta._snip_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
@@ -218,7 +220,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

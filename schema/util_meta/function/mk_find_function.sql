@@ -25,7 +25,8 @@ Function mk_find_function generates a draft "find matching entries" function for
 
 ASSERTIONS
 
- * There will exist a view for the table in the same schema as the function to be created
+ * There is a view for the table (mk_view) being selected from, either in the
+ DDL schema or in a corresponding "private" schema.
 
 */
 DECLARE
@@ -52,16 +53,16 @@ BEGIN
 
     --------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
     --------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_table_noun := util_meta.table_noun ( a_object_name, l_ddl_schema ) ;
+    l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
 
     l_func_name := 'find_' || l_table_noun ;
-    l_base_view := util_meta.find_view (
+    l_base_view := util_meta._find_view (
         a_proc_schema => a_ddl_schema,
         a_table_schema => a_object_schema,
         a_table_name => a_object_name ) ;
@@ -79,26 +80,26 @@ BEGIN
     ----------------------------------------------------------------------------
     IF l_is_row_based THEN
 
-        l_local_vars := util_meta.append_parameter (
+        l_local_vars := util_meta._append_parameter (
             a_parameters => l_local_vars,
             a_name => 'r',
             a_datatype => 'record' ) ;
 
     END IF ;
 
-    l_local_vars := util_meta.append_parameter (
+    l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
         a_name => 'l_has_permission',
         a_datatype => 'boolean' ) ;
 
     ----------------------------------------------------------------------------
-    l_calling_params := util_meta.append_parameter (
+    l_calling_params := util_meta._append_parameter (
         a_parameters => l_calling_params,
         a_name => 'a_user',
         a_datatype => 'text',
         a_description => 'The ID or username of the user doing the search' ) ;
 
-    l_calling_params := util_meta.append_parameter (
+    l_calling_params := util_meta._append_parameter (
         a_parameters => l_calling_params,
         a_name => 'a_search_term',
         a_datatype => 'text',
@@ -132,55 +133,55 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
-        util_meta.snippet_function_frontmatter (
+        util_meta._new_line (),
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
             a_return_type => l_base_view.full_object_name,
             a_returns_set => true,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_documentation_block (
+        util_meta._snip_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_declare_variables ( a_variables => l_local_vars ),
+        util_meta._snip_declare_variables ( a_variables => l_local_vars ),
         '',
         'BEGIN',
         '',
-        util_meta.indent ( 1 )
+        util_meta._indent ( 1 )
             || '-- TODO: review this as different applications may have different permissions models.',
-        util_meta.indent ( 1 ) || '-- TODO: verify the columns to search on' ) ;
+        util_meta._indent ( 1 ) || '-- TODO: verify the columns to search on' ) ;
 
     ----------------------------------------------------------------------------
     l_found_cte := concat_ws (
-        util_meta.new_line (),
-        util_meta.indent ( 2 ) || 'found AS (',
-        util_meta.indent ( 3 )
+        util_meta._new_line (),
+        util_meta._indent ( 2 ) || 'found AS (',
+        util_meta._indent ( 3 )
             || 'SELECT '
-            || array_to_string ( l_pk_cols, ',' || util_meta.new_line () || util_meta.indent ( 6 ) ),
-        util_meta.indent ( 4 ) || 'FROM base',
-        util_meta.indent ( 4 ) || 'WHERE ( ( a_search_term IS NOT NULL',
-        util_meta.indent ( 7 ) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
-        util_meta.indent ( 7 ) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
-        util_meta.indent ( 6 )
+            || array_to_string ( l_pk_cols, ',' || util_meta._new_line () || util_meta._indent ( 6 ) ),
+        util_meta._indent ( 4 ) || 'FROM base',
+        util_meta._indent ( 4 ) || 'WHERE ( ( a_search_term IS NOT NULL',
+        util_meta._indent ( 7 ) || 'AND trim ( a_search_term ) <> ' || quote_literal ( '' ),
+        util_meta._indent ( 7 ) || 'AND lower ( base::text ) ~ lower ( a_search_term ) )',
+        util_meta._indent ( 6 )
             || 'OR ( trim ( coalesce ( a_search_term, '
             || quote_literal ( '' )
             || ' ) ) = '
             || quote_literal ( '' )
             || ' ) )',
-        util_meta.indent ( 2 ) || ')' ) ;
+        util_meta._indent ( 2 ) || ')' ) ;
 
     ----------------------------------------------------------------------------
     l_select := concat_ws (
-        util_meta.new_line (),
-        util_meta.indent ( 2 ) || 'SELECT de.*',
-        util_meta.indent ( 3 ) || 'FROM ' || l_base_view.full_object_name || ' de',
-        util_meta.indent ( 3 ) || 'JOIN found',
-        util_meta.indent ( 4 )
+        util_meta._new_line (),
+        util_meta._indent ( 2 ) || 'SELECT de.*',
+        util_meta._indent ( 3 ) || 'FROM ' || l_base_view.full_object_name || ' de',
+        util_meta._indent ( 3 ) || 'JOIN found',
+        util_meta._indent ( 4 )
             || 'ON ( '
-            || array_to_string ( l_join_clause, util_meta.new_line () || util_meta.indent ( 5 ) || 'AND ' )
+            || array_to_string ( l_join_clause, util_meta._new_line () || util_meta._indent ( 5 ) || 'AND ' )
             || ' )' ) ;
 
     ----------------------------------------------------------------------------
@@ -188,64 +189,64 @@ BEGIN
     IF l_is_row_based THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || '-- ASSERTION: the permissions model is row (as opposed to table) based.',
+            util_meta._indent ( 1 ) || '-- ASSERTION: the permissions model is row (as opposed to table) based.',
             '',
-            util_meta.indent ( 1 ) || 'FOR r IN (',
-            util_meta.indent ( 2 ) || 'WITH base AS (',
-            util_meta.indent ( 3 )
+            util_meta._indent ( 1 ) || 'FOR r IN (',
+            util_meta._indent ( 2 ) || 'WITH base AS (',
+            util_meta._indent ( 3 )
                 || 'SELECT '
-                || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
-            util_meta.indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
-            util_meta.indent ( 2 ) || '),',
+                || array_to_string ( l_search_cols, ',' || util_meta._new_line () || util_meta._indent ( 5 ) ),
+            util_meta._indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
+            util_meta._indent ( 2 ) || '),',
             l_found_cte,
             l_select,
-            util_meta.indent ( 2 ) || ') LOOP',
-            util_meta.snippet_get_permissions (
+            util_meta._indent ( 2 ) || ') LOOP',
+            util_meta._snip_get_permissions (
                 a_indents => 1,
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_table_noun,
                 a_action => 'select',
                 a_id_param => 'r.' || l_pk_cols[1] ),
             '',
-            util_meta.indent ( 2 ) || 'IF l_has_permission THEN',
-            util_meta.indent ( 3 ) || 'RETURN NEXT r ;',
-            util_meta.indent ( 2 ) || 'END IF ;',
+            util_meta._indent ( 2 ) || 'IF l_has_permission THEN',
+            util_meta._indent ( 3 ) || 'RETURN NEXT r ;',
+            util_meta._indent ( 2 ) || 'END IF ;',
             '',
-            util_meta.indent ( 1 ) || 'END LOOP ;' ) ;
+            util_meta._indent ( 1 ) || 'END LOOP ;' ) ;
 
     ELSE
 
         -- is table based
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || '-- ASSERTION: the permissions model is table (as opposed to row) based.',
-            util_meta.snippet_get_permissions (
+            util_meta._indent ( 1 ) || '-- ASSERTION: the permissions model is table (as opposed to row) based.',
+            util_meta._snip_get_permissions (
                 a_ddl_schema => l_ddl_schema,
                 a_object_type => l_table_noun,
                 a_action => 'select',
                 a_id_param => 'null' ),
             '',
-            util_meta.indent ( 1 ) || 'RETURN QUERY',
-            util_meta.indent ( 2 ) || 'WITH base AS (',
-            util_meta.indent ( 3 )
+            util_meta._indent ( 1 ) || 'RETURN QUERY',
+            util_meta._indent ( 2 ) || 'WITH base AS (',
+            util_meta._indent ( 3 )
                 || 'SELECT '
-                || array_to_string ( l_search_cols, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
-            util_meta.indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
-            util_meta.indent ( 4 ) || 'WHERE l_has_permission',
-            util_meta.indent ( 2 ) || '),',
+                || array_to_string ( l_search_cols, ',' || util_meta._new_line () || util_meta._indent ( 5 ) ),
+            util_meta._indent ( 4 ) || 'FROM ' || l_base_view.full_object_name,
+            util_meta._indent ( 4 ) || 'WHERE l_has_permission',
+            util_meta._indent ( 2 ) || '),',
             l_found_cte,
             l_select || ' ;' ) ;
 
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_backmatter (
+        util_meta._snip_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
@@ -254,7 +255,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

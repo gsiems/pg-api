@@ -48,7 +48,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified object is valid
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'function' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'function' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
@@ -87,7 +87,7 @@ BEGIN
                     l_full_view_name AS full_view_name,
                     column_name,
                     comments
-                FROM util_meta.calling_parameters (
+                FROM util_meta._calling_parameters (
                         a_object_schema => a_object_schema,
                         a_object_name => a_object_name,
                         a_object_type => 'function' )
@@ -108,7 +108,7 @@ BEGIN
                 ON ( columns.full_object_name = args.full_view_name
                     AND columns.column_name = args.column_name ) ) LOOP
 
-        l_calling_params := util_meta.append_parameter (
+        l_calling_params := util_meta._append_parameter (
             a_parameters => l_calling_params,
             a_name => r.param_name,
             a_direction => r.param_direction,
@@ -122,7 +122,7 @@ BEGIN
     -- are in the same schema
     FOR r IN (
         SELECT column_name,
-                util_meta.json_identifier ( column_name ) AS json_alias
+                util_meta._json_identifier ( column_name ) AS json_alias
             FROM util_meta.columns
             WHERE full_object_name = l_full_view_name
             ORDER BY ordinal_position ) LOOP
@@ -143,55 +143,55 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
-        util_meta.snippet_function_frontmatter (
+        util_meta._snip_function_frontmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'sql',
             a_return_type => 'text',
             a_returns_set => false,
             a_calling_parameters => l_calling_params ),
-        util_meta.snippet_documentation_block (
+        util_meta._snip_documentation_block (
             a_object_name => l_func_name,
             a_object_type => 'function',
             a_object_purpose => l_doc_item,
             a_calling_parameters => l_calling_params ),
         '',
-        util_meta.indent ( 1 ) || 'WITH t AS (',
-        util_meta.indent ( 2 )
+        util_meta._indent ( 1 ) || 'WITH t AS (',
+        util_meta._indent ( 2 )
             || 'SELECT '
-            || array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent ( 4 ) ),
-        util_meta.indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
-        util_meta.indent ( 5 )
-            || array_to_string ( l_calling_params.args, ',' || util_meta.new_line () || util_meta.indent ( 5 ) ),
-        util_meta.indent ( 4 ) || ')',
-        util_meta.indent ( 1 ) || ')' ) ;
+            || array_to_string ( l_columns, ',' || util_meta._new_line () || util_meta._indent ( 4 ) ),
+        util_meta._indent ( 3 ) || 'FROM ' || a_object_schema || '.' || a_object_name || ' (',
+        util_meta._indent ( 5 )
+            || array_to_string ( l_calling_params.args, ',' || util_meta._new_line () || util_meta._indent ( 5 ) ),
+        util_meta._indent ( 4 ) || ')',
+        util_meta._indent ( 1 ) || ')' ) ;
 
     -- TODO: need a better way of determining single tuple results vs multi-tuple results
     IF l_func_type = 'get' THEN
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || 'SELECT row_to_json ( t ) AS json',
-            util_meta.indent ( 2 ) || 'FROM t ;' ) ;
+            util_meta._indent ( 1 ) || 'SELECT row_to_json ( t ) AS json',
+            util_meta._indent ( 2 ) || 'FROM t ;' ) ;
 
     ELSE
 
         l_result := concat_ws (
-            util_meta.new_line (),
+            util_meta._new_line (),
             l_result,
-            util_meta.indent ( 1 ) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
-            util_meta.indent ( 2 ) || 'FROM t ;' ) ;
+            util_meta._indent ( 1 ) || 'SELECT json_agg ( row_to_json ( t ) ) AS json',
+            util_meta._indent ( 2 ) || 'FROM t ;' ) ;
 
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
         '',
-        util_meta.snippet_function_backmatter (
+        util_meta._snip_function_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'sql',
@@ -200,7 +200,7 @@ BEGIN
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;

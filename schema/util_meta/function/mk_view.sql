@@ -71,13 +71,13 @@ BEGIN
 
     ----------------------------------------------------------------------------
     -- Ensure that the specified table exists
-    IF NOT util_meta.is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
+    IF NOT util_meta._is_valid_object ( a_object_schema, a_object_name, 'table' ) THEN
         RETURN 'ERROR: invalid object' ;
     END IF ;
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_view_name := util_meta.view_name ( a_object_name ) ;
+    l_view_name := util_meta._view_name ( a_object_name ) ;
     l_full_view_name := concat_ws ( '.', l_ddl_schema, l_view_name ) ;
     l_full_table_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
 
@@ -94,7 +94,7 @@ BEGIN
 
         l_comments := array_append (
             l_comments,
-            util_meta.snippet_object_comment (
+            util_meta._snip_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_view_name,
                 a_object_type => 'view',
@@ -107,7 +107,7 @@ BEGIN
         SELECT boolean_type,
                 true_val,
                 false_val
-            FROM util_meta.boolean_casting ( a_cast_booleans_as ) ) LOOP
+            FROM util_meta._boolean_casting ( a_cast_booleans_as ) ) LOOP
 
         l_boolean_type := r.boolean_type ;
         l_true_val := r.true_val ;
@@ -139,7 +139,7 @@ BEGIN
         IF col.data_type = 'boolean' AND l_boolean_type <> 'boolean' THEN
 
             l_boolean_transform := concat_ws (
-                util_meta.new_line () || util_meta.indent ( 3 ),
+                util_meta._new_line () || util_meta._indent ( 3 ),
                 'CASE',
                 concat_ws (
                     ' ',
@@ -160,7 +160,7 @@ BEGIN
 
         l_comments := array_append (
             l_comments,
-            util_meta.snippet_object_comment (
+            util_meta._snip_object_comment (
                 a_ddl_schema => l_ddl_schema,
                 a_object_name => l_view_name || '.' || col.column_name,
                 a_object_type => 'column',
@@ -179,7 +179,7 @@ BEGIN
 
             has_join := false ;
 
-            l_fk_tab := util_meta.table_noun (
+            l_fk_tab := util_meta._table_noun (
                 a_object_name => fk.ref_table_name,
                 a_ddl_schema => fk.ref_schema_name ) ;
 
@@ -263,7 +263,7 @@ BEGIN
 
                 l_comments := array_append (
                     l_comments,
-                    util_meta.snippet_object_comment (
+                    util_meta._snip_object_comment (
                         a_ddl_schema => l_ddl_schema,
                         a_object_name => l_view_name || '.' || l_column_alias,
                         a_object_type => 'column',
@@ -274,7 +274,7 @@ BEGIN
             IF has_join THEN
                 l_joins := array_append (
                     l_joins,
-                    util_meta.indent ( 1 )
+                    util_meta._indent ( 1 )
                         || concat_ws (
                             ' ',
                             col.join_type,
@@ -283,7 +283,7 @@ BEGIN
 
                 l_joins := array_append (
                     l_joins,
-                    util_meta.indent ( 2 )
+                    util_meta._indent ( 2 )
                         || concat_ws (
                             ' ',
                             'ON',
@@ -299,15 +299,15 @@ BEGIN
     END LOOP ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result,
         'CREATE OR REPLACE VIEW ' || l_full_view_name,
         'AS',
         concat_ws (
             ' ',
             'SELECT',
-            array_to_string ( l_columns, ',' || util_meta.new_line () || util_meta.indent ( 2 ) ) ),
-        util_meta.indent ( 1 ) || concat_ws (
+            array_to_string ( l_columns, ',' || util_meta._new_line () || util_meta._indent ( 2 ) ) ),
+        util_meta._indent ( 1 ) || concat_ws (
             ' ',
             'FROM',
             l_full_table_name,
@@ -315,25 +315,28 @@ BEGIN
 
     IF array_length ( l_joins, 1 ) > 0 THEN
 
-        l_result := concat_ws ( util_meta.new_line (), l_result, array_to_string ( l_joins, util_meta.new_line () ) ) ;
+        l_result := concat_ws (
+            util_meta._new_line (),
+            l_result,
+            array_to_string ( l_joins, util_meta._new_line () ) ) ;
 
     END IF ;
 
     l_result := concat_ws (
-        util_meta.new_line (),
+        util_meta._new_line (),
         l_result || ' ;',
         '',
-        util_meta.snippet_owners_and_grants (
+        util_meta._snip_owners_and_grants (
             a_ddl_schema => a_ddl_schema,
             a_object_name => l_view_name,
             a_object_type => 'view',
             a_owner => a_owner,
             a_grantees => a_grantees ),
         '',
-        array_to_string ( l_comments, util_meta.new_line () ),
+        array_to_string ( l_comments, util_meta._new_line () ),
         '' ) ;
 
-    RETURN util_meta.cleanup_whitespace ( l_result ) ;
+    RETURN util_meta._cleanup_whitespace ( l_result ) ;
 
 END ;
 $$ ;
