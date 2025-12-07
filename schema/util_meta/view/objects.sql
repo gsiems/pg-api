@@ -106,6 +106,7 @@ SELECT objs.schema_oid,
                 'range type', 'multirange' )
                 THEN 'type'
             WHEN objs.object_type IN ( 'partitioned table', 'table partition' ) THEN 'table'
+            WHEN objs.object_type IN ( 'view', 'materialized view' ) THEN 'view'
             ELSE objs.object_type
             END AS base_object_type,
         objs.object_type,
