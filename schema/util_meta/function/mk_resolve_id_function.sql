@@ -90,7 +90,7 @@ BEGIN
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
 
     -- ASSERTION: the table name is a noun that appropriately reflects the table contents
-    l_table_noun := regexp_replace ( a_object_name, '^[drs]t_', '' ) ;
+    l_table_noun := regexp_replace ( a_object_name, '^[a-z]t_', '' ) ;
     l_func_name := concat_ws (
         '_',
         'resolve',
