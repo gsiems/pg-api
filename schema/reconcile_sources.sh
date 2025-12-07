@@ -6,7 +6,7 @@
 # Included files that no longer exist should get commented out and new files
 # should get appended to the end of the create-[schema_name].sql file
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 
 function append_includes_list() {
     local schema="${1}"
@@ -15,19 +15,19 @@ function append_includes_list() {
     # For each object type that we care about
     for objType in Sequence Table Foreign_Table View Materialized_View Type Function Procedure; do
 
-        objLabel="$(echo ${objType} | tr '_' ' ')"
-        typeDir=$(echo ${objType} | tr '[A-Z]' '[a-z]')
+        objLabel="$(echo "${objType}" | tr '_' ' ')"
+        typeDir=$(echo "${objType}" | tr '[:upper:]' '[:lower:]')
 
         # Check if there is a sub-directory for the object type
-        for sd in $(find ${schema} -mindepth 1 -maxdepth 2 -type d ! -empty -name ${typeDir}); do
+        for sd in $(find "${schema}" -mindepth 1 -maxdepth 2 -type d ! -empty -name "${typeDir}"); do
 
-            echo "" >>${fileName}
+            echo "" >>"${fileName}"
             tmp="-- ${objLabel}s ------------------------------------------------------------------------------"
-            echo ${tmp:0:80} >>${fileName}
+            echo "${tmp:0:80}" >>"${fileName}"
 
             # Add the DDL (sql) files
-            for sqlFile in $(find ${sd} -mindepth 1 -maxdepth 2 -type f ! -empty -name "*.sql" | sort); do
-                echo "\i ${sqlFile}" >>${fileName}
+            for sqlFile in $(find "${sd}" -mindepth 1 -maxdepth 2 -type f ! -empty -name "*.sql" | sort); do
+                echo "\i ${sqlFile}" >>"${fileName}"
             done
         done
     done
@@ -36,9 +36,9 @@ function append_includes_list() {
 function new_create_schema_file() {
     local schema="${1}"
 
-    local newFile="xx_create-${schema}.sql"
+    local newFile="xxx_create-${schema}.sql"
 
-    cat <<EOT >${newFile}
+    cat <<EOT >"${newFile}"
 DROP SCHEMA IF EXISTS ${schema} CASCADE ;
 
 SET statement_timeout = 0 ;
@@ -53,20 +53,22 @@ COMMENT ON SCHEMA ${schema} IS 'TBD' ;
 
 EOT
 
-    append_includes_list ${schema} ${newFile}
+    append_includes_list "${schema}" "${newFile}"
 }
 
 function update_create_schema_file() {
     local schema="${1}"
     local currentFile="${2}"
+    local newFilesList
+    local newFile
 
-    local newFilesList=$(mktemp -p . XXXXXXXXXX.tmp.tmp)
-    local newFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
+    newFilesList=$(mktemp -p . XXXXXXXXXX.tmp.tmp)
+    newFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
 
-    append_includes_list ${schema} ${newFilesList}
+    append_includes_list "${schema}" "${newFilesList}"
 
     local fileChanged=0
-    local oldIFS=${IFS}
+    local oldIFS="${IFS}"
     IFS=
 
     # Compare the current file to the new list of files. If line is a file
@@ -78,15 +80,16 @@ function update_create_schema_file() {
 
             '\i '*)
                 # if \i and not for any currently existing sql file then comment out
-
-                local trimmed=$(echo "${line}" | sed 's/[[:space:]]*$//')
-                local matched=$(grep "${trimmed}" ${newFilesList})
+                local trimmed
+                local matched
+                trimmed=$(echo "${line}" | sed 's/[[:space:]]*$//')
+                matched=$(grep "${trimmed}" "${newFilesList}")
 
                 if [ -z "${matched}" ]; then
-                    echo "--${trimmed}" >>${newFile}
+                    echo "--${trimmed}" >>"${newFile}"
                     fileChanged=1
                 else
-                    echo "${trimmed}" >>${newFile}
+                    echo "${trimmed}" >>"${newFile}"
                     if [ "${trimmed}" != "${line}" ]; then
                         # cleanup trailing whitespace
                         fileChanged=1
@@ -95,60 +98,62 @@ function update_create_schema_file() {
                 ;;
 
             *)
-                echo "${line}" >>${newFile}
+                echo "${line}" >>"${newFile}"
                 ;;
         esac
 
-    done <${currentFile}
+    done <"${currentFile}"
 
     # Compare the new list of files to the current file. If the new file isn't
     # in the current file then append it to the current file
-    local hasNew=0
+    local hasNew
+    hasNew=0
 
     while read -r line; do
 
         case "${line}" in
 
             '\i '*)
-                local matched=$(grep "${line}" ${currentFile})
+                local matched
+                matched=$(grep "${line}" "${currentFile}")
                 if [ -z "${matched}" ]; then
 
                     if [ "${hasNew}" == "0" ]; then
-
-                        echo "" >>${newFile}
-                        local hdr="-- NEW FILES: $(date) -------------------------------------------------------------------------" >>${newFile}
-                        echo ${hdr:0:80} >>${newFile}
+                        local hdr
+                        echo "" >>"${newFile}"
+                        hdr="-- NEW FILES: $(date) -------------------------------------------------------------------------" >>"${newFile}"
+                        echo "${hdr:0:80}" >>"${newFile}"
                         hasNew=1
                     fi
 
-                    echo "${line}" >>${newFile}
+                    echo "${line}" >>"${newFile}"
                     fileChanged=1
 
                 fi
                 ;;
         esac
 
-    done <${newFilesList}
+    done <"${newFilesList}"
 
-    IFS=${oldIFS}
+    IFS="${oldIFS}"
 
     if [ "${fileChanged}" == "1" ]; then
-        mv ${newFile} ${currentFile}
+        mv "${newFile}" "${currentFile}"
     else
-        rm ${newFile}
+        rm "${newFile}"
     fi
 
-    rm ${newFilesList}
+    rm "${newFilesList}"
 }
 
 for schema in $(find . -mindepth 1 -maxdepth 1 -type d ! -empty | sed 's/^\.\///'); do
 
-    currentFile=$(ls | grep *_create-${schema}.sql)
+    currentFile=$(ls | grep -P "[0-9]+_create-${schema}.sql")
 
     if [ -z "${currentFile}" ]; then
-        new_create_schema_file ${schema}
+        new_create_schema_file "${schema}"
     else
-        update_create_schema_file ${schema} ${currentFile}
+        update_create_schema_file "${schema}" "${currentFile}"
     fi
 
 done
