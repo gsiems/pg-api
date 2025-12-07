@@ -1,50 +1,31 @@
+/**
+
+### Util_meta
+
+
+*/
 
 SET statement_timeout = 0 ;
 SET client_encoding = 'UTF8' ;
-SET standard_conforming_strings = on ;
-SET check_function_bodies = true ;
+SET standard_conforming_strings = ON ;
+SET check_function_bodies = TRUE ;
 SET client_min_messages = warning ;
+SET search_path = pg_catalog ;
 
 \unset ON_ERROR_STOP
 
 DROP SCHEMA IF EXISTS util_meta CASCADE ;
-DROP ROLE IF EXISTS util_meta_read ;
-DROP ROLE IF EXISTS util_meta_owner ;
-
-CREATE ROLE util_meta_owner ;
-
-CREATE ROLE util_meta_read ;
 
 \set ON_ERROR_STOP
-
-ALTER USER util_meta_owner NOLOGIN
-    NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION ;
-
-COMMENT ON ROLE util_meta_owner IS 'Ownership role for util_meta functions and data' ;
-
-ALTER ROLE util_meta_read NOLOGIN
-    NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION ;
-
-COMMENT ON ROLE util_meta_read IS 'Read-only role for accessing util_meta functions and data' ;
 
 CREATE SCHEMA IF NOT EXISTS util_meta ;
 
 COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions, procedures) for creating database API objects.' ;
 
-ALTER SCHEMA util_meta OWNER TO util_meta_owner ;
-
-DO $$
-    BEGIN
-        EXECUTE format ( 'GRANT TEMPORARY ON DATABASE %I TO util_meta_owner', current_database()::text );
-
-        EXECUTE format ( 'GRANT util_meta_read TO %s ;', current_user::text );
-
-    END
-$$;
-
 -- Types -----------------------------------------------------------------------
 \i util_meta/type/ut_parameters.sql
-\i util_meta/type/ut_proc.sql
+\i util_meta/type/ut_object.sql
+\i util_meta/type/ut_parent_table.sql
 
 -- Tables ----------------------------------------------------------------------
 \i util_meta/table/st_default_param.sql
@@ -68,6 +49,9 @@ $$;
 -- Functions -------------------------------------------------------------------
 
 -- Common utility functions
+\i util_meta/function/base_name.sql
+\i util_meta/function/base_order.sql
+
 \i util_meta/function/resolve_parameter.sql
 
 \i util_meta/function/append_parameter.sql
@@ -80,7 +64,11 @@ $$;
 \i util_meta/function/proc_parameters.sql
 \i util_meta/function/calling_parameters.sql
 \i util_meta/function/boolean_casting.sql
-\i util_meta/function/guess_private_proc.sql
+\i util_meta/function/find_private_proc.sql
+\i util_meta/function/view_name.sql
+\i util_meta/function/find_view.sql
+
+\i util_meta/function/get_dt_parent.sql
 
 -- Snippet functions
 \i util_meta/function/snippet_declare_variables.sql
@@ -112,16 +100,14 @@ $$;
 \i util_meta/function/mk_find_function.sql
 \i util_meta/function/mk_get_function.sql
 \i util_meta/function/mk_list_function.sql
+\i util_meta/function/mk_list_children_function.sql
 
 \i util_meta/function/mk_priv_delete_procedure.sql
 \i util_meta/function/mk_priv_insert_procedure.sql
 \i util_meta/function/mk_priv_update_procedure.sql
 \i util_meta/function/mk_priv_upsert_procedure.sql
 
-\i util_meta/function/mk_delete_procedure.sql
-\i util_meta/function/mk_insert_procedure.sql
-\i util_meta/function/mk_update_procedure.sql
-\i util_meta/function/mk_upsert_procedure.sql
+\i util_meta/function/mk_api_procedure.sql
 
 --------------------------------------------------------------------------------
 -- JSON utility functions
@@ -140,33 +126,3 @@ $$;
 --------------------------------------------------------------------------------
 -- Testing functions
 --\i util_meta/function/mk_test_procedure_wrapper.sql
-
---------------------------------------------------------------------------------
--- Ownership and Grants
-
-GRANT USAGE ON SCHEMA util_meta TO util_meta_read ;
-
-DO $$
-    DECLARE
-        r record ;
-    BEGIN
-        FOR r IN (
-            SELECT schema_name,
-                    object_name,
-                    object_type
-                FROM util_meta.objects
-                WHERE schema_name = 'util_meta'
-                    AND object_type NOT IN ( 'index' ) ) LOOP
-
-            EXECUTE format ( 'ALTER %s %I.%I OWNER TO util_meta_owner ;', r.object_type, r.schema_name, r.object_name ) ;
-
-            IF r.object_type IN ( 'view', 'table' ) THEN
-                EXECUTE format ( 'GRANT SELECT ON %I.%I TO util_meta_read ;', r.schema_name, r.object_name ) ;
-            ELSIF r.object_type IN ( 'function', 'procedure' ) THEN
-                EXECUTE format ( 'GRANT EXECUTE ON %s %I.%I TO util_meta_read ;', r.object_type, r.schema_name, r.object_name ) ;
-            END IF ;
-
-        END LOOP ;
-    END ;
-$$ ;
-
