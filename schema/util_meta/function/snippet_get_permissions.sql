@@ -42,6 +42,7 @@ DECLARE
     l_action text ;
     l_id_param text ;
     l_indents integer ;
+    l_return text ;
 
 BEGIN
 
@@ -56,11 +57,17 @@ BEGIN
 
     IF a_action = 'l_desired_action' THEN
         l_action := a_action ;
-    ELSIF a_action = 'upsert' THEN
-        l_action := 'CASE WHEN ' || a_id_param || ' IS NULL THEN ''insert'' ELSE ''update'' END' ;
     ELSE
         l_action := quote_literal ( a_action ) ;
     END IF ;
+
+    l_return := concat_ws (
+        util_meta.new_line (),
+        '',
+        util_meta.indent ( l_indents + 1 ) || 'l_has_permission := ' || a_ddl_schema || '.can_do (',
+        util_meta.indent ( l_indents + 2 ) || 'a_user => a_user,',
+        util_meta.indent ( l_indents + 2 ) || 'a_action => ' || l_action || ',',
+        util_meta.indent ( l_indents + 2 ) || 'a_object_type => ' || quote_literal ( l_object_type ) || ',' ) ;
 
     IF a_parent_object_type IS NULL THEN
 
@@ -68,28 +75,14 @@ BEGIN
 
         RETURN concat_ws (
             util_meta.new_line (),
-            '',
-            util_meta.indent ( l_indents + 1 ) || 'l_has_permission := ' || a_ddl_schema || '.can_do (',
-            util_meta.indent ( l_indents + 2 ) || 'a_user => a_user,',
-            util_meta.indent ( l_indents + 2 ) || 'a_action => ' || l_action || ',',
-            util_meta.indent ( l_indents + 2 )
-                || 'a_object_type => '
-                || quote_literal ( l_object_type )
-                || ',  -- TODO verify this',
-            util_meta.indent ( l_indents + 2 ) || 'a_id => ' || l_id_param || ' ) ; -- TODO verify this' ) ;
+            l_return,
+            util_meta.indent ( l_indents + 2 ) || 'a_id => ' || l_id_param || ' ) ;' ) ;
 
     END IF ;
 
     RETURN concat_ws (
         util_meta.new_line (),
-        '',
-        util_meta.indent ( l_indents + 1 ) || 'l_has_permission := ' || a_ddl_schema || '.can_do (',
-        util_meta.indent ( l_indents + 2 ) || 'a_user => a_user,',
-        util_meta.indent ( l_indents + 2 ) || 'a_action => ' || l_action || ',',
-        util_meta.indent ( l_indents + 2 )
-            || 'a_object_type => '
-            || quote_literal ( l_object_type )
-            || ',  -- TODO verify this',
+        l_return,
         util_meta.indent ( l_indents + 2 ) || 'a_id => null,',
         util_meta.indent ( l_indents + 2 )
             || 'a_parent_object_type => '
