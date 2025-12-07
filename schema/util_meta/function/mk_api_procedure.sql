@@ -46,9 +46,7 @@ DECLARE
     l_local_vars util_meta.ut_parameters ;
     l_parent util_meta.ut_parent_table ;
     l_private_proc util_meta.ut_object ;
-    l_procedure_type text := 'procedure' ;
 
-    l_chk text ;
     l_ddl_schema text ;
     l_full_table_name text ;
     l_id_param text ;
