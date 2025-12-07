@@ -49,7 +49,7 @@ BEGIN
             || l_user_id_var
             || ' := '
             || r.full_object_name
-            || ' ( a_user => '
+            || ' ( a_username => '
             || l_user_id_param
             || ' ) ;' ;
 
@@ -78,7 +78,7 @@ BEGIN
 
     RETURN '-- TODO: (schema name?) '
         || l_user_id_var
-        || ' := resolve_user_id ( a_user => '
+        || ' := resolve_user_id ( a_username => '
         || l_user_id_param
         || ' ) ;' ;
 
