@@ -1,5 +1,5 @@
 # Documentation
 
- - [Glossary of terms](glossary.md)
- - [Naming conventions](naming_conventions.md)
+ - [Conventions](conventions.md)
  - [Database API](api/readme.md)
+ - [Glossary of terms](glossary.md)
