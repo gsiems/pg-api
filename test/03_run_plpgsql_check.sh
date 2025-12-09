@@ -41,7 +41,7 @@ cd "$(dirname "$0")" || exit
 
 source ./set_env.sh
 
-if [[ -n "${usage}" ]]; then
+if [[ -n ${usage} ]]; then
     usage
 fi
 
@@ -65,17 +65,13 @@ psqlFile=$(mktemp -p . XXXXXXXXXX.sql.tmp)
 
 # TODO: Determine schema for plpgsql_check extension and dynamically set that
 
+extCmd="SELECT schema_name
+    FROM util_meta.extensions
+    WHERE extension_name = 'plpgsql_check'"
 
+plChkSchema=$(psql -t -U "${usr}" -d "${db}" -p "${port}" -c "${extCmd}")
 
-extCmd="SELECT n.nspname::text AS schema_name
-    FROM pg_catalog.pg_extension px
-    JOIN pg_catalog.pg_namespace n
-        ON ( px.extnamespace = n.oid )
-    WHERE px.extname = 'plpgsql_check'"
-
-plChkSchema=$(psql -t -U "${usr}" -d "${db}" -p "${port}" -c "${extCmd}" )
-
-if [[ -n "${plChkSchema}" ]]; then
+if [[ -n ${plChkSchema} ]]; then
 
     cat <<EOT >"${psqlFile}"
 
@@ -145,4 +141,3 @@ else
     echo "Could not run plpgsql_check. Extension not found."
 
 fi
-
