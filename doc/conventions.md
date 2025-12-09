@@ -2,11 +2,12 @@
 
 ## Contents
 
-* [Layout](#1.0-layout)
-* [Database](#2.0-database)
-* [Documentation](#3.0-documentation)
+* [Layout](#10-layout)
+* [Database](#20-database)
+* [Documentation](#30-documentation)
 
 ## 1.0 Layout
+[top](#contents)
 
 **1.0.1** The (database portion of) the project should be the same for all
 projects.
@@ -33,6 +34,7 @@ purpose of the directory, and any guidance/rules as to the use of the contents
 of the directory (the what, why, and how of the directory).
 
 # 2.0 Database
+[top](#contents)
 
 ### 2.1.0 Naming
 
@@ -195,6 +197,7 @@ non-public nature of the function/procedure (`util_meta` recognizes `priv_` and
 purpose for the role and/or who uses the role (login roles).
 
 ## 3.0 Documentation
+[top](#contents)
 
 **3.0.1** All schemas, tables, views, and columns should have database
 comments. These comments will be used when drafting dependent database objects
