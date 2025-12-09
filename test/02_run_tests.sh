@@ -13,7 +13,8 @@ SYNOPSIS
 
 DESCRIPTION
 
-    Runs a set of one or more pgTap test files on the localhost pg instance
+    Runs a set of one or more pgTap test files from the tests directory on the
+    localhost pg instance
 
 OPTIONS
 
@@ -200,10 +201,12 @@ function test_dir() {
 
     resultFile=$(mktemp -p . XXXXXXXXXX.out.tmp)
 
-    echo "" >>"${resultFile}"
-    echo "${banner}" >>"${resultFile}"
-    echo "${banner}" >>"${resultFile}"
-    echo "# Testing ${dir}" >>"${resultFile}"
+    cat <<EOT >>"${resultFile}"
+
+"${banner}"
+"${banner}"
+"# Testing ${dir}"
+EOT
 
     for testFile in "${dir}"/*.sql; do
         run_test_file "${testFile}" "${resultFile}" "${logFile}"
@@ -222,7 +225,7 @@ function run_tests() {
     if [[ -z ${file} ]]; then
 
         # Nothing specified, run everything
-        for directory in $(find . -maxdepth 1 -type d ! -name test_data ! -name plprofiler_client ! -name '\.*' | sort); do
+        for directory in $(find tests -mindepth 1 -maxdepth 1 -type d ! -name '\.*' | sort); do
             test_dir "${directory}" "${logFile}"
         done
 
