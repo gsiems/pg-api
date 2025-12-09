@@ -15,7 +15,7 @@ DESCRIPTION
 
     Truncates and re-loads test data using psql (*.sql) files in the test_data directory.
 
-    Files are run in alpha-umeric order based on the filename.
+    Files are run in alpha-numeric order based on the filename.
 
 OPTIONS
 
