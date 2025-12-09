@@ -1,0 +1,19 @@
+
+#
+git_ignore
+
+#
+*.bak
+*.out
+*.dump
+~*
+*~
+
+*.bz2
+*.gz
+*.tar
+*.zip
+
+# Ignore the util_log schema as that is obtained from https://github.com/gsiems/pg-util_log
+schema/util_log
+10_create-util_log.sql
