@@ -202,7 +202,7 @@ purpose for the role and/or who uses the role (login roles).
 **3.0.1** All schemas, tables, views, and columns should have database
 comments. These comments will be used when drafting dependent database objects
 (views, functions, and procedures). Use a
-[tool][https://github.com/gsiems/db-dictionary] to extract those comments to
+[tool](https://github.com/gsiems/db-dictionary) to extract those comments to
 build/maintain a data dictionary.
 
 The documentation for database objects should be maintained in the source code
