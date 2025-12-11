@@ -53,10 +53,14 @@ pk_columns AS (
         FROM primary_keys
 ),
 natural_keys AS (
+    -- ASSERTION: natural keys will have a unique constraint and the primary
+    -- natural key (if there are multiple) will be the first one created
+    -- (s.b. the one with the lowest oid)
     SELECT schemas.schema_name,
             r.relname::text AS object_name,
             c.conname::text AS constraint_name,
-            split_part ( split_part ( pg_get_constraintdef ( c.oid ), '(', 2 ), ')', 1 ) AS column_names
+            split_part ( split_part ( pg_get_constraintdef ( c.oid ), '(', 2 ), ')', 1 ) AS column_names,
+            row_number () OVER ( PARTITION BY schemas.schema_name, r.relname ORDER BY c.oid ) AS rn
         FROM pg_catalog.pg_class r
         JOIN util_meta.schemas
             ON ( schemas.schema_oid = r.relnamespace )
@@ -66,9 +70,6 @@ natural_keys AS (
             ON ( nc.oid = c.connamespace )
         WHERE r.relkind = 'r'
             AND c.contype = 'u'
-            -- ASSERTION: natural keys will have a unique constraint and the name of the
-            -- primary natural key (if there are multiple) will end with "_nk"
-            AND c.conname::text = r.relname::text || '_nk'
 ),
 nk_columns AS (
     SELECT schema_name,
@@ -76,6 +77,7 @@ nk_columns AS (
             constraint_name,
             trim ( unnest ( string_to_array ( column_names, ',' ) ) ) AS column_name
         FROM natural_keys
+        WHERE rn = 1
 ),
 types AS (
     SELECT schemas.schema_oid,
