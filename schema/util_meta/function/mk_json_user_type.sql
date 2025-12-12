@@ -46,7 +46,7 @@ BEGIN
 
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
-    l_type_name := regexp_replace ( a_object_name, '^[a-z][mtv]_', 'ut_' ) ;
+    l_type_name := regexp_replace ( util_meta._to_singular ( a_object_name ), '^[a-z][mtv]_', 'ut_' ) ;
     l_full_type_name := concat_ws ( '.', l_ddl_schema, l_type_name ) ;
 
     ----------------------------------------------------------------------------

@@ -51,7 +51,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
-    l_proc_name := 'priv_delete_' || l_table_noun ;
+    l_proc_name := 'priv_delete_' || util_meta._to_singular ( l_table_noun ) ;
 
     l_assertions := array_append (
         l_assertions,

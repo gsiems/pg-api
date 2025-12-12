@@ -66,7 +66,7 @@ BEGIN
     --------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
-    l_func_name := 'get_' || l_table_noun ;
+    l_func_name := util_meta._to_singular ( 'get_' || l_table_noun ) ;
 
     l_base_view := util_meta._find_view (
         a_proc_schema => a_ddl_schema,

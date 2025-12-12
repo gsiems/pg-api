@@ -92,7 +92,7 @@ BEGIN
     l_func_name := concat_ws (
         '_',
         'resolve',
-        l_table_noun,
+        util_meta._to_singular ( l_table_noun ),
         'id' ) ;
 
     l_doc_item := replace ( l_table_noun, '_', ' ' ) ;

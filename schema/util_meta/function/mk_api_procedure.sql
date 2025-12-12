@@ -79,7 +79,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
-    l_proc_name := concat_ws ( '_', a_action, l_table_noun ) ;
+    l_proc_name := concat_ws ( '_', a_action, util_meta._to_singular ( l_table_noun ) ) ;
     l_full_table_name := concat_ws ( '.', a_object_schema, a_object_name ) ;
 
     l_purpose := 'performs ' || a_action || ' actions on ' || l_full_table_name ;

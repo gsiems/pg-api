@@ -74,7 +74,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_ddl_schema := coalesce ( a_ddl_schema, a_object_schema ) ;
     l_table_noun := util_meta._table_noun ( a_object_name, l_ddl_schema ) ;
-    l_proc_name := 'priv_insert_' || l_table_noun ;
+    l_proc_name := 'priv_insert_' || util_meta._to_singular ( l_table_noun ) ;
 
     l_local_vars := util_meta._append_parameter (
         a_parameters => l_local_vars,
