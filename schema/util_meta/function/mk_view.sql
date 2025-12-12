@@ -65,7 +65,8 @@ DECLARE
     l_boolean_transform text ;
 
     l_fnk_count bigint ;
-    l_fk_tab text ;
+    l_ref_noun text ;
+    l_ref_alia text ;
 
 BEGIN
 
@@ -179,7 +180,7 @@ BEGIN
 
             has_join := false ;
 
-            l_fk_tab := util_meta._table_noun (
+            l_ref_noun := util_meta._table_noun (
                 a_object_name => fk.ref_table_name,
                 a_ddl_schema => fk.ref_schema_name ) ;
 
@@ -203,47 +204,28 @@ BEGIN
 
                 has_join := true ;
 
-                IF l_fnk_count > 1 THEN
-
-                    IF fk_col.column_name = 'name' THEN
-
-                        IF col.column_name ~ '_id$' THEN
-                            l_column_alias := regexp_replace ( col.column_name, '_id$', '_' || l_fk_tab ) ;
-                        ELSIF col.column_name ~ '_id_' THEN
-                            l_column_alias := regexp_replace ( col.column_name, '_id_', '_' || l_fk_tab || '_' ) ;
-                        ELSE
-                            l_column_alias := col.column_name || '_' || l_fk_tab ;
-                        END IF ;
-                    ELSE
-
-                        IF col.column_name ~ '_id$' THEN
-                            l_column_alias := regexp_replace ( col.column_name, '_id$', '_' )
-                                || '_'
-                                || fk_col.column_name ;
-                        ELSIF col.column_name ~ '_id_' THEN
-                            l_column_alias := regexp_replace (
-                                col.column_name || '_' || fk_col.column_name,
-                                '_id_',
-                                '_' ) ;
-                            --                        l_column_alias := regexp_replace ( col.column_name, '_id_', '_' || l_fk_tab || '_' ) ;
-                        ELSE
-                            l_column_alias := col.column_name || '_' || l_fk_tab ;
-                        END IF ;
-
-                    END IF ;
-
-                ELSE
-
+                IF l_fnk_count = 1 THEN
                     IF col.column_name ~ '_id$' THEN
                         l_column_alias := regexp_replace ( col.column_name, '_id$', '' ) ;
                     ELSIF col.column_name ~ '_id_' THEN
                         l_column_alias := regexp_replace ( col.column_name, '_id_', '_' ) ;
-                        --                    ELSIF fk_col.column_name = 'name' THEN
-                        --                        l_column_alias := col.column_name || '_' || l_fk_tab ;
                     ELSE
-                        l_column_alias := col.column_name || '_' || l_fk_tab ;
+                        l_column_alias := col.column_name || '_' || l_ref_noun ;
+                    END IF ;
+                ELSE
+                    IF fk_col.column_name ~ ( '^' || l_ref_noun )::text THEN
+                        l_ref_alia := fk_col.column_name ;
+                    ELSE
+                        l_ref_alia := l_ref_noun || '_' || fk_col.column_name ;
                     END IF ;
 
+                    IF col.column_name ~ '_id$' THEN
+                        l_column_alias := regexp_replace ( col.column_name, '_id$', '_' || l_ref_alia ) ;
+                    ELSIF col.column_name ~ '_id_' THEN
+                        l_column_alias := regexp_replace ( col.column_name, '_id_', '_' || l_ref_alia || '_' ) ;
+                    ELSE
+                        l_column_alias := col.column_name || '_' || l_ref_alia ;
+                    END IF ;
                 END IF ;
 
                 l_columns := array_append (
