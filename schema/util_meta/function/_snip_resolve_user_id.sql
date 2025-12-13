@@ -10,7 +10,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, util_meta
 AS $$
 /* *
-Function _snip_resolve_user_id generates the pl/pg-sql code snippet for logging the calling parameters to a function or procedure
+Function _snip_resolve_user_id generates the pl/pg-sql code snippet for performing user ID lookups
 
 | Parameter                      | In/Out | Datatype   | Description                                        |
 | ------------------------------ | ------ | ---------- | -------------------------------------------------- |
