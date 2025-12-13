@@ -295,8 +295,9 @@ BEGIN
             '',
             util_meta._snip_resolve_id (
                 a_id_param => l_local_parent_param,
-                a_function_schema => l_ddl_schema,
-                a_function_name => l_resolve_id_func,
+                a_calling_schema => l_ddl_schema,
+                a_calling_func => l_func_name,
+                a_desired_func => l_resolve_id_func,
                 a_resolve_id_params => l_resolve_id_params ),
             util_meta._snip_get_permissions (
                 a_action => 'select',
@@ -360,7 +361,6 @@ BEGIN
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
