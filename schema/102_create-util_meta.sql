@@ -30,6 +30,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- Tables ----------------------------------------------------------------------
 \i util_meta/table/st_default_param.sql
 \i util_meta/table/rt_config_default.sql
+\i util_meta/table/rt_plural_word.sql
 
 -- Views -----------------------------------------------------------------------
 \i util_meta/view/conftypes.sql
@@ -49,6 +50,8 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 -- Functions -------------------------------------------------------------------
 
 -- Common utility functions
+\i util_meta/function/_to_plural.sql
+\i util_meta/function/_to_singular.sql
 \i util_meta/function/_base_name.sql
 \i util_meta/function/_base_order.sql
 
@@ -64,7 +67,7 @@ COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions
 \i util_meta/function/_proc_parameters.sql
 \i util_meta/function/_calling_parameters.sql
 \i util_meta/function/_boolean_casting.sql
-\i util_meta/function/_find_private_proc.sql
+\i util_meta/function/_find_func.sql
 \i util_meta/function/_view_name.sql
 \i util_meta/function/_find_view.sql
 
