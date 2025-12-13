@@ -86,9 +86,10 @@ BEGIN
 
     ------------------------------------------------------------------------
     -- Determine the private procedure to call.
-    l_private_proc := util_meta._find_private_proc (
-        a_proc_schema => l_ddl_schema,
-        a_proc_name => l_proc_name ) ;
+    l_private_proc := util_meta._find_func (
+        a_calling_schema => l_ddl_schema,
+        a_calling_func => l_proc_name,
+        a_desired_func => l_proc_name ) ;
 
     ----------------------------------------------------------------------------
     IF a_action IN ( 'update', 'upsert', 'delete' ) THEN
@@ -302,7 +303,6 @@ BEGIN
         util_meta._snip_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => l_purpose,
             a_owner => a_owner,
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;
