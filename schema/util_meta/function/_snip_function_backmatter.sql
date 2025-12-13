@@ -56,15 +56,20 @@ BEGIN
             a_object_type => 'function',
             a_owner => a_owner,
             a_grantees => a_grantees,
-            a_calling_parameters => a_calling_parameters ),
-        '',
-        util_meta._snip_object_comment (
-            a_ddl_schema => a_ddl_schema,
-            a_object_name => a_function_name,
-            a_object_type => 'function',
-            a_comment => a_comment,
-            a_calling_parameters => a_calling_parameters ),
-        '' ) ;
+            a_calling_parameters => a_calling_parameters ) ) ;
+
+    IF a_comment IS NOT NULL THEN
+        l_return := concat_ws (
+            util_meta._new_line (),
+            l_return,
+            '',
+            util_meta._snip_object_comment (
+                a_ddl_schema => a_ddl_schema,
+                a_object_name => a_function_name,
+                a_object_type => 'function',
+                a_comment => a_comment,
+                a_calling_parameters => a_calling_parameters ) ) ;
+    END IF ;
 
     RETURN l_return ;
 
