@@ -172,7 +172,6 @@ BEGIN
             a_ddl_schema => l_ddl_schema,
             a_function_name => l_func_name,
             a_language => 'plpgsql',
-            a_comment => l_doc_item,
             a_owner => a_owner,
             a_grantees => a_grantees,
             a_calling_parameters => l_calling_params ) ) ;

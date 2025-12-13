@@ -118,7 +118,6 @@ BEGIN
                 a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
                 a_language => 'plpgsql',
-                a_comment => NULL::text,
                 a_owner => a_owner,
                 a_grantees => a_grantees,
                 a_calling_parameters => l_calling_params ) ) ;
