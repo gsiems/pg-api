@@ -86,6 +86,18 @@ BEGIN
             a_name => 'l_connected_user_id',
             a_datatype => 'integer' ) ;
 
+        l_local_vars := util_meta._append_parameter (
+            a_parameters => l_local_vars,
+            a_name => 'l_acting_can_do',
+            a_datatype => 'boolean',
+            a_default => 'false' ) ;
+
+        l_local_vars := util_meta._append_parameter (
+            a_parameters => l_local_vars,
+            a_name => 'l_connected_can_do',
+            a_datatype => 'boolean',
+            a_default => 'false' ) ;
+
         l_result := concat_ws (
             util_meta._new_line (),
             util_meta._snip_function_frontmatter (
@@ -113,7 +125,7 @@ BEGIN
             '',
             util_meta._indent ( 1 ) || '-- TODO: Finish this function',
             '',
-            util_meta._indent ( 1 ) || 'RETURN false ;',
+            util_meta._indent ( 1 ) || 'RETURN l_acting_can_do AND l_connected_can_do ;',
             util_meta._snip_function_backmatter (
                 a_ddl_schema => r.ddl_schema,
                 a_function_name => 'can_do',
