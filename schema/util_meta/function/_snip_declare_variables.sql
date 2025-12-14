@@ -17,18 +17,31 @@ Function _snip_declare_variables generates the pl/pg-sql code snippet for declar
 DECLARE
 
     l_variable_lines text[] ;
+    l_variable_line text ;
 
 BEGIN
 
     FOR l_idx IN 1..array_length ( a_variables.names, 1 ) LOOP
         IF a_variables.names[l_idx] IS NOT NULL AND a_variables.datatypes[l_idx] IS NOT NULL THEN
-            l_variable_lines := array_append (
-                l_variable_lines,
-                concat_ws (
+
+            IF a_variables.defaults[l_idx] IS NULL THEN
+                l_variable_line := concat_ws (
                     ' ',
                     a_variables.names[l_idx],
                     a_variables.datatypes[l_idx],
-                    ';' ) ) ;
+                    ';' ) ;
+            ELSE
+                l_variable_line := concat_ws (
+                    ' ',
+                    a_variables.names[l_idx],
+                    a_variables.datatypes[l_idx],
+                    ':=',
+                    a_variables.defaults[l_idx],
+                    ';' ) ;
+            END IF ;
+
+            l_variable_lines := array_append ( l_variable_lines, l_variable_line ) ;
+
         END IF ;
     END LOOP ;
 

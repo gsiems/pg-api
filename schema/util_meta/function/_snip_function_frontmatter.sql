@@ -53,7 +53,8 @@ BEGIN
                         a_calling_parameters.names[l_idx],
                         a_calling_parameters.directions[l_idx],
                         a_calling_parameters.datatypes[l_idx],
-                        'default null' ) ) ;
+                        'DEFAULT ' || coalesce ( a_calling_parameters.defaults[l_idx], 'NULL' ) ) ) ;
+
         END LOOP ;
 
         l_return := concat_ws (
