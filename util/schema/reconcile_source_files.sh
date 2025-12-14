@@ -1,12 +1,33 @@
 #!/usr/bin/env bash
 
-# Reconcile the current list of DDL files in the schema directories with the
-# includes '\i' file list contained in the create-[schema_name].sql files
-#
-# Included files that no longer exist should get commented out and new files
-# should get appended to the end of the create-[schema_name].sql file
+function usage() {
+
+    cat <<'EOT'
+NAME
+
+reconcile_source_files.sh
+
+SYNOPSIS
+
+    reconcile_source_files.sh
+
+DESCRIPTION
+
+    Reconciles the current list of DDL files in the schema directories with the
+    includes '\i' file list contained in the create-[schema_name].sql files.
+
+    Included files that no longer exist should get commented out and new files
+    should get appended to the end of the appropriate create-[schema_name].sql
+    file.
+
+EOT
+    exit 0
+}
 
 cd "$(dirname "$0")" || exit 1
+
+targetDir=../../schema
+cd "$(targetDir "$0")" || exit 1
 
 function append_includes_list() {
     local schema="${1}"
