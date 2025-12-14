@@ -342,8 +342,6 @@ ASSERTIONS:
 
  * Reference tables have single-column natural keys (multi-column natural keys will require tweaking of the generated function)
 
- * The natural key for the reference table follows the table_name + '_nk' convention
-
 Note that this should work for all rt_ and st_ tables
 
 
