@@ -191,6 +191,11 @@ non-public objects and/or their identifiers should have a prefix indicating the
 non-public nature of the function/procedure (`util_meta` recognizes `priv_` and
 `_`).
 
+**2.4.5** Use the util_meta.rt_plural_word table to define singular/plural
+forms of words used in table names so that the generated functions that read
+better in the plural or functions/procedures that read better in the singular
+can be better named.
+
 ### 2.5.0 Roles
 
 **2.5.1** Database users/roles should have database comments stating the
