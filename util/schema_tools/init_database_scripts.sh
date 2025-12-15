@@ -35,6 +35,15 @@ if [[ -z ${dbName} ]]; then
     usage
 fi
 
+preamble="
+SET statement_timeout = 0 ;
+SET client_encoding = 'UTF8' ;
+SET standard_conforming_strings = ON ;
+SET check_function_bodies = TRUE ;
+SET client_min_messages = warning ;
+SET search_path = pg_catalog ;
+"
+
 ################################################################################
 fileName=001_drop_database
 psqlFile="${targetDir}"/"${fileName}".sql
@@ -55,17 +64,12 @@ cat <<EOT >"${psqlFile}"
 
 \\c postgres
 
-SET statement_timeout = 0 ;
-SET client_encoding = 'UTF8' ;
-SET standard_conforming_strings = ON ;
-SET check_function_bodies = TRUE ;
-SET client_min_messages = warning ;
-SET search_path = pg_catalog ;
+${preamble}
 
 \\unset ON_ERROR_STOP
 
 -- Since "REVOKE CONNECT ON DATABASE ${dbName} FROM ALL" isn't an option, so:
-DO $$
+DO \$\$
 DECLARE
     r record ;
 BEGIN
@@ -115,7 +119,7 @@ BEGIN
 
     END LOOP ;
 END ;
-$$ ;
+\$\$ ;
 
 -- Ensure that there are no other connections to the database
 SELECT pg_terminate_backend ( pid )
@@ -146,11 +150,7 @@ cat <<EOT >"${psqlFile}"
 
 */
 
-SET statement_timeout = 0 ;
-SET client_encoding = 'UTF8' ;
-SET standard_conforming_strings = on ;
-SET check_function_bodies = true ;
-SET client_min_messages = warning ;
+${preamble}
 
 \\unset ON_ERROR_STOP
 
@@ -182,11 +182,7 @@ cat <<EOT >"${psqlFile}"
 
 */
 
-SET statement_timeout = 0 ;
-SET client_encoding = 'UTF8' ;
-SET standard_conforming_strings = on ;
-SET check_function_bodies = true ;
-SET client_min_messages = warning ;
+${preamble}
 
 \\unset ON_ERROR_STOP
 
@@ -237,7 +233,6 @@ if [[ -f ${psqlFile} ]]; then
 fi
 
 cat <<EOT >"${psqlFile}"
-
 /**
 ## Create the database
 
@@ -245,11 +240,7 @@ cat <<EOT >"${psqlFile}"
 
 */
 
-SET statement_timeout = 0 ;
-SET client_encoding = 'UTF8' ;
-SET standard_conforming_strings = on ;
-SET check_function_bodies = true ;
-SET client_min_messages = warning ;
+${preamble}
 
 \\unset ON_ERROR_STOP
 
@@ -274,5 +265,76 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog ;
 --CREATE EXTENSION IF NOT EXISTS postgis ;
 --CREATE EXTENSION IF NOT EXISTS fuzzystrmatch ;
 CREATE EXTENSION IF NOT EXISTS plpgsql_check ;
+
+EOT
+
+################################################################################
+fileName=006_create_util_schemas
+psqlFile="${targetDir}"/"${fileName}".sql
+
+if [[ -f ${psqlFile} ]]; then
+    echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
+    exit 1
+fi
+
+cat <<EOT >"${psqlFile}"
+/**
+## Create the utility schemas
+
+[${fileName}](${fileName}.sql)
+
+*/
+
+${preamble}
+
+\connect ${dbName}
+
+EOT
+
+ls "${targetDir}" | grep -P "^1.+sql" | awk '{print "\\i " $1}' >>${psqlFile}
+
+################################################################################
+fileName=007_create_data_schemas
+psqlFile="${targetDir}"/"${fileName}".sql
+
+if [[ -f ${psqlFile} ]]; then
+    echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
+    exit 1
+fi
+
+cat <<EOT >"${psqlFile}"
+/**
+## Create the data schemas
+
+[${fileName}](${fileName}.sql)
+
+*/
+
+${preamble}
+
+\connect ${dbName}
+
+EOT
+
+################################################################################
+fileName=008_create_api_schemas
+psqlFile="${targetDir}"/"${fileName}".sql
+
+if [[ -f ${psqlFile} ]]; then
+    echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
+    exit 1
+fi
+
+cat <<EOT >"${psqlFile}"
+/**
+## Create the API schemas
+
+[${fileName}](${fileName}.sql)
+
+*/
+
+${preamble}
+
+\connect ${dbName}
 
 EOT
