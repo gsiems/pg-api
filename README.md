@@ -74,16 +74,21 @@ the database objects.
 
 4. There is a testing framework at the database level.
 
-5. Much of the testing framework (and test cases) is generated using PostgreSQL
-functions and views on the database metadata.
+5. Much of the testing framework (and test cases) are generated using
+PostgreSQL functions and views on the database metadata.
 
 6. It should be possible to copy the contents of this project to a new
 directory as a starting point for a new database application. TODO: should
 there be a script for initializing a new project?
 
-By using convention plus metadata, the intent is to accomplish these goals while:
+7. Recurring development tasks that can be reasonably scripted should be
+scripted.
 
-1. Minimizing the amount of rote typing required for creating the database objects.
+By using convention plus metadata, the intent is to accomplish these goals
+while:
+
+1. Minimizing the amount of rote typing required for creating the database
+objects.
 
 2. Leaning into the "Principle of Least Surprise" (PLS) (a.k.a. the
 ["Principle of Least Astonishment"](https://en.wikipedia.org/wiki/Principle_of_least_astonishment) (POLA)).
@@ -97,7 +102,7 @@ and making [smart decisions](https://fs.blog/smart-decisions/) is a thing.
 ## Constraints
 
 1. To the extent practicable, all code generation functions are to be written
-as PostgreSQL functions and should make extensive use of the pg_catalog metadata.
+as PostgreSQL functions and should make extensive use of the database metadata.
 
 2. All SQL scripts are intended to be run using the `psql` client.
 
