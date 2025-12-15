@@ -5,15 +5,15 @@ function usage() {
     cat <<'EOT'
 NAME
 
-init_schema_scripts.sh
+init_api_schema_scripts.sh
 
 SYNOPSIS
 
-    init_schema_scripts.sh schema_name [schema_name] [schema_name] [schema_name] [...]
+    init_api_schema_scripts.sh schema_name [schema_name] [schema_name] [schema_name] [...]
 
 DESCRIPTION
 
-    Creates both the directory structure for one or more new database schemas
+    Creates both the directory structure for one or more new API schemas
     and the initial scripts for creating the schemas and schema objects.
 
 EOT
@@ -36,11 +36,15 @@ fi
 
 for schema in "$@"; do
     mkdir "${targetDir}/${schema}"
-    mkdir -p "${targetDir}"/{,as_generated/}"${schema}"/{foreign_server,foreign_table,function,materialized_view,procedure,sequence,table,trigger,type,view}
+    mkdir -p "${targetDir}"/{,as_generated/}"${schema}"/{function,materialized_view,procedure,type,view}
 
-    lastNum=$(ls 3*.sql | cut -d '_' -f 1 | tail -n 1)
 
-    newNum=$((lastNum + 1))
+    lastNum=$(ls "${targetDir}" | grep -P "^3.+sql" | cut -d '_' -f 1 | tail -n 1)
+    if [[ -z ${lastNum} ]]; then
+        newNum=301
+    else
+        newNum=$((lastNum + 1))
+    fi
 
     fileName="${newNum}_create-${schema}"
     psqlFile="${targetDir}"/"${fileName}".sql
@@ -72,12 +76,14 @@ REVOKE USAGE ON SCHEMA ${schema} FROM public ;
 
 -- Tables ----------------------------------------------------------------------
 
--- Views -----------------------------------------------------------------------
+-- Views and Materialized Views ------------------------------------------------
 
 -- Functions -------------------------------------------------------------------
 
 -- Procedures ------------------------------------------------------------------
 
 EOT
+
+echo "\\i ${fileName}.sql">>"${targetDir}"/008_create_api_schemas.sql
 
 done
