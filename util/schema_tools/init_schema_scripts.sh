@@ -73,6 +73,12 @@ if [ ! -d "${targetDir}" ]; then
     mkdir -p "${targetDir}" || exit 1
 fi
 
+dbName=$(grep -P 'ALTER DATABASE .+ OWNER TO' "${targetDir}"/004_create_database.sql | awk '{print $3}')
+if [[ -z ${dbName} ]]; then
+    echo "Could not determine database name."
+    exit 1
+fi
+
 owner=$(grep -P 'ALTER DATABASE .+ OWNER TO' "${targetDir}"/004_create_database.sql | awk '{print $6}')
 if [[ -z ${owner} ]]; then
     owner=TBD
