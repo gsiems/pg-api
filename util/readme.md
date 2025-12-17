@@ -26,13 +26,9 @@ from object DDL files (as markdoown files).
 * `init_database_scripts.sh` Creates the initial scripts for creating a
 database.
 
-* `init_doc_schema_scripts.sh`  Creates both the directory structure for one or
-more new data table schemas and the initial scripts for creating the schemas
-and schema objects.
-
-* `init_api_schema_scripts.sh` Creates both the directory structure for one or
-more new API schemas and the initial scripts for creating the schemas and
-schema objects.
+* `init_schema_scripts.sh` Creates both the directory structure for one or more
+new schemas and the initial scripts for creating the schemas and schema
+objects.
 
 * `reconcile_source_files.sh` Reconciles the current list of DDL files in the
 schema directories with the includes '\i' file list contained in the
