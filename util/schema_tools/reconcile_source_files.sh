@@ -77,7 +77,7 @@ EOT
     append_includes_list "${schema}" "${newFile}"
 }
 
-function update_create_schema_file() {
+function update_schema_file() {
     local schema="${1}"
     local currentFile="${2}"
     local newFilesList
@@ -174,7 +174,7 @@ for schema in $(find . -mindepth 1 -maxdepth 1 -type d ! -empty | sed 's/^\.\///
     if [ -z "${currentFile}" ]; then
         new_create_schema_file "${schema}"
     else
-        update_create_schema_file "${schema}" "${currentFile}"
+        update_schema_file "${schema}" "${currentFile}"
     fi
 
 done
