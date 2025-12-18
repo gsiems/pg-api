@@ -291,6 +291,286 @@ EOT
 
 ################################################################################
 function init_util_schema() {
+
+    owner=${dbName}_owner
+
+    utilDir="${targetDir}"/util_log
+
+    if [[ -d $utilDir ]]; then
+        fileName=101_create-util_log
+        psqlFile="${targetDir}"/"${fileName}".sql
+
+        if [[ -f ${psqlFile} ]]; then
+            echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
+        else
+            cat <<EOT >"${psqlFile}"
+/**
+### Logging
+
+[${fileName}](${fileName}.sql)
+
+Setup [util_log](https://github.com/gsiems/pg-util_log) to provide persistent
+logging for functions, procedures, and views.
+
+*/
+
+\\connect ${dbName}
+${preamble}
+
+-- set the search path so dblink creates properly
+SET search_path = public, pg_catalog ;
+
+CREATE EXTENSION IF NOT EXISTS dblink SCHEMA public ;
+
+SET search_path = pg_catalog, public ;
+
+\\unset ON_ERROR_STOP
+
+DROP SCHEMA IF EXISTS util_log CASCADE ;
+
+CREATE SCHEMA IF NOT EXISTS util_log ;
+
+COMMENT ON SCHEMA util_log IS 'Schema and objects for logging database function and procedure calls' ;
+
+ALTER SCHEMA util_log OWNER TO ${owner} ;
+GRANT USAGE ON SCHEMA util_log TO ${owner} ;
+REVOKE USAGE ON SCHEMA util_log FROM public ;
+
+DROP SERVER IF EXISTS loopback_dblink CASCADE ;
+
+CREATE SERVER loopback_dblink FOREIGN DATA WRAPPER dblink_fdw
+    OPTIONS ( hostaddr '127.0.0.1', dbname '${dbName}' ) ;
+
+ALTER SERVER loopback_dblink OWNER TO ${owner} ;
+
+/**
+Since the logging is using dblink as a loopback, the password for the linked
+user and user mappings can be dynamically set/used.
+
+*/
+DO
+\$\$
+DECLARE
+    r record ;
+BEGIN
+    FOR r IN (
+        WITH x AS (
+            -- upper case letters
+            SELECT chr ( ( 65 + round ( random () * 25 ) )::integer ) AS x
+                FROM generate_series ( 1, 26 )
+            UNION
+            -- lower case letters
+            SELECT chr ( ( 97 + round ( random () * 25 ) )::integer )
+                FROM generate_series ( 1, 26 )
+            UNION
+            -- numbers
+            SELECT chr ( ( 48 + round ( random () * 9 ) )::integer )
+                FROM generate_series ( 1, 10 )
+        ),
+        y AS (
+            SELECT x AS chrs
+                FROM x
+                ORDER BY random ()
+                LIMIT ( 20 + round ( random () * 10 ) )
+        )
+        SELECT '${dbName}_logger' AS usr,
+                array_to_string ( array_agg ( chrs ), '' ) AS passwd
+            FROM y ) LOOP
+
+        EXECUTE format ('ALTER ROLE %I LOGIN PASSWORD %L', r.usr, r.passwd ) ;
+
+        EXECUTE format ('CREATE USER MAPPING FOR ${owner} SERVER loopback_dblink
+            OPTIONS ( user %L, password %L )', r.usr, r.passwd ) ;
+
+        EXECUTE format ('CREATE USER MAPPING FOR CURRENT_USER SERVER loopback_dblink
+            OPTIONS ( user %L, password %L )', r.usr, r.passwd ) ;
+
+    END LOOP ;
+END ;
+\$\$ ;
+
+\\set ON_ERROR_STOP
+
+-- Tables --------------------------------------------------------------
+\\i util_log/table/st_log_level.sql
+\\i util_log/table/dt_proc_log.sql
+\\i util_log/table/dt_last_logged.sql
+
+-- Views ---------------------------------------------------------------
+\\i util_log/view/dv_proc_log.sql
+\\i util_log/view/dv_proc_log_today.sql
+\\i util_log/view/dv_proc_log_last_hour.sql
+\\i util_log/view/dv_proc_log_last_day.sql
+\\i util_log/view/dv_proc_log_last_week.sql
+
+-- Functions -----------------------------------------------------------
+\\i util_log/function/dici.sql
+\\i util_log/function/manage_partitions.sql
+\\i util_log/function/update_last_logged.sql
+
+-- Procedures ----------------------------------------------------------
+\\i util_log/procedure/log_to_dblink.sql
+\\i util_log/procedure/log_begin.sql
+\\i util_log/procedure/log_debug.sql
+\\i util_log/procedure/log_exception.sql
+\\i util_log/procedure/log_finish.sql
+\\i util_log/procedure/log_info.sql
+
+-- Query bug -----------------------------------------------------------
+\\i util_log/function/query_bug.sql
+EOT
+
+        fi
+    fi
+
+    utilDir="${targetDir}"/util_meta
+
+    if [[ -d $utilDir ]]; then
+        fileName=102_create-util_meta
+        psqlFile="${targetDir}"/"${fileName}".sql
+
+        if [[ -f ${psqlFile} ]]; then
+            echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
+        else
+            cat <<EOT >"${psqlFile}"
+/**
+### Metadata
+
+[${fileName}](${fileName}.sql)
+
+Setup util_meta for generating the DDL for creating functions, procedures, and
+views.
+
+*/
+
+\\connect ${dbName}
+${preamble}
+\\unset ON_ERROR_STOP
+
+DROP SCHEMA IF EXISTS util_meta CASCADE ;
+
+\\set ON_ERROR_STOP
+
+CREATE SCHEMA IF NOT EXISTS util_meta ;
+
+COMMENT ON SCHEMA util_meta IS 'Database meta-data for objects (views, functions, procedures) for creating database API objects.' ;
+
+ALTER SCHEMA util_meta OWNER TO ${owner} ;
+GRANT USAGE ON SCHEMA util_meta TO ${owner} ;
+REVOKE USAGE ON SCHEMA util_meta FROM public ;
+
+-- Types -----------------------------------------------------------------------
+\\i util_meta/type/ut_parameters.sql
+\\i util_meta/type/ut_object.sql
+\\i util_meta/type/ut_parent_table.sql
+
+-- Tables ----------------------------------------------------------------------
+\\i util_meta/table/st_default_param.sql
+\\i util_meta/table/rt_config_default.sql
+\\i util_meta/table/rt_plural_word.sql
+
+-- Views -----------------------------------------------------------------------
+\\i util_meta/view/conftypes.sql
+\\i util_meta/view/contypes.sql
+\\i util_meta/view/prokinds.sql
+\\i util_meta/view/relkinds.sql
+\\i util_meta/view/typtypes.sql
+
+\\i util_meta/view/schemas.sql
+\\i util_meta/view/objects.sql
+\\i util_meta/view/columns.sql
+\\i util_meta/view/foreign_keys.sql
+\\i util_meta/view/object_grants.sql
+\\i util_meta/view/dependencies.sql
+\\i util_meta/view/extensions.sql
+
+-- Functions -------------------------------------------------------------------
+
+-- Common utility functions
+\\i util_meta/function/_to_plural.sql
+\\i util_meta/function/_to_singular.sql
+\\i util_meta/function/_base_name.sql
+\\i util_meta/function/_base_order.sql
+
+\\i util_meta/function/_resolve_parameter.sql
+
+\\i util_meta/function/_append_parameter.sql
+
+\\i util_meta/function/_cleanup_whitespace.sql
+\\i util_meta/function/_indent.sql
+\\i util_meta/function/_is_valid_object.sql
+\\i util_meta/function/_new_line.sql
+\\i util_meta/function/_table_noun.sql
+\\i util_meta/function/_proc_parameters.sql
+\\i util_meta/function/_calling_parameters.sql
+\\i util_meta/function/_boolean_casting.sql
+\\i util_meta/function/_find_func.sql
+\\i util_meta/function/_view_name.sql
+\\i util_meta/function/_find_view.sql
+
+\\i util_meta/function/_find_dt_parent.sql
+
+-- Snippet functions
+\\i util_meta/function/_snip_declare_variables.sql
+\\i util_meta/function/_snip_documentation_block.sql
+
+\\i util_meta/function/_snip_log_params.sql
+\\i util_meta/function/_snip_object_comment.sql
+\\i util_meta/function/_snip_owners_and_grants.sql
+\\i util_meta/function/_snip_resolve_id.sql
+\\i util_meta/function/_snip_resolve_user_id.sql
+
+\\i util_meta/function/_snip_function_backmatter.sql
+\\i util_meta/function/_snip_function_frontmatter.sql
+\\i util_meta/function/_snip_procedure_backmatter.sql
+\\i util_meta/function/_snip_procedure_frontmatter.sql
+
+\\i util_meta/function/_snip_get_permissions.sql
+\\i util_meta/function/_snip_permissions_check.sql
+
+--------------------------------------------------------------------------------
+-- "Final" DDL generating functions for "regular API" objects
+\\i util_meta/function/mk_view.sql
+\\i util_meta/function/mk_user_type.sql
+\\i util_meta/function/mk_object_migration.sql
+
+\\i util_meta/function/mk_resolve_id_function.sql
+\\i util_meta/function/mk_can_do_function_shell.sql
+
+\\i util_meta/function/mk_find_function.sql
+\\i util_meta/function/mk_get_function.sql
+\\i util_meta/function/mk_list_function.sql
+\\i util_meta/function/mk_list_children_function.sql
+
+\\i util_meta/function/mk_priv_delete_procedure.sql
+\\i util_meta/function/mk_priv_insert_procedure.sql
+\\i util_meta/function/mk_priv_update_procedure.sql
+\\i util_meta/function/mk_priv_upsert_procedure.sql
+
+\\i util_meta/function/mk_api_procedure.sql
+
+--------------------------------------------------------------------------------
+-- JSON utility functions
+\\i util_meta/function/_json_identifier.sql
+
+-- JSON snippet functions
+\\i util_meta/function/_snip_json_agg_build_object.sql
+\\i util_meta/function/_snip_json_build_object.sql
+
+-- "Final" DDL generating functions for "JSON API" objects
+\\i util_meta/function/mk_json_view.sql
+\\i util_meta/function/mk_json_user_type.sql
+
+\\i util_meta/function/mk_json_function_wrapper.sql
+
+--------------------------------------------------------------------------------
+-- Testing functions
+--\\i util_meta/function/mk_test_procedure_wrapper.sql
+EOT
+
+        fi
+    fi
+
     fileName=006_create_util_schemas
     psqlFile="${targetDir}"/"${fileName}".sql
 
@@ -305,9 +585,8 @@ function init_util_schema() {
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 ${preamble}
-
 EOT
 
         ls "${targetDir}" | grep -P "^1.+sql" | awk '{print "\\i " $1}' >>"${psqlFile}"
@@ -331,7 +610,7 @@ function init_create_data_schemas() {
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 ${preamble}
 
 EOT
@@ -354,7 +633,7 @@ function init_create_api_schemas() {
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 ${preamble}
 
 EOT
@@ -410,7 +689,7 @@ the different environments.
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 ${preamble}
 
 EOT
@@ -446,36 +725,38 @@ EOT
 }
 
 function init_run_all() {
-    fileName=000_run_all.sh
+    fileName=000_run_all
 
-    if [[ -f ${fileName} ]]; then
-        echo "${fileName} already exists. Cowardly refusing to overwrite it."
+    shFile="${targetDir}"/"${fileName}".sh
+    if [[ -f ${shFile} ]]; then
+        echo "${shFile} already exists. Cowardly refusing to overwrite it."
     else
-        cat <<EOT >"${fileName}"
+        cat <<EOT >"${shFile}"
 #!/usr/bin/env bash
 
 psql -f 000_run_all.sql postgres
 EOT
 
-        chmod 700 "${fileName}"
+        chmod 700 "${shFile}"
     fi
 
-    fileName=000_run_all.sql
+    fileName=000_run_all
+    psqlFile="${targetDir}"/"${fileName}".sql
 
-    if [[ -f ${fileName} ]]; then
-        echo "${fileName} already exists. Cowardly refusing to overwrite it."
+    if [[ -f ${psqlFile} ]]; then
+        echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
     else
-        cat <<EOT >"${fileName}"
-\i 001_drop_database.sql
-\i 002_drop_roles.sql
-\i 003_create_roles.sql
-\i 004_create_database.sql
-\i 006_create_util_schemas.sql
-\i 007_create_data_schemas.sql
-\i 008_create_api_schemas.sql
+        cat <<EOT >"${psqlFile}"
+\\i 001_drop_database.sql
+\\i 002_drop_roles.sql
+\\i 003_create_roles.sql
+\\i 004_create_database.sql
+\\i 006_create_util_schemas.sql
+\\i 007_create_data_schemas.sql
+\\i 008_create_api_schemas.sql
 
-\i 501_ownership_and_permissions.sql
-\i 601_role_passwords.sql
+\\i 501_ownership_and_permissions.sql
+\\i 601_role_passwords.sql
 EOT
     fi
 }
