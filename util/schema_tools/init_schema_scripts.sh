@@ -102,16 +102,18 @@ function get_new_num() {
 function init_api_schema() {
     local schema="${1}"
 
-    mkdir -p "${targetDir}"/{,as_generated/}"${schema}"/{function,materialized_view,procedure,type,view}
-
-    newNum=$(get_new_num 3)
-    fileName="${newNum}_create-${schema}"
-    psqlFile="${targetDir}"/"${fileName}".sql
+    psqlFile=$(find "${targetDir}" -type f -name "3*create-${schema}.sql" | head -n 1)
 
     if [[ -f ${psqlFile} ]]; then
         echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
         return
     fi
+
+    mkdir -p "${targetDir}"/"${schema}"/{function,materialized_view,procedure,type,view}
+
+    newNum=$(get_new_num 3)
+    fileName="${newNum}_create-${schema}"
+    psqlFile="${targetDir}"/"${fileName}".sql
 
     cat <<EOT >"${psqlFile}"
 /**
@@ -121,7 +123,7 @@ function init_api_schema() {
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 
 SET statement_timeout = 0 ;
 SET client_encoding = 'UTF8' ;
@@ -156,16 +158,18 @@ EOT
 function init_data_schema() {
     local schema="${1}"
 
-    mkdir -p "${targetDir}"/"${schema}"/{foreign_server,foreign_table,function,sequence,table}
-
-    newNum=$(get_new_num 2)
-    fileName="${newNum}_create-${schema}"
-    psqlFile="${targetDir}"/"${fileName}".sql
+    psqlFile=$(find "${targetDir}" -type f -name "2*create-${schema}.sql" | head -n 1)
 
     if [[ -f ${psqlFile} ]]; then
         echo "${psqlFile} already exists. Cowardly refusing to overwrite it."
         return
     fi
+
+    mkdir -p "${targetDir}"/"${schema}"/{foreign_server,foreign_table,function,sequence,table}
+
+    newNum=$(get_new_num 2)
+    fileName="${newNum}_create-${schema}"
+    psqlFile="${targetDir}"/"${fileName}".sql
 
     cat <<EOT >"${psqlFile}"
 /**
@@ -175,7 +179,7 @@ function init_data_schema() {
 
 */
 
-\connect ${dbName}
+\\connect ${dbName}
 
 SET statement_timeout = 0 ;
 SET client_encoding = 'UTF8' ;
