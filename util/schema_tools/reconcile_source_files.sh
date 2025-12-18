@@ -27,7 +27,7 @@ EOT
 cd "$(dirname "$0")" || exit 1
 
 targetDir=../../schema
-cd "$(targetDir "$0")" || exit 1
+cd "${targetDir}" || exit 1
 
 function append_includes_list() {
     local schema="${1}"
@@ -167,7 +167,7 @@ function update_schema_file() {
     rm "${newFilesList}"
 }
 
-for schema in $(find . -mindepth 1 -maxdepth 1 -type d ! -empty | sed 's/^\.\///'); do
+for schema in $(find . -mindepth 1 -maxdepth 1 -type d ! -empty ! -name as_generated | sed 's/^\.\///'); do
 
     currentFile=$(ls | grep -P "[0-9]+_create-${schema}.sql")
 
