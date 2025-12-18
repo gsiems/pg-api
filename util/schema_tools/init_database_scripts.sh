@@ -74,7 +74,6 @@ SET search_path = pg_catalog ;
 "
 
 ################################################################################
-
 function init_drop_database() {
     fileName=001_drop_database
     psqlFile="${targetDir}"/"${fileName}".sql
@@ -446,6 +445,41 @@ EOT
     fi
 }
 
+function init_run_all() {
+    fileName=000_run_all.sh
+
+    if [[ -f ${fileName} ]]; then
+        echo "${fileName} already exists. Cowardly refusing to overwrite it."
+    else
+        cat <<EOT >"${fileName}"
+#!/usr/bin/env bash
+
+psql -f 000_run_all.sql postgres
+EOT
+
+        chmod 700 "${fileName}"
+    fi
+
+    fileName=000_run_all.sql
+
+    if [[ -f ${fileName} ]]; then
+        echo "${fileName} already exists. Cowardly refusing to overwrite it."
+    else
+        cat <<EOT >"${fileName}"
+\i 001_drop_database.sql
+\i 002_drop_roles.sql
+\i 003_create_roles.sql
+\i 004_create_database.sql
+\i 006_create_util_schemas.sql
+\i 007_create_data_schemas.sql
+\i 008_create_api_schemas.sql
+
+\i 501_ownership_and_permissions.sql
+\i 601_role_passwords.sql
+EOT
+    fi
+}
+
 ################################################################################
 init_drop_database
 init_drop_roles
@@ -456,3 +490,4 @@ init_create_data_schemas
 init_create_api_schemas
 init_ownership_and_permissions
 init_role_passwords
+init_run_all
