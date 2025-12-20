@@ -266,7 +266,7 @@ params AS (
             NULL::text AS audit_action,
             false AS is_audit_tmsp_col,
             false AS is_audit_user_col,
-            'a_user' AS param_name,
+            'a_act_user' AS param_name,
             'in' AS param_direction,
             'text' AS param_data_type,
             NULL::text AS ref_param_name,

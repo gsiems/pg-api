@@ -95,7 +95,7 @@ BEGIN
     ----------------------------------------------------------------------------
     l_calling_params := util_meta._append_parameter (
         a_parameters => l_calling_params,
-        a_name => 'a_user',
+        a_name => 'a_act_user',
         a_datatype => 'text',
         a_description => 'The ID or username of the user doing the search' ) ;
 

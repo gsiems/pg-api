@@ -77,7 +77,7 @@ BEGIN
                     a_object_name => a_object_name,
                     a_ddl_schema => l_ddl_schema )
             WHERE is_pk
-                OR param_name IN ( 'a_err', 'a_user' )
+                OR param_name IN ( 'a_err', 'a_act_user' )
             ORDER BY ordinal_position ) LOOP
 
         IF r.is_pk THEN

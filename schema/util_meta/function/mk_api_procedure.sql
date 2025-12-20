@@ -147,7 +147,7 @@ BEGIN
 
         IF a_action = 'delete' THEN
 
-            IF r.is_pk OR r.param_name IN ( 'a_err', 'a_user' ) THEN
+            IF r.is_pk OR r.param_name IN ( 'a_err', 'a_act_user' ) THEN
 
                 l_proc_args := array_append ( l_proc_args, concat_ws (
                         ' ',

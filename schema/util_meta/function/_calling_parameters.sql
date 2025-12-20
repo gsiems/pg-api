@@ -81,7 +81,7 @@ SELECT schema_name,
         regexp_replace ( param_name, '^a_', 'l_' ) AS local_var_name,
         regexp_replace ( param_name, '^a_', '' ) AS column_name,
         CASE
-            WHEN param_name = 'a_user' THEN 'The ID or username of the user performing the action'
+            WHEN param_name = 'a_act_user' THEN 'The ID or username of the user performing the action'
             WHEN param_name = 'a_err' THEN 'The (business or database) error that was generated, if any'
             WHEN param_name = 'a_search_term' THEN 'The string to search for'
             END AS comments

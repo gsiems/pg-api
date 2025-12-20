@@ -65,7 +65,7 @@ BEGIN
         util_meta._new_line (),
         '',
         util_meta._indent ( l_indents + 1 ) || 'l_has_permission := ' || a_ddl_schema || '.can_do (',
-        util_meta._indent ( l_indents + 2 ) || 'a_user => a_user,',
+        util_meta._indent ( l_indents + 2 ) || 'a_user => a_act_user,',
         util_meta._indent ( l_indents + 2 ) || 'a_action => ' || l_action || ',',
         util_meta._indent ( l_indents + 2 ) || 'a_object_type => ' || quote_literal ( l_object_type ) || ',' ) ;
 
