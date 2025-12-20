@@ -437,7 +437,7 @@ l_parent_id_param
         util_meta._snip_procedure_backmatter (
             a_ddl_schema => l_ddl_schema,
             a_procedure_name => l_proc_name,
-            a_comment => 'performs an update on ' || a_object_name,
+            a_comment => NULL::text,
             a_owner => a_owner,
             a_calling_parameters => l_calling_params ) ) ;
 
