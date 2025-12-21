@@ -734,6 +734,8 @@ function init_run_all() {
         cat <<EOT >"${shFile}"
 #!/usr/bin/env bash
 
+cd "\$(dirname "\$0")" || exit 1
+
 psql -f 000_run_all.sql postgres
 EOT
 
