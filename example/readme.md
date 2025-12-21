@@ -62,7 +62,7 @@ Note that the tables and columns all have comments.
 
 Run the `reconcile_source_files` to add the table (and sequence) files to the
 "create example_data schema"
-([`201_create-example_data.sql`](schema/201_create-example_data.sql)) plsql
+([`201_create-example_data.sql`](schema/201_create-example_data.sql)) psql
 script. This will add any new files to the end of the file (this will also
 comment out any listed files that no longer exist).
 
@@ -70,7 +70,7 @@ comment out any listed files that no longer exist).
 ../util/schema_tools/reconcile_source_files.sh -o "${PWD}"/schema
 ```
 
-Edit the `schema/201_create-example_data.sql` plsql script to ensure the tables
+Edit the `schema/201_create-example_data.sql` psql script to ensure the tables
 are created in the correct order and then run the script to create the schema
 and tables in the database.
 
@@ -148,7 +148,7 @@ generating the view comments.
  * [`schema/priv_example_admin/view/dv_user_app_role.sql`](schema/priv_example_admin/view/dv_user_app_role.sql)
 
 Run the `reconcile_source_files` script to add the view DDL files to the
-([`301_create-priv_example_admin`](schema/301_create-priv_example_admin)) plsql
+([`301_create-priv_example_admin`](schema/301_create-priv_example_admin)) psql
 script.
 
 ```
