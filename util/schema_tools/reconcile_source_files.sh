@@ -9,7 +9,7 @@ reconcile_source_files.sh
 
 SYNOPSIS
 
-    reconcile_source_files.sh
+    reconcile_source_files.sh [-o target_directory]
 
 DESCRIPTION
 
@@ -20,13 +20,40 @@ DESCRIPTION
     should get appended to the end of the appropriate create-[schema_name].sql
     file.
 
+OPTIONS
+
+    -o target_directory
+
+        The name directory to create the scripts in (defaults to ../../schema)
+
+    -h
+
+        Displays this help
+
 EOT
     exit 0
 }
 
 cd "$(dirname "$0")" || exit 1
 
-targetDir=../../schema
+########################################################################
+# Read the calling args
+while getopts 'ho:' arg; do
+    case ${arg} in
+        h) usage=1 ;;
+        o) targetDir="${OPTARG}" ;;
+        *) usage=1 ;;
+    esac
+done
+
+if [[ -n ${usage} ]]; then
+    usage
+fi
+
+if [[ -z ${targetDir} ]]; then
+    targetDir=../../schema
+fi
+
 cd "${targetDir}" || exit 1
 
 function append_includes_list() {
