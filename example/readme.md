@@ -52,12 +52,11 @@ data schema.
 
 Create the tables. NB: this is for the simplest app that could possibly work.
 
-```
-EDIT [schema/example_data/sequence/seq_rt_id.sql](schema/example_data/sequence/seq_rt_id.sql)
-EDIT [schema/example_data/table/st_app_role.sql](schema/example_data/table/st_app_role.sql)
-EDIT [schema/example_data/table/dt_user.sql](schema/example_data/table/dt_user.sql)
-EDIT [schema/example_data/table/dt_user_app_role.sql](schema/example_data/table/dt_user_app_role.sql)
-```
+Create and edit:
+ * [`schema/example_data/sequence/seq_rt_id.sql`](schema/example_data/sequence/seq_rt_id.sql)
+ * [`schema/example_data/table/st_app_role.sql`](schema/example_data/table/st_app_role.sql)
+ * [`schema/example_data/table/dt_user.sql`](schema/example_data/table/dt_user.sql)
+ * [`schema/example_data/table/dt_user_app_role.sql`](schema/example_data/table/dt_user_app_role.sql)
 
 Note that the tables and columns all have comments.
 
