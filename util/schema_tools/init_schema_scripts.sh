@@ -20,7 +20,7 @@ OPTIONS
 
     -o directory_name
 
-        The name directory to create the scripts in (defaults to ../../schema)
+        The name of the directory to create the scripts in (defaults to ../../schema)
 
     -s schema_name(s)
 

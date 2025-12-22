@@ -24,7 +24,7 @@ OPTIONS
 
     -o target_directory
 
-        The name directory to create the scripts in (defaults to ../../schema)
+        The name of the directory to create the scripts in (defaults to ../../schema)
 
     -h
 
