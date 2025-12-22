@@ -106,32 +106,59 @@ the files allows for comparisons between the generated and final code.
 Running:
 
 ```
-source generators.sh
-ddl_schema=priv_example_admin
-table_schema=example_data
+../util/schema_tools/mk_view.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name st_app_role \
+    --verbose
 
-gen_view_ddl "${ddl_schema}" "${table_schema}" st_app_role
-gen_view_ddl "${ddl_schema}" "${table_schema}" dt_user
-gen_view_ddl "${ddl_schema}" "${table_schema}" dt_user_app_role
+../util/schema_tools/mk_view.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user \
+    --verbose
+
+../util/schema_tools/mk_view.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user_app_role \
+    --verbose
 ```
 
 Executes the following to generate sql files for creating the views:
 
 ```
 SELECT util_meta.mk_view (
-            a_object_schema => 'example_data',
-            a_object_name => 'st_app_role',
-            a_ddl_schema => 'priv_example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'st_app_role'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_view (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'priv_example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_view (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user_app_role',
-            a_ddl_schema => 'priv_example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user_app_role'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
 ```
 
@@ -171,11 +198,13 @@ function(s) need to be created.
 Running:
 
 ```
-source generators.sh
-ddl_schema=priv_example_admin
-table_schema=example_data
-
-gen_resolve_id_func_ddl "${ddl_schema}" "${table_schema}" dt_user
+../util/schema_tools/mk_resolve_id_function.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user \
+    --verbose
 ```
 
 Executes the following to generate the sql file for creating the
@@ -183,9 +212,11 @@ Executes the following to generate the sql file for creating the
 
 ```
 SELECT util_meta.mk_resolve_id_function (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'priv_example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
 ```
 
@@ -214,36 +245,60 @@ then edit and run `301_create-priv_example_admin.sql` to create the function.
 By now, a pattern should be seen...
 
 ```
-source generators.sh
-ddl_schema=priv_example_admin
-table_schema=example_data
+../util/schema_tools/mk_priv_insert_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user \
+    --verbose
 
-gen_priv_proc_ddl "${ddl_schema}" "${table_schema}" dt_user insert
-gen_priv_proc_ddl "${ddl_schema}" "${table_schema}" dt_user update
-gen_priv_proc_ddl "${ddl_schema}" "${table_schema}" dt_user upsert
+../util/schema_tools/mk_priv_update_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user \
+    --verbose
+
+../util/schema_tools/mk_priv_upsert_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema priv_example_admin \
+    --object_schema example_data \
+    --object_name dt_user \
+    --verbose
 ```
 
 ```
 SELECT util_meta.mk_priv_insert_procedure (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'priv_example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text
         ) ;
+
 SELECT util_meta.mk_priv_update_procedure (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'priv_example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text
         ) ;
+
 SELECT util_meta.mk_priv_upsert_procedure (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'priv_example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'priv_example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text
         ) ;
 ```
 
@@ -283,15 +338,18 @@ Before creating the public API functions and procedures `can_do` function needs
 to be created.
 
 ```
-source generators.sh
-ddl_schema=example_admin
-
-gen_can_do_func_ddl "${ddl_schema}"
+../util/schema_tools/mk_can_do_function_shell.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --ddl_schema example_data \
+    --verbose
 ```
 
 ```
 SELECT util_meta.mk_can_do_function_shell (
-            a_ddl_schema => 'example_admin'
+        a_ddl_schema => 'example_data'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
 ```
 
@@ -313,14 +371,31 @@ Edit and run ```schema/302_create-example_admin.sql```
 
 ## Create the API functions
 
-```
-source generators.sh
-ddl_schema=example_admin
-table_schema=example_data
 
-gen_api_func_ddl "${ddl_schema}" "${table_schema}" dt_user find
-gen_api_func_ddl "${ddl_schema}" "${table_schema}" dt_user get
-gen_api_func_ddl "${ddl_schema}" "${table_schema}" dt_user list
+```
+../util/schema_tools/mk_find_function.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
+
+../util/schema_tools/mk_get_function.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
+
+../util/schema_tools/mk_list_function.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
 ```
 
 ```
