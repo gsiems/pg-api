@@ -400,19 +400,29 @@ Edit and run ```schema/302_create-example_admin.sql```
 
 ```
 SELECT util_meta.mk_find_function (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_is_row_based => null::boolean,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_get_function (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_list_function (
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin'
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_exclude_binary_data => null::boolean,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
 ```
 
@@ -443,39 +453,69 @@ Edit and run `schema/302_create-example_admin.sql`
 ## Create the API procedures
 
 ```
-source generators.sh
-ddl_schema=example_admin
-table_schema=example_data
+../util/schema_tools/mk_api_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --action insert \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
 
-gen_api_proc_ddl "${ddl_schema}" "${table_schema}" dt_user insert
-gen_api_proc_ddl "${ddl_schema}" "${table_schema}" dt_user update
-gen_api_proc_ddl "${ddl_schema}" "${table_schema}" dt_user upsert
+../util/schema_tools/mk_api_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --action update \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
+
+../util/schema_tools/mk_api_procedure.sh \
+    --dir "${PWD}"/schema/as_generated \
+    --db example_db \
+    --action upsert \
+    --object_schema example_data \
+    --object_name dt_user \
+    --ddl_schema example_admin \
+    --verbose
 ```
 
 ```
 SELECT util_meta.mk_api_procedure (
-            a_action => 'insert',
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_action => 'insert'::text,
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_api_procedure (
-            a_action => 'update',
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_action => 'update'::text,
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
+
 SELECT util_meta.mk_api_procedure (
-            a_action => 'upsert',
-            a_object_schema => 'example_data',
-            a_object_name => 'dt_user',
-            a_ddl_schema => 'example_admin',
-            a_insert_audit_columns => 'created_dt,created_by_id',
-            a_update_audit_columns => 'updated_dt,updated_by_id'
+        a_action => 'upsert'::text,
+        a_object_schema => 'example_data'::text,
+        a_object_name => 'dt_user'::text,
+        a_ddl_schema => 'example_admin'::text,
+        a_cast_booleans_as => null::text,
+        a_insert_audit_columns => 'created_dt,created_by_id'::text,
+        a_update_audit_columns => 'updated_dt,updated_by_id'::text,
+        a_owner => null::text,
+        a_grantees => null::text
         ) ;
 ```
 
