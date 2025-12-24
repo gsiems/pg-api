@@ -8,10 +8,12 @@ WITH referential_constraints AS (
             mr.label AS match_option,
             ur.label AS update_rule,
             dr.label AS delete_rule,
-            regexp_split_to_array ( pg_catalog.pg_get_constraintdef ( con.oid ), '[ \(\)]' ) AS def
+            regexp_split_to_array ( pg_catalog.pg_get_constraintdef ( con.oid ), '[\(\)]' ) AS def
         FROM pg_catalog.pg_constraint con
         JOIN pg_catalog.pg_class tbl
             ON ( tbl.oid = con.conrelid )
+        JOIN util_meta.schemas
+            ON ( schemas.schema_oid = tbl.relnamespace )
         JOIN pg_catalog.pg_namespace tsc
             ON ( tsc.oid = tbl.relnamespace )
         JOIN pg_catalog.pg_class rcon
@@ -29,12 +31,12 @@ WITH referential_constraints AS (
 SELECT schema_name,
         table_name,
         concat_ws ( '.', schema_name, table_name ) AS full_table_name,
-        def[4] AS column_names,
+        def[2] AS column_names,
         constraint_name,
-        split_part ( def[7], '.', 1 ) AS ref_schema_name,
-        split_part ( def[7], '.', 2 ) AS ref_table_name,
-        def[7] AS ref_full_table_name,
-        def[8] AS ref_column_names,
+        split_part ( split_part ( def[3], ' ', 3 ), '.', 1 ) AS ref_schema_name,
+        split_part ( split_part ( def[3], ' ', 3 ), '.', 2 ) AS ref_table_name,
+        split_part ( def[3], ' ', 3 ) AS ref_full_table_name,
+        def[4] AS ref_column_names,
         ref_constraint_name,
         match_option,
         update_rule,
