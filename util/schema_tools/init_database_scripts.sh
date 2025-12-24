@@ -483,6 +483,7 @@ REVOKE USAGE ON SCHEMA util_meta FROM public ;
 \\i util_meta/view/object_grants.sql
 \\i util_meta/view/dependencies.sql
 \\i util_meta/view/extensions.sql
+\\i util_meta/view/indexes.sql
 
 -- Functions -------------------------------------------------------------------
 
