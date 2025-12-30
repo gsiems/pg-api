@@ -54,7 +54,7 @@ BEGIN
         || a_object_type
         || ' has already been deleted'' ;' ;
 
-    IF util_meta._is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+    IF util_meta._uses_logging () THEN
         l_log_line := 'call util_log.log_exception ( a_err ) ;' ;
     END IF ;
 

@@ -40,7 +40,7 @@ BEGIN
         util_meta._indent ( 2 ) || 'a_err := substr ( SQLSTATE::text || '' - '' || SQLERRM, 1, 200 ) ;' ) ;
 
     -- check that util_log schema exists
-    IF util_meta._is_valid_object ( 'util_log', 'log_exception', 'procedure' ) THEN
+    IF util_meta._uses_logging () THEN
         l_return := concat_ws (
             util_meta._new_line (),
             l_return,
