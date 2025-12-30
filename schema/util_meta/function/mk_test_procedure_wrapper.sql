@@ -52,17 +52,9 @@ BEGIN
     END IF ;
 
     -- check that util_log schema exists
-    IF NOT util_meta._is_valid_object ( 'util_log', 'log_begin', 'procedure' ) THEN
-        l_uses_logging := true ;
-    END IF ;
+    l_uses_logging := util_meta._uses_logging () ;
 
     ----------------------------------------------------------------------------
-
-/*
-
-
-
-*/
     l_proc_base := regexp_replace ( regexp_replace ( a_object_name, '^priv', '' ), '^_', '' ) ;
     l_proc_type := split_part ( l_proc_base, '_', 1 ) ; -- insert, update, delete, upsert
     l_obj_noun := regexp_replace ( regexp_replace ( l_proc_base, '^' || l_proc_type || '_', '' ), '^rt_', '' ) ;
@@ -302,16 +294,6 @@ BEGIN
         -- new table data matches the submitted data.
         -- First, find a matching view. Note that the view probably exists in the same
         -- schema as the procedure... probably
-
-/*
-
-util_meta._find_view (
-    a_proc_schema text DEFAULT NULL,
-    a_table_schema text DEFAULT NULL,
-    a_table_name text DEFAULT NULL )
-
-*/
-
         FOR r IN (
             WITH pfx AS (
                 SELECT prefix,
@@ -508,9 +490,10 @@ util_meta._find_view (
 
         END IF ;
 
-    END IF ;
-
+    -- ELSIF l_proc_type = 'delete' THEN
     -- TODO: for delete procedures ensure that the delete succeeded
+
+    END IF ;
 
     --------------------------------------------------------------------
     -- end-matter
