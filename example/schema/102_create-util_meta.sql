@@ -72,6 +72,7 @@ REVOKE USAGE ON SCHEMA util_meta FROM public ;
 \i util_meta/function/_cleanup_whitespace.sql
 \i util_meta/function/_indent.sql
 \i util_meta/function/_is_valid_object.sql
+\i util_meta/function/_uses_logging.sql
 \i util_meta/function/_new_line.sql
 \i util_meta/function/_table_noun.sql
 \i util_meta/function/_proc_parameters.sql
@@ -138,4 +139,4 @@ REVOKE USAGE ON SCHEMA util_meta FROM public ;
 
 --------------------------------------------------------------------------------
 -- Testing functions
---\i util_meta/function/mk_test_procedure_wrapper.sql
+\i util_meta/function/mk_test_procedure_wrapper.sql
