@@ -343,6 +343,12 @@ CREATE SERVER loopback_dblink FOREIGN DATA WRAPPER dblink_fdw
 
 ALTER SERVER loopback_dblink OWNER TO ${owner} ;
 
+GRANT CONNECT ON DATABASE example_db TO ${dbName}_logger ;
+
+GRANT USAGE ON SCHEMA util_log TO ${dbName}_logger ;
+
+GRANT INSERT ON util_log.dt_proc_log TO ${dbName}_logger ;
+
 /**
 Since the logging is using dblink as a loopback, the password for the linked
 user and user mappings can be dynamically set/used.
