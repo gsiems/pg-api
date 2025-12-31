@@ -37,3 +37,59 @@ create-[schema_name].sql files.
 Included files that no longer exist should get commented out and new files
 should get appended to the end of the appropriate create-[schema_name].sql
 file.
+
+* `maker_core.sh` Common elements used by the following `mk_*` scripts
+
+* `mk_api_procedure.sh` Wraps the `util_meta.mk_api_procedure` function for
+scripting DDL file creation.
+
+* `mk_can_do_function_shell.sh` Wraps the `util_meta.mk_can_do_function_shell`
+function for scripting DDL file creation.
+
+* `mk_ddl_generators.sh` Wraps the `util_meta.mk_ddl_generators` function for
+scripting DDL file creation.
+
+* `mk_find_function.sh` Wraps the `util_meta.mk_find_function` function for
+scripting DDL file creation.
+
+* `mk_get_function.sh` Wraps the `util_meta.mk_get_function` function for
+scripting DDL file creation.
+
+* `mk_json_function_wrapper.sh` Wraps the `util_meta.mk_json_function_wrapper`
+function for scripting DDL file creation.
+
+* `mk_json_user_type.sh` Wraps the `util_meta.mk_json_user_type` function for
+scripting DDL file creation.
+
+* `mk_json_view.sh` Wraps the `util_meta.mk_json_view` function for scripting
+DDL file creation.
+
+* `mk_list_children_function.sh` Wraps the
+`util_meta.mk_list_children_function` function for scripting DDL file creation.
+
+* `mk_list_function.sh` Wraps the `util_meta.mk_list_function` function for
+scripting DDL file creation.
+
+* `mk_priv_delete_procedure.sh` Wraps the `util_meta.mk_priv_delete_procedure`
+function for scripting DDL file creation.
+
+* `mk_priv_insert_procedure.sh` Wraps the `util_meta.mk_priv_insert_procedure`
+function for scripting DDL file creation.
+
+* `mk_priv_update_procedure.sh` Wraps the `util_meta.mk_priv_update_procedure`
+function for scripting DDL file creation.
+
+* `mk_priv_upsert_procedure.sh` Wraps the `util_meta.mk_priv_upsert_procedure`
+function for scripting DDL file creation.
+
+* `mk_test_procedure_wrapper.sh` Wraps the `util_meta.mk_test_procedure_wrapper`
+function for scripting DDL file creation.
+
+* `mk_resolve_id_function.sh` Wraps the `util_meta.mk_resolve_id_function`
+function for scripting DDL file creation.
+
+* `mk_user_type.sh` Wraps the `util_meta.mk_user_type` function for scripting
+DDL file creation.
+
+* `mk_view.sh` Wraps the `util_meta.mk_view` function for scripting DDL file
+creation.
