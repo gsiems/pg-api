@@ -71,7 +71,7 @@ EOT
 
 ################################################################################
 # Calling arguments and initialization
-cd "$(dirname "$0")" || exit
+cd "$(dirname "$0")" || exit 1
 
 source ./set_env.sh
 
