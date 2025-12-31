@@ -180,18 +180,22 @@ permissions check).
 
 **2.4.2** Procedures should be used for modifying data.
 
-**2.4.3** Function and procedure identifiers should consist of an action - item
+**2.4.3** Procedures should capture exceptions and return them (via an in-out
+parameter) to the caller and allow the caller to determine whether to commit,
+rollback, or retry.
+
+**2.4.4** Function and procedure identifiers should consist of an action - item
 name pair that indicates the action being taken and the kind of thing the
 action is being taken on (i.e. `insert_user`, `cancel_order`,
 `calibrate_test_equipment`, etc.). Action and item pair names should be
 consistent across all database objects.
 
-**2.4.4** Functions and procedures that are non-public should be in a schema for
+**2.4.5** Functions and procedures that are non-public should be in a schema for
 non-public objects and/or their identifiers should have a prefix indicating the
 non-public nature of the function/procedure (`util_meta` recognizes `priv_` and
 `_`).
 
-**2.4.5** Use the util_meta.rt_plural_word table to define singular/plural
+**2.4.6** Use the util_meta.rt_plural_word table to define singular/plural
 forms of words used in table names so that the generated functions that read
 better in the plural or functions/procedures that read better in the singular
 can be better named.
