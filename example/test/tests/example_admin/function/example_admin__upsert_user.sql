@@ -7,7 +7,6 @@ CREATE OR REPLACE FUNCTION test.example_admin__upsert_user (
     a_app_roles in text DEFAULT NULL,
     a_is_active in boolean DEFAULT NULL,
     a_act_user in text DEFAULT NULL,
-    a_err in text DEFAULT NULL,
     a_label in text DEFAULT NULL,
     a_should_pass in boolean DEFAULT NULL )
 RETURNS boolean
