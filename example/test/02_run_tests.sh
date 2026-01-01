@@ -1,0 +1,1 @@
+../../test/02_run_tests.sh

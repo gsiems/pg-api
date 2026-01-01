@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+    <title>PL&nbsp;Coverage&nbsp;Report&nbsp;for&nbsp;pgTap&nbsp;tests&nbsp;&nbsp;[2025-12-31&nbsp;19:06:19]</title>
+
+    <style>
+    body {
+        background-color: hsl(0, 0%, 95%);;
+        font-family: verdana,helvetica,sans-serif;
+        margin: 5px;
+        padding: 0;
+    }
+    table.rptData  {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    table.rptData thead tr th {
+        background-color: hsl(0, 0%, 85%);
+        border-bottom: 2px solid hsl(0, 0%, 50%);
+        border-right: 2px solid hsl(0, 0%, 50%);
+        color: hsl(213, 48%, 38%);
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+    table.rptData td {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    table.rptData tr:nth-child(odd) {
+        background-color: hsl(240, 67%, 94%);
+    }
+    table.rptData tr:nth-child(even) {
+        background-color: hsl(0, 0%, 85%);
+    }
+    </style>
+
+</head>
+<body>
+
+    <h1>PL&nbsp;Coverage&nbsp;Report&nbsp;for&nbsp;pgTap&nbsp;tests&nbsp;&nbsp;[2025-12-31&nbsp;19:06:19]</h1>
+
+<h2>Summary</h2>
+<table class="rptData" id="rptSum" width="95%">
+<thead>
+<tr>
+    <th align="center" rowspan="2">Schema</th>
+    <th align="center" rowspan="2">Total Count</th>
+    <th align="center" colspan="2">PL/pgSQL</th>
+    <th align="center" colspan="2">SQL</th>
+    <th align="center" colspan="2">Other</th>
+</tr>
+<tr>
+    <th align="center">Count</th>
+    <th align="center">Percent</th>
+    <th align="center">Count</th>
+    <th align="center">Percent</th>
+    <th align="center">Count</th>
+    <th align="center">Percent</th>
+</tr>
+</thead>
+<tbody>
+
+<tr valign="top"><td>example_admin</td><td align="right">8</td><td align="center">0 / 8</td><td align="right">0</td><td align="center">0 / 0</td><td align="right">-</td><td align="center">0 / 0</td><td align="right">-</td></tr>
+<tr valign="top"><td>priv_example_admin</td><td align="right">6</td><td align="center">0 / 6</td><td align="right">0</td><td align="center">0 / 0</td><td align="right">-</td><td align="center">0 / 0</td><td align="right">-</td></tr>
+<tr valign="top"><td>util_log</td><td align="right">10</td><td align="center">0 / 9</td><td align="right">0</td><td align="center">0 / 1</td><td align="right">0</td><td align="center">0 / 0</td><td align="right">-</td></tr>
+<tr valign="top"><td>util_meta</td><td align="right">53</td><td align="center">0 / 44</td><td align="right">0</td><td align="center">0 / 9</td><td align="right">0</td><td align="center">0 / 0</td><td align="right">-</td></tr>
+</tbody>
+</table>
+
+<h2>Details</h2>
+<table class="rptData" id="rptDtl" width="95%">
+<thead>
+<tr>
+    <th>Type</th>
+    <th>Schema</th>
+    <th>Name</th>
+    <th>OID</th>
+    <th>Return Type</th>
+    <th>Language</th>
+    <th>Was Executed</th>
+    <th>Is Unused Trigger</th>
+</tr>
+</thead>
+<tbody>
+
+<tr valign="top"><td>Function</td><td>example_admin</td><td>can_do</td><td>726200</td><td>boolean</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>example_admin</td><td>delete_user</td><td>726204</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>example_admin</td><td>find_users</td><td>726201</td><td>SETOF&nbsp;priv_example_admin.dv_user</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>example_admin</td><td>get_user</td><td>726202</td><td>SETOF&nbsp;priv_example_admin.dv_user</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>example_admin</td><td>insert_user</td><td>726205</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>example_admin</td><td>list_users</td><td>726203</td><td>SETOF&nbsp;priv_example_admin.dv_user</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>example_admin</td><td>update_user</td><td>726206</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>example_admin</td><td>upsert_user</td><td>726207</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>priv_example_admin</td><td>priv_delete_user</td><td>726193</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>priv_example_admin</td><td>priv_insert_user</td><td>726194</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>priv_example_admin</td><td>priv_set_user_app_roles</td><td>726198</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>priv_example_admin</td><td>priv_update_user</td><td>726195</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>priv_example_admin</td><td>priv_upsert_user</td><td>726196</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>priv_example_admin</td><td>resolve_user_id</td><td>726192</td><td>integer</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_log</td><td>dici</td><td>725460</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_begin</td><td>725945</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_debug</td><td>725946</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_exception</td><td>725947</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_finish</td><td>725948</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_info</td><td>725949</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Procedure</td><td>util_log</td><td>log_to_dblink</td><td>725943</td><td></td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_log</td><td>manage_partitions</td><td>725461</td><td>void</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_log</td><td>query_bug</td><td>725950</td><td>boolean</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_log</td><td>update_last_logged</td><td>725942</td><td>bigint</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_append_parameter</td><td>726762</td><td>util_meta.ut_parameters</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_base_name</td><td>726759</td><td>text</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_base_order</td><td>726760</td><td>integer</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_boolean_casting</td><td>726772</td><td>TABLE</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_calling_parameters</td><td>726771</td><td>TABLE</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_cleanup_whitespace</td><td>726763</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_find_dt_parent</td><td>726776</td><td>util_meta.ut_parent_table</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_find_func</td><td>726773</td><td>util_meta.ut_object</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_find_view</td><td>726775</td><td>util_meta.ut_object</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_indent</td><td>726764</td><td>text</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_is_valid_object</td><td>726765</td><td>boolean</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_json_identifier</td><td>726817</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_new_line</td><td>726767</td><td>text</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_proc_parameters</td><td>726769</td><td>TABLE</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_resolve_parameter</td><td>726761</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_declare_variables</td><td>726777</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_documentation_block</td><td>726778</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_function_backmatter</td><td>726784</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_function_frontmatter</td><td>726785</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_get_permissions</td><td>726788</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_json_agg_build_object</td><td>726818</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_json_build_object</td><td>726820</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_log_params</td><td>726779</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_object_comment</td><td>726780</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_owners_and_grants</td><td>726781</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_permissions_check</td><td>726789</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_procedure_backmatter</td><td>726786</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_procedure_frontmatter</td><td>726787</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_resolve_id</td><td>726782</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_snip_resolve_user_id</td><td>726783</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_table_noun</td><td>726768</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_to_plural</td><td>726757</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_to_singular</td><td>726758</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_uses_logging</td><td>726766</td><td>boolean</td><td>sql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>_view_name</td><td>726774</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_api_procedure</td><td>726815</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_can_do_function_shell</td><td>726798</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_find_function</td><td>726799</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_get_function</td><td>726801</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_json_function_wrapper</td><td>726824</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_json_user_type</td><td>726823</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_json_view</td><td>726822</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_list_children_function</td><td>726805</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_list_function</td><td>726803</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_object_migration</td><td>726794</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_priv_delete_procedure</td><td>726807</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_priv_insert_procedure</td><td>726809</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_priv_update_procedure</td><td>726811</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_priv_upsert_procedure</td><td>726813</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_resolve_id_function</td><td>726796</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_test_procedure_wrapper</td><td>726826</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_user_type</td><td>726793</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+<tr valign="top"><td>Function</td><td>util_meta</td><td>mk_view</td><td>726791</td><td>text</td><td>plpgsql</td><td align="center">N</td><td align="center">-</td></tr>
+</tbody>
+</table>
+</body>
+</html>
+

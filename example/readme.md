@@ -641,6 +641,306 @@ echo "# Documentation
 ../util/doc/extract_api_doc.sh -d example_db -s "${PWD}"/schema -t "${PWD}"/doc/api
 ```
 
-## Setup testing
+## Testing
 
-TODO
+### Setup some test data
+
+Firstly, pre-load the database with some test data...
+
+`cat test/test_data/001_dt_user.sql`
+```
+DELETE FROM example_data.dt_user_app_role ;
+DELETE FROM example_data.dt_user ;
+
+INSERT INTO example_data.dt_user ( username, first_name, last_name )
+    VALUES
+        ( session_user::text, initcap ( session_user::text ), 'NLN' ),
+        ( 'alice', 'Alice', 'A' ),
+        ( 'bob', 'Bob', 'B' ),
+        ( 'eve', 'Eve', 'Eavesdropper' ),
+        ( 'mallory', 'Mallory', 'Malicious' ),
+        ( 'trent', 'Trent', 'Trusted' ) ;
+```
+
+`cat test/test_data/002_dt_user_app_role.sql`
+```
+DELETE FROM example_data.dt_user_app_role ;
+
+WITH n AS (
+    SELECT usr.id AS user_id,
+            rol.id AS app_role_id
+        FROM example_data.dt_user usr
+        CROSS JOIN example_data.st_app_role rol
+        WHERE rol.name = 'admin'
+            AND usr.username IN ( session_user::text, 'trent' )
+    UNION
+    SELECT usr.id AS user_id,
+            rol.id AS rol_id
+        FROM example_data.dt_user usr
+        CROSS JOIN example_data.st_app_role rol
+        WHERE rol.name IN ( 'read', 'write' )
+            AND usr.username IN ( 'alice', 'bob' )
+    UNION
+    SELECT usr.id AS user_id,
+            rol.id AS rol_id
+        FROM example_data.dt_user usr
+        CROSS JOIN example_data.st_app_role rol
+        WHERE rol.name = 'read'
+            AND usr.username = 'eve'
+)
+INSERT INTO example_data.dt_user_app_role ( user_id, app_role_id )
+    SELECT *
+        FROM n ;
+```
+
+### Create the test wrapper functions
+
+Before writing tests for the insert_user, update_user, and upsert_user
+procedures it is first necessary to create wrapper functions that can translate
+the success or failure of the procedures to a boolean true/false value that can
+be used by pgTAP.
+
+```
+../util/schema_tools/mk_test_procedure_wrapper.sh \
+    --dir "${PWD}"/test \
+    --db example_db \
+    --object_schema example_admin \
+    --object_name insert_user \
+    --test_schema test \
+    --verbose
+
+../util/schema_tools/mk_test_procedure_wrapper.sh \
+    --dir "${PWD}"/test \
+    --db example_db \
+    --object_schema example_admin \
+    --object_name update_user \
+    --test_schema test \
+    --verbose
+
+../util/schema_tools/mk_test_procedure_wrapper.sh \
+    --dir "${PWD}"/test \
+    --db example_db \
+    --object_schema example_admin \
+    --object_name upsert_user \
+    --test_schema test \
+    --verbose
+```
+
+```
+SELECT util_meta.mk_test_procedure_wrapper (
+        a_object_schema => 'example_admin'::text,
+        a_object_name => 'insert_user'::text,
+        a_test_schema => 'test'::text
+        ) ;
+
+SELECT util_meta.mk_test_procedure_wrapper (
+        a_object_schema => 'example_admin'::text,
+        a_object_name => 'update_user'::text,
+        a_test_schema => 'test'::text
+        ) ;
+
+SELECT util_meta.mk_test_procedure_wrapper (
+        a_object_schema => 'example_admin'::text,
+        a_object_name => 'upsert_user'::text,
+        a_test_schema => 'test'::text
+        ) ;
+```
+
+Note that, while wrappers for the priv_insert_user, priv_update_user, and
+priv_upsert_user procedures could be created and used, there isn't much benefit
+to doing so (in this example anyhow) as the private procedures will get tested
+by virtue of testing the public procedures.
+
+### Create the PgTAP test files
+
+`cat test/tests/example_admin/01_test_can_do.sql`
+```
+\i 20_pre_tap.sql
+
+SELECT PLAN ( 4 ) ;
+
+SELECT ok (
+    NOT example_admin.can_do (
+        a_user => 'mallory',
+        a_action => 'insert',
+        a_object_type => 'user',
+        a_id => NULL::integer,
+        a_parent_object_type => NULL::text,
+        a_parent_id => NULL::integer ),
+    'Unprivileged user cannot do' ) ;
+
+SELECT ok (
+    NOT example_admin.can_do (
+        a_user => 'eve',
+        a_action => 'insert',
+        a_object_type => 'user',
+        a_id => NULL::integer,
+        a_parent_object_type => NULL::text,
+        a_parent_id => NULL::integer ),
+    'Under-privileged user cannot do' ) ;
+
+SELECT ok (
+    example_admin.can_do (
+        a_user => 'trent',
+        a_action => 'insert',
+        a_object_type => 'user',
+        a_id => NULL::integer,
+        a_parent_object_type => NULL::text,
+        a_parent_id => NULL::integer ),
+    'Privileged user can do (insert)' ) ;
+
+SELECT ok (
+    example_admin.can_do (
+        a_user => 'trent',
+        a_action => 'update',
+        a_object_type => 'user',
+        a_id => (
+            SELECT min ( id )
+                FROM example_data.dt_user ),
+        a_parent_object_type => NULL::text,
+        a_parent_id => NULL::integer ),
+    'Privileged user can do (update)' ) ;
+
+\i 30_post_tap.sql
+```
+
+Note that, for testing the user modification procedures, the test wrappers
+generated earlier need to be created in the database.
+
+`cat test/tests/example_admin/02_test_user.sql`
+```
+\i 20_pre_tap.sql
+
+\i tests/example_admin/function/example_admin__insert_user.sql
+\i tests/example_admin/function/example_admin__update_user.sql
+\i tests/example_admin/function/example_admin__upsert_user.sql
+
+SELECT plan ( 4 ) ;
+
+SELECT ok (
+    test.example_admin__insert_user (
+        a_username => 'carol',
+        a_first_name => 'Carol',
+        a_last_name => 'Chad',
+        a_email_address => 'Carol@example.com',
+        a_app_roles => 'read',
+        a_act_user => session_user::text,
+        a_label => 'Insert user',
+        a_should_pass => true
+        ),
+    'Insert user'
+    ) ;
+
+SELECT ok (
+    test.example_admin__update_user (
+        a_id => ( select id from example_data.dt_user where username = 'carol' ),
+        a_username => 'carol',
+        a_first_name => 'Carol',
+        a_last_name => 'Smith',
+        a_email_address => 'Carol@example.com',
+        a_app_roles => 'read,write',
+        a_act_user => session_user::text,
+        a_label => 'Update user',
+        a_should_pass => true
+        ),
+    'Update user'
+    ) ;
+
+SELECT ok (
+    test.example_admin__upsert_user (
+        a_id => ( select id from example_data.dt_user where username = 'carol' ),
+        a_username => 'carol',
+        a_first_name => 'Carol',
+        a_last_name => 'Chad',
+        a_email_address => 'Carol@example.com',
+        a_app_roles => 'read',
+        a_act_user => session_user::text,
+        a_label => 'Upsert user',
+        a_should_pass => true
+        ),
+    'Upsert user (update)'
+    ) ;
+
+SELECT ok (
+    test.example_admin__upsert_user (
+       a_username => 'dudley',
+        a_first_name => 'Dudley',
+        a_last_name => 'Doright',
+        a_email_address => 'Dudley@example.com',
+        a_app_roles => 'read',
+        a_act_user => session_user::text,
+        a_label => 'Upsert user',
+        a_should_pass => true
+        ),
+    'Upsert user (insert)'
+    ) ;
+
+\i 30_post_tap.sql
+```
+
+### Run the tests
+
+NB that the plprofiler report generation is not currently working...
+
+```
+test/00_run_all.sh -d example_db
+```
+
+```
+DELETE 0
+DELETE 0
+INSERT 0 6
+DELETE 0
+INSERT 0 7
+
+#############################################################
+#############################################################
+# Testing tests/example_admin
+
+#############################################################
+# Running tests/example_admin/01_test_can_do.sql
+SET
+1..4
+ok 1 - Unprivileged user cannot do
+ok 2 - Under-privileged user cannot do
+ok 3 - Privileged user can do (insert)
+ok 4 - Privileged user can do (update)
+
+#############################################################
+# Running tests/example_admin/02_test_user.sql
+SET
+1..4
+ok 1 - Insert user
+ok 2 - Update user
+ok 3 - Upsert user (update)
+ok 4 - Upsert user (insert)
+
+#############################################################
+### Totals
+Total Passed: 8 of 8
+
+SELECT 0
+SELECT 0
+Expanded display is on.
+Pager usage is off.
+-[ RECORD 1 ]--------------------------------------------------------------
+procedure | example_admin.can_do(text,text,text,integer,text,integer)
+message   | warning extra: 00000: : unused parameter "a_action"
+details   |
+-[ RECORD 2 ]--------------------------------------------------------------
+procedure | example_admin.can_do(text,text,text,integer,text,integer)
+message   | warning extra: 00000: : unused parameter "a_object_type"
+details   |
+-[ RECORD 3 ]--------------------------------------------------------------
+procedure | example_admin.can_do(text,text,text,integer,text,integer)
+message   | warning extra: 00000: : unused parameter "a_id"
+details   |
+-[ RECORD 4 ]--------------------------------------------------------------
+procedure | example_admin.can_do(text,text,text,integer,text,integer)
+message   | warning extra: 00000: : unused parameter "a_parent_object_type"
+details   |
+-[ RECORD 5 ]--------------------------------------------------------------
+procedure | example_admin.can_do(text,text,text,integer,text,integer)
+message   | warning extra: 00000: : unused parameter "a_parent_id"
+details   |
+```

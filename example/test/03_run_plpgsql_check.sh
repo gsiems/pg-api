@@ -1,0 +1,1 @@
+../../test/03_run_plpgsql_check.sh

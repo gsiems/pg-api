@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+  <title>PL&nbsp;Profiler&nbsp;Report&nbsp;for&nbsp;pgTap&nbsp;tests&nbsp;&nbsp;[2025-12-31&nbsp;19:06:19]</title>
+
+<script language="javascript">
+    // ----
+    // toggle_div()
+    //
+    //  JS function to toggle one of the functions to show/block.
+    // ----
+    function toggle_div(tog_id, dtl_id) {
+        var tog_elem = document.getElementById(tog_id);
+        var dtl_elem = document.getElementById(dtl_id);
+        if (dtl_elem.style.display == "block") {
+            dtl_elem.style.display = "none";
+            tog_elem.innerHTML = "show";
+        } else {
+            dtl_elem.style.display = "block";
+            tog_elem.innerHTML = "hide";
+        }
+    }
+    </script>
+
+    <style>
+    body {
+        background-color: hsl(0, 0%, 95%);;
+        font-family: verdana,helvetica,sans-serif;
+        margin: 5px;
+        padding: 0;
+    }
+    table.rptData  {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    table.rptData thead tr th {
+        background-color: hsl(0, 0%, 85%);
+        border-bottom: 2px solid hsl(0, 0%, 50%);
+        border-right: 2px solid hsl(0, 0%, 50%);
+        color: hsl(213, 48%, 38%);
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+    table.rptData td {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    table.rptData tr:nth-child(odd) {
+        background-color: hsl(0, 0%, 90%);
+    }
+    table.rptData tr:nth-child(even) {
+        background-color: hsl(240, 67%, 94%);
+    }
+    code {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    table.linestats td {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    table.linestats tr:nth-child(odd) {
+        background-color: hsl(240, 67%, 94%);
+    }
+    table.linestats tr:nth-child(even) {
+        background-color: hsl(0, 0%, 85%);
+    }
+    </style>
+
+</head>
+<body>
+
+
+  <h1>PL&nbsp;Profiler&nbsp;Report&nbsp;for&nbsp;pgTap&nbsp;tests&nbsp;&nbsp;[2025-12-31&nbsp;19:06:19]</h1>
+
+<h2>Hot Spots</h2>
+<table class="rptData" id="rptHotSpots" width="95%">
+<thead>
+<tr>
+    <th align="left" rowspan="2">Type</th>
+    <th align="left" rowspan="2">Schema</th>
+    <th align="left" rowspan="2">Name</th>
+    <th align="right" rowspan="2">OID</th>
+    <th align="right" rowspan="2">Exec Count</th>
+    <th align="center" colspan="3">Self Time</th>
+</tr>
+<tr>
+    <th align="right">Total (&percnt;)</th>
+    <th align="right">Total (µs)</th>
+    <th align="right">Average (µs)</th>
+</tr>
+</thead>
+<tbody>
+
+</tbody>
+</table>
+
+<h2>Details</h2>
+<table class="rptData" id="rptDtl" width="95%">
+<thead>
+<tr>
+    <th align="left" rowspan="2">Type</th>
+    <th align="left" rowspan="2">Schema</th>
+    <th align="left" rowspan="2">Name</th>
+    <th align="right" rowspan="2">OID</th>
+    <th align="right" rowspan="2">Line Count</th>
+    <th align="right" rowspan="2">Exec Count</th>
+    <th align="center" colspan="3">Self Time</th>
+    <th align="center" colspan="2">Total Time</th>
+    <th rowspan="2">Details</th>
+</tr>
+<tr>
+    <th align="right">Total (&percnt;)</th>
+    <th align="right">Total (µs)</th>
+    <th align="right">Average (µs)</th>
+    <th align="right">Total (µs)</th>
+    <th align="right">Average (µs)</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+</body>
+</html>
+
