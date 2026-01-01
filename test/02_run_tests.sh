@@ -203,9 +203,9 @@ function test_dir() {
 
     cat <<EOT >>"${resultFile}"
 
-"${banner}"
-"${banner}"
-"# Testing ${dir}"
+${banner}
+${banner}
+# Testing ${dir}
 EOT
 
     for testFile in "${dir}"/*.sql; do
@@ -269,6 +269,26 @@ function run_tests() {
 ################################################################################
 
 function init_plprofiler() {
+
+    cmd="select extname from pg_catalog.pg_extension where extname::text = 'plprofiler' ;"
+    res=$(echo "${cmd}" | psql -X -U "${usr}" -d "${db}" -p "${port}" -q -t)
+
+    if [[ -z ${res} ]]; then
+        cmd="CREATE SCHEMA IF NOT EXISTS plprofiler ;
+CREATE EXTENSION IF NOT EXISTS plprofiler SCHEMA plprofiler ;
+ALTER SCHEMA plprofiler OWNER TO plprofiler ;
+"
+        echo "${cmd}" | psql -X -U "${usr}" -d "${db}" -p "${port}" -q -t
+    fi
+
+    cmd="select nspname from pg_catalog.pg_namespace where nspname::text = 'plprofiler_client' ;"
+    res=$(echo "${cmd}" | psql -X -U "${usr}" -d "${db}" -p "${port}" -q -t)
+
+    if [[ -z ${res} ]]; then
+        pushd plprofiler_client
+        psql -U "${usr}" -d "${db}" -p "${port}" -f schema.sql
+        popd
+    fi
 
     cmd="select plprofiler_client.init_profile ( a_name => '${profileName}' ) ;"
 
