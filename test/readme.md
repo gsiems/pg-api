@@ -1,8 +1,16 @@
 # Testing
 
-At a minimum, there should be database level testing of all API entry points.
+At the database level:
 
-## Extensions/tooling
+* There should be testing for all API entry points.
+
+* Critical functionality should probably have more tests than non-critical
+functionality.
+
+* "Complex" functionality should probably have more tests than simple
+functionality.
+
+## Tools
 
 ### pgTAP
 
@@ -54,6 +62,46 @@ and procedures vs. other function/procedure languages (sql, plperl, plpython,
 etc.).
 
 * https://github.com/gsiems/plprofiler_client
+
+### Complexity
+
+One tool that looks promising for calculating cyclomatic complexity is
+https://github.com/sorenbronsted/sqlcc.
+
+An approximate relative complexity can also be generated using something like
+the following (this asserts that the SQL is formatted with upper case keywords):
+
+```
+kwl="IF
+ELSE
+ELSIF
+WHEN
+AND
+OR
+IN
+ANY
+BETWEEN
+SELECT
+INSERT
+UPDATE
+DELETE
+UPSERT
+MERGE
+JOIN
+WHERE
+UNION
+EXCEPT
+INTERSECT
+LIMIT
+OFFSET
+HAVING
+PARTITION BY
+GROUP BY
+ORDER BY"
+
+kwo=$(echo -n "${kwl}" | tr "\n" "|")
+grep -cP "\s($kwo)\s" ../schema/*/*.sql | awk -F ':' '{print $2 " " $1}' | sort -nr | grep -P "^[0-9]{2}"
+```
 
 ## Directories
 
