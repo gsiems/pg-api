@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE FUNCTION plprofiler_client.save_dataset_from_shared (
     a_opt_name text DEFAULT NULL::text,
     a_config plprofiler_client.ut_config DEFAULT NULL::plprofiler_client.ut_config,
@@ -6,20 +5,31 @@ CREATE OR REPLACE FUNCTION plprofiler_client.save_dataset_from_shared (
     a_overwrite boolean DEFAULT false )
 RETURNS void
 LANGUAGE plpgsql
-AS $function$
+AS $$
+/**
+Function save_dataset_from_shared
+
+    "Aggregate the existing data found in pl_profiler_linestats_shared
+    and pl_profiler_callgraph_shared into a new entry in *_saved."
+
+| Parameter                      | In/Out | Datatype   | Description                                        |
+| ------------------------------ | ------ | ---------- | -------------------------------------------------- |
+| a_opt_name                     | in     | text       | The name of the saved-dataset                      |
+| a_config                       | in     | ut_config  |                                                    |
+| a_config_json                  | in     | json       |                                                    |
+| a_overwrite                    | in     | boolean    |                                                    |
+
+Extracted from plprofiler.py save_dataset_from_shared()
+*/
 DECLARE
-        -- Aggregate the existing data found in pl_profiler_linestats_shared
-        -- and pl_profiler_callgraph_shared into a new entry in *_saved.
+
     l_options text ;
-    --l_search_path text ;
     l_row_count bigint ;
     l_schema text ;
 
 BEGIN
 
-    --l_search_path := current_setting ( 'search_path' ) ;
-
-    PERFORM plprofiler_client.set_search_path ( ) ;
+    perform plprofiler_client.set_search_path () ;
 
     l_schema := plprofiler_client.query_plprofiler_namespace ()::text ;
 
@@ -40,11 +50,12 @@ BEGIN
                 s_functions_overflow,
                 s_lines_overflow )
             VALUES (
-                a_opt_name,
-                l_options,
-                pl_profiler_callgraph_overflow (),
-                pl_profiler_functions_overflow (),
-                pl_profiler_lines_overflow () ) ;
+                    a_opt_name,
+                    l_options,
+                    pl_profiler_callgraph_overflow (),
+                    pl_profiler_functions_overflow (),
+                    pl_profiler_lines_overflow ()
+                ) ;
 
     END IF ;
 
@@ -61,10 +72,12 @@ BEGIN
                 p.oid,
                 n.nspname,
                 p.proname,
-                min ( CASE
-                    WHEN p.prokind = 'p' THEN ''
-                    ELSE coalesce ( pg_catalog.pg_get_function_result ( p.oid ), 'void' )
-                    END ) AS func_result,
+                min (
+                    CASE
+                        WHEN p.prokind = 'p' THEN ''
+                        ELSE coalesce ( pg_catalog.pg_get_function_result ( p.oid ), 'void' )
+                        END
+                    ) AS func_result,
                 coalesce ( pg_catalog.pg_get_function_arguments ( p.oid ), 'none' ) AS func_args
             FROM pg_catalog.pg_proc p
             JOIN pg_catalog.pg_namespace n
@@ -82,7 +95,7 @@ BEGIN
                 n.nspname,
                 p.proname ;
 
-    GET DIAGNOSTICS l_row_count = ROW_COUNT ;
+    GET diagnostics l_row_count = row_count ;
 
     IF l_row_count = 0 THEN
         RAISE EXCEPTION 'No function data to save found' ;
@@ -119,7 +132,7 @@ BEGIN
                 l.func_oid,
                 l.line_number ;
 
-    GET DIAGNOSTICS l_row_count = ROW_COUNT ;
+    GET diagnostics l_row_count = row_count ;
 
     IF l_row_count = 0 THEN
         RAISE EXCEPTION 'No plprofiler data to save' ;
@@ -146,4 +159,4 @@ BEGIN
                 stack ;
 
 END ;
-$function$;
+$$ ;

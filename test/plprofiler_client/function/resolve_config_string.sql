@@ -1,11 +1,20 @@
-
 CREATE OR REPLACE FUNCTION plprofiler_client.resolve_config_string (
     a_opt_name text DEFAULT NULL::text,
     a_config plprofiler_client.ut_config DEFAULT NULL::plprofiler_client.ut_config,
     a_config_json json DEFAULT NULL::json )
 RETURNS text
 LANGUAGE plpgsql
-AS $function$
+AS $$
+/**
+Function resolve_config_string
+
+| Parameter                      | In/Out | Datatype   | Description                                        |
+| ------------------------------ | ------ | ---------- | -------------------------------------------------- |
+| a_opt_name                     | in     | text       | The name of the saved-dataset                      |
+| a_config                       | in     | ut_config  |                                                    |
+| a_config_json                  | in     | json       |                                                    |
+
+*/
 DECLARE
 
     l_config_json json ;
@@ -23,4 +32,4 @@ BEGIN
     RETURN l_config_json::text ;
 
 END ;
-$function$;
+$$ ;

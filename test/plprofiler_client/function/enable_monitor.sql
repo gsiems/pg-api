@@ -1,10 +1,19 @@
-
 CREATE OR REPLACE FUNCTION plprofiler_client.enable_monitor (
     a_opt_pid integer DEFAULT NULL::integer,
-    a_opt_interval integer DEFAULT 10)
+    a_opt_interval integer DEFAULT 10 )
 RETURNS void
 LANGUAGE plpgsql
-AS $function$
+AS $$
+/**
+Function enable_monitor turns monitoring on
+
+| Parameter                      | In/Out | Datatype   | Description                                        |
+| ------------------------------ | ------ | ---------- | -------------------------------------------------- |
+| a_opt_pid                      | in     | integer    | The PID of the backend to monitor                  |
+| a_opt_interval                 | in     | integer    | Interval in seconds at which the monitored backend(s) will copy the local-data to shared-data and then reset their local-data. |
+
+Extracted from plprofiler.py enable_monitor()
+*/
 DECLARE
 
     r record ;
@@ -24,7 +33,8 @@ BEGIN
                     FROM pg_catalog.pg_settings
                     WHERE name = 'server_version' ) LOOP
 
-                RAISE EXCEPTION 'ERROR: monitor command not supported on server version %s. Perform monitoring manually via postgresql.conf changes and reloading the postmaster.', r2.setting ;
+                RAISE EXCEPTION 'ERROR: monitor command not supported on server version %s. Perform monitoring manually via postgresql.conf changes and reloading the postmaster.',
+                    r2.setting ;
 
             END LOOP ;
 
@@ -32,15 +42,15 @@ BEGIN
 
     END LOOP ;
 
-    PERFORM plprofiler_client.set_search_path ( ) ;
+    perform plprofiler_client.set_search_path () ;
 
     IF a_opt_pid IS NOT NULL THEN
-        PERFORM pl_profiler_set_enabled_pid ( a_opt_pid ) ;
+        perform pl_profiler_set_enabled_pid ( a_opt_pid ) ;
     ELSE
-        PERFORM pl_profiler_set_enabled_global ( true ) ;
+        perform pl_profiler_set_enabled_global ( true ) ;
     END IF ;
 
-    PERFORM pl_profiler_set_collect_interval ( coalesce ( a_opt_interval, 10 ) ) ;
+    perform pl_profiler_set_collect_interval ( coalesce ( a_opt_interval, 10 ) ) ;
 
 END ;
-$function$;
+$$ ;

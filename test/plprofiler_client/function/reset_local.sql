@@ -1,12 +1,16 @@
-
 CREATE OR REPLACE FUNCTION plprofiler_client.reset_local ()
 RETURNS void
 LANGUAGE plpgsql
-AS $function$
+AS $$
+/**
+Function reset_local
+
+Extracted from plprofiler.py reset_local()
+*/
 BEGIN
 
-    PERFORM plprofiler_client.set_search_path ( ) ;
-    PERFORM pl_profiler_reset_local ( ) ;
+    perform plprofiler_client.set_search_path () ;
+    perform pl_profiler_reset_local () ;
 
 END ;
-$function$;
+$$ ;

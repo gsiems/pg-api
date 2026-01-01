@@ -6,12 +6,13 @@ SET check_function_bodies = true ;
 SET client_min_messages = warning ;
 
 
---CREATE SCHEMA IF NOT EXISTS plprofiler ;
+CREATE SCHEMA IF NOT EXISTS plprofiler ;
 
---CREATE EXTENSION IF NOT EXISTS plprofiler SCHEMA plprofiler ;
+CREATE EXTENSION IF NOT EXISTS plprofiler SCHEMA plprofiler ;
 
+ALTER SCHEMA plprofiler OWNER TO plprofiler ;
 
-CREATE SCHEMA IF NOT EXISTS plprofiler_client ;
+CREATE SCHEMA IF NOT EXISTS plprofiler_client AUTHORIZATION plprofiler ;
 
 COMMENT ON SCHEMA plprofiler_client IS 'Functions extracted from the plprofiler client tool (with some modifications)' ;
 
@@ -23,6 +24,7 @@ COMMENT ON SCHEMA plprofiler_client IS 'Functions extracted from the plprofiler 
 
 \i type/ut_config.sql
 
+\i function/esc_html.sql
 \i function/init_config.sql
 \i function/json_to_config.sql
 \i function/config_to_json.sql
@@ -51,7 +53,7 @@ COMMENT ON SCHEMA plprofiler_client IS 'Functions extracted from the plprofiler 
 \i function/save_dataset_from_local.sql
 \i function/save_dataset_from_shared.sql
 
-\i function/init_config.sql
+\i function/init_profile.sql
 \i function/generate_coverage_report.sql
 \i function/generate_profiler_report.sql
 

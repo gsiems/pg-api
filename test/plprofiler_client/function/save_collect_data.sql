@@ -1,12 +1,16 @@
-
 CREATE OR REPLACE FUNCTION plprofiler_client.save_collect_data ()
 RETURNS void
 LANGUAGE plpgsql
-AS $function$
+AS $$
+/**
+Function save_collect_data
+
+Extracted from plprofiler.py save_collect_data()
+*/
 BEGIN
 
-    PERFORM plprofiler_client.set_search_path ( ) ;
-    PERFORM pl_profiler_collect_data ( ) ;
+    perform plprofiler_client.set_search_path () ;
+    perform pl_profiler_collect_data () ;
 
 END ;
-$function$;
+$$ ;
