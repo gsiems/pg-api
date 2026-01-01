@@ -751,6 +751,14 @@ priv_upsert_user procedures could be created and used, there isn't much benefit
 to doing so (in this example anyhow) as the private procedures will get tested
 by virtue of testing the public procedures.
 
+Add the the test wrappers to the test/10_init_testrun.sql file:
+
+```
+\i tests/example_admin/function/example_admin__insert_user.sql
+\i tests/example_admin/function/example_admin__update_user.sql
+\i tests/example_admin/function/example_admin__upsert_user.sql
+```
+
 ### Create the PgTAP test files
 
 `cat test/tests/example_admin/01_test_can_do.sql`
@@ -804,16 +812,9 @@ SELECT ok (
 \i 30_post_tap.sql
 ```
 
-Note that, for testing the user modification procedures, the test wrappers
-generated earlier need to be created in the database.
-
 `cat test/tests/example_admin/02_test_user.sql`
 ```
 \i 20_pre_tap.sql
-
-\i tests/example_admin/function/example_admin__insert_user.sql
-\i tests/example_admin/function/example_admin__update_user.sql
-\i tests/example_admin/function/example_admin__upsert_user.sql
 
 SELECT plan ( 4 ) ;
 
@@ -878,12 +879,19 @@ SELECT ok (
 \i 30_post_tap.sql
 ```
 
-### Run the tests
+### If using logging
 
-NB that the plprofiler report generation is not currently working...
+If the util_log schema is in use then ensure that the manage_partitions
+function is being periodically run or manually run it prior to testing:
 
 ```
-test/00_run_all.sh -d example_db
+psql -d example_db -c "select util_log.manage_partitions () ;"
+```
+
+### Run the tests
+
+```
+test/00_run_all.sh -d example_db -c
 ```
 
 ```
@@ -919,28 +927,33 @@ ok 4 - Upsert user (insert)
 ### Totals
 Total Passed: 8 of 8
 
+#############################################################
+# Generating the plprofiler reports
+## Creating test_profile.html
+## Creating test_covered.html
+
 SELECT 0
 SELECT 0
 Expanded display is on.
 Pager usage is off.
--[ RECORD 1 ]--------------------------------------------------------------
-procedure | example_admin.can_do(text,text,text,integer,text,integer)
-message   | warning extra: 00000: : unused parameter "a_action"
-details   |
--[ RECORD 2 ]--------------------------------------------------------------
-procedure | example_admin.can_do(text,text,text,integer,text,integer)
-message   | warning extra: 00000: : unused parameter "a_object_type"
-details   |
--[ RECORD 3 ]--------------------------------------------------------------
-procedure | example_admin.can_do(text,text,text,integer,text,integer)
-message   | warning extra: 00000: : unused parameter "a_id"
-details   |
--[ RECORD 4 ]--------------------------------------------------------------
-procedure | example_admin.can_do(text,text,text,integer,text,integer)
-message   | warning extra: 00000: : unused parameter "a_parent_object_type"
-details   |
--[ RECORD 5 ]--------------------------------------------------------------
-procedure | example_admin.can_do(text,text,text,integer,text,integer)
-message   | warning extra: 00000: : unused parameter "a_parent_id"
-details   |
 ```
+
+### Test Coverage
+
+Looking at the test coverage report generated using plprofiler
+(`test/test_covered.html`) we can see that there is 57% test coverage of the
+PL/pgSQL functions and procedures in the example_admin schema and 100% test
+coverage of the PL/pgSQL functions and procedures in the priv_example_admin
+schema. The details show that the example_admin.find_users,
+example_admin.list_users, and example_admin.get_user function have no test
+coverage.
+
+Looking at the test profile report generated using plprofiler
+(`test/test_profile.html`) we can see that logging (log_to_dblink) had the
+highest total time measured which is not surprising considering the overall
+simplicity of the application (so far). The next highest total time (not
+counting the pgTAP and test functions) is the
+priv_example_admin.priv_set_user_app_roles procedure, and the next highest
+average time is the priv_example_admin.priv_insert_user procedure. Note that,
+in the details section, clicking the show link for the functions/procedures
+provides information on where in the function/procedure the time was spent.
