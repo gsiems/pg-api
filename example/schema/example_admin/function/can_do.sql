@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION example_admin.can_do (
     a_parent_id in integer DEFAULT NULL )
 RETURNS boolean
 LANGUAGE plpgsql
-STABLE
+--STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, example_admin
 AS $$
@@ -36,7 +36,20 @@ DECLARE
     l_acting_can_do boolean := false ;
     l_connected_can_do boolean := false ;
 
+    l_do_logging boolean := false ;
+
 BEGIN
+
+    -- This bit is to keep pl_profiler from complaining about unused parameters:
+    IF l_do_logging THEN
+        call util_log.log_begin (
+            util_log.dici ( a_user ),
+            util_log.dici ( a_action ),
+            util_log.dici ( a_object_type ),
+            util_log.dici ( a_id ),
+            util_log.dici ( a_parent_object_type ),
+            util_log.dici ( a_parent_id ) ) ;
+    END IF ;
 
     l_acting_user_id := priv_example_admin.resolve_user_id ( a_username => a_user ) ;
 
@@ -61,4 +74,3 @@ BEGIN
 
 END ;
 $$ ;
-
