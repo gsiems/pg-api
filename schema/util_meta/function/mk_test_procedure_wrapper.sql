@@ -147,7 +147,7 @@ BEGIN
 
         END IF ;
 
-        IF r.param_direction <> 'out' THEN
+        IF r.param_direction <> 'out' AND r.param_name <> 'a_err' THEN
 
             l_func_params := util_meta._append_parameter (
                 a_parameters => l_func_params,
