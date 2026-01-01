@@ -1,10 +1,6 @@
 
 \i 20_pre_tap.sql
 
-\i tests/example_admin/function/example_admin__insert_user.sql
-\i tests/example_admin/function/example_admin__update_user.sql
-\i tests/example_admin/function/example_admin__upsert_user.sql
-
 -- Plan count should be the number of tests
 SELECT plan ( 4 ) ;
 --SELECT * FROM no_plan ( ) ;
