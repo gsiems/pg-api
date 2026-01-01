@@ -132,5 +132,5 @@ if [[ -n ${verbose} ]]; then
     echo "To ${out_file}"
 fi
 
-cat "${tmp_file}" | sed -e 's/^"//' -e 's/" $//' >"${out_file}"
+cat "${tmp_file}" | sed -e 's/^"//' -e 's/" *$//' >"${out_file}"
 rm "${tmp_file}"
