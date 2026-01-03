@@ -23,7 +23,7 @@ BEGIN
     -- remove trailing tab and/or space characters
     l_result := regexp_replace (
         a_text,
-        E'[ \t](\n)',
+        E'[ \t]+\n',
         E'\n',
         'g' ) ;
 
